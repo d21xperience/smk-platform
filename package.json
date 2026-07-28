@@ -1,0 +1,28 @@
+{
+  "name": "smk-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SMK Platform - Integrated Digital School Ecosystem",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "setup": "yarn install && make setup",
+    "dev:guru": "yarn workspace siakad-guru dev",
+    "dev:web": "yarn workspace web-sekolah dev",
+    "dev:ppdb": "yarn workspace ppdb dev",
+    "build:guru": "yarn workspace siakad-guru build",
+    "build:web": "yarn workspace web-sekolah build",
+    "build:ppdb": "yarn workspace ppdb build",
+    "lint": "yarn workspaces foreach -A run lint",
+    "format": "yarn workspaces foreach -A run format",
+    "clean": "yarn workspaces foreach -A run clean"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">= 26 || ^24 || ^22.12"
+  }
+}

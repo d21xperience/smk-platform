@@ -1,0 +1,151 @@
+# ============================================
+# DEPENDENCIES
+# ============================================
+node_modules/
+vendor/
+.pnp
+.pnp.js
+
+# ============================================
+# BUILD OUTPUTS
+# ============================================
+dist/
+build/
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test.js
+*.test.js.map
+
+# ============================================
+# ENVIRONMENT & SECRETS
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+*.pem
+*.key
+secrets/
+
+# ============================================
+# IDE & EDITOR
+# ============================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# OS FILES
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ============================================
+# DOCKER
+# ============================================
+docker-compose.override.yml
+.docker/
+
+# ============================================
+# LOGS
+# ============================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================================
+# DATABASE FILES
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+
+# ============================================
+# TESTING & COVERAGE
+# ============================================
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
+*.lcov
+
+# ============================================
+# TEMPORARY FILES
+# ============================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# ============================================
+# GOLANG SPECIFIC
+# ============================================
+*.prof
+*.out
+go.work
+go.work.sum
+
+# ============================================
+# QUASAR / VUE SPECIFIC
+# ============================================
+.quasar/
+dist/spa/
+dist/pwa/
+dist/ssr/
+dist/electron/
+
+# ============================================
+# CLOUDFLARE TUNNEL
+# ============================================
+*.json
+!package.json
+cloudflared/
+*.cfcert
+*.cfkey
+
+# ============================================
+# BACKUP FILES
+# ============================================
+backup/
+*.sql.gz
+*.tar.gz
+*.zip
+
+# ============================================
+# MINIO / IPFS
+# ============================================
+minio-data/
+ipfs-data/
+
+# ============================================
+# SQLITE EDGE CACHE
+# ============================================
+edge.db
+edge.db-journal
+edge.db-wal
+
+nul

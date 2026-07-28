@@ -1,0 +1,293 @@
+# =============================================================================
+# SMK PLATFORM - DEVELOPMENT INFRASTRUCTURE
+# =============================================================================
+# File ini menjalankan infrastruktur yang dibutuhkan untuk development:
+# - PostgreSQL (Source of Truth untuk Core Services)
+# - Redis (Cache & Event Bus)
+# - MinIO (Object Storage untuk file upload)
+#
+# CARA PENGGUNAAN:
+# - Start: docker-compose up -d
+# - Stop: docker-compose down
+# - Logs: docker-compose logs -f [service-name]
+# - Restart: docker-compose restart [service-name]
+#
+# CATATAN:
+# - Edge BFF dan Core Services TIDAK dijalankan di sini (jalankan manual)
+# - Frontend apps TIDAK dijalankan di sini (jalankan manual dengan yarn dev)
+# - File ini hanya untuk infrastructure, bukan application services
+# =============================================================================
+
+# =============================================================================
+# SERVICES
+# =============================================================================
+services:
+
+  # ===========================================================================
+  # POSTGRESQL - Source of Truth (Local Core)
+  # ===========================================================================
+  # Database utama untuk semua data akademik.
+  # Di production, ini berjalan di Server Lokal Sekolah.
+  # Di development, ini berjalan di Docker untuk kemudahan.
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: smk-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-smk_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret123}
+      POSTGRES_DB: ${POSTGRES_DB:-smk_platform}
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+    volumes:
+      # Persistent data
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization scripts (optional)
+      - ./scripts/init-db:/docker-entrypoint-initdb.d
+
+    networks:
+      - backend
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smk_dev} -d ${POSTGRES_DB:-smk_platform}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    # Resource limits (untuk development)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  # ===========================================================================
+  # REDIS - Cache & Event Bus
+  # ===========================================================================
+  # Digunakan untuk:
+  # - Distributed cache di Edge BFF
+  # - Session storage
+  # - Event bus (Pub/Sub) untuk Domain Events
+  # - Projection cache di Core Services
+
+  redis:
+    image: redis:latest
+    container_name: smk-redis
+    restart: unless-stopped
+
+    # Command dengan konfigurasi optimal
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory ${REDIS_MAXMEMORY:-256mb}
+      --maxmemory-policy ${REDIS_MAXMEMORY_POLICY:-allkeys-lru}
+      --save 60 1000
+      --loglevel warning
+
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+    volumes:
+      # Persistent data (RDB + AOF)
+      - redis_data:/data
+
+    networks:
+      - backend
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  # ===========================================================================
+  # MINIO - Object Storage
+  # ===========================================================================
+  # Digunakan untuk menyimpan file upload:
+  # - Foto siswa
+  # - Dokumen scan (ijazah, KTP, dll)
+  # - Laporan dalam format PDF/Excel
+  # - File backup
+
+  minio:
+    image: minio/minio:latest
+    container_name: smk-minio
+    restart: unless-stopped
+
+    # MinIO server command
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+
+    ports:
+      # API port
+      - "9000:9000"
+      # Console port
+      - "9001:9001"
+
+    volumes:
+      # Persistent data
+      - minio_data:/data
+
+    networks:
+      - backend
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  # ===========================================================================
+  # REDIS COMMANDER - Redis GUI (Optional)
+  # ===========================================================================
+  # Web UI untuk inspect dan manage Redis data.
+  # Berguna untuk debugging dan monitoring cache.
+  # Access: http://localhost:8081
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: smk-redis-gui
+    restart: unless-stopped
+
+    environment:
+      REDIS_HOSTS: local:redis:6379
+      HTTP_USER: admin
+      HTTP_PASSWORD: admin
+
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+    profiles:
+      - tools  # Hanya start dengan: docker-compose --profile tools up
+
+
+  # ===========================================================================
+  # PGADMIN - PostgreSQL GUI (Optional)
+  # ===========================================================================
+  # Web UI untuk manage PostgreSQL database.
+  # Berguna untuk query testing dan database inspection.
+  # Access: http://localhost:5050
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: smk-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smk.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+
+    ports:
+      - "5050:80"
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+    profiles:
+      - tools  # Hanya start dengan: docker-compose --profile tools up
+
+
+# =============================================================================
+# VOLUMES - Persistent Storage
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: smk_postgres_data
+
+  redis_data:
+    driver: local
+    name: smk_redis_data
+
+  minio_data:
+    driver: local
+    name: smk_minio_data
+
+  pgadmin_data:
+    driver: local
+    name: smk_pgadmin_data
+
+
+# =============================================================================
+# NETWORKS - Network Isolation
+# =============================================================================
+networks:
+  backend:
+    driver: bridge
+    name: smk_backend_network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package attendance;
+
+option go_package = "smk-platform/contracts/protobuf/attendance";
+
+import "google/protobuf/timestamp.proto";
+
+service AttendanceService {
+  rpc SubmitAttendance(SubmitAttendanceRequest) returns (SubmitAttendanceResponse);
+  rpc GetDashboard(GetDashboardRequest) returns (GetDashboardResponse);
+  rpc GetSessionDetail(GetSessionDetailRequest) returns (GetSessionDetailResponse);
+}
+
+message SubmitAttendanceRequest {
+  string session_id = 1;
+  repeated AttendanceRecord records = 2;
+}
+
+message SubmitAttendanceResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetDashboardRequest {
+  string date = 1;
+}
+
+message GetDashboardResponse {
+  string date = 1;
+  int32 total_sessions = 2;
+  int32 total_present = 3;
+  int32 total_absent = 4;
+}
+
+message GetSessionDetailRequest {
+  string session_id = 1;
+}
+
+message GetSessionDetailResponse {
+  AttendanceSession session = 1;
+}
+
+message AttendanceSession {
+  string id = 1;
+  google.protobuf.Timestamp date = 2;
+  string class_id = 3;
+  string class_name = 4;
+  string status = 5;
+  repeated AttendanceRecord records = 6;
+}
+
+message AttendanceRecord {
+  string student_id = 1;
+  string student_name = 2;
+  string status = 3;
+  string note = 4;
+}

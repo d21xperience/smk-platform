@@ -1,0 +1,117 @@
+// app global css
+/* Font untuk berbagai aksara */
+.font-latin {
+  font-family: 'Roboto', sans-serif;
+}
+
+.font-arabic {
+  font-family: 'Amiri', 'Noto Sans Arabic', serif;
+  direction: rtl;
+  text-align: right;
+  font-size: 1.3em;
+  line-height: 2;
+}
+
+.font-sundanese {
+  font-family: 'Noto Sans Sundanese', sans-serif;
+}
+
+.font-javanese {
+  font-family: 'Noto Sans Javanese', sans-serif;
+}
+
+.font-bali {
+  font-family: 'Noto Sans Balinese', sans-serif;
+}
+
+.font-batak {
+  font-family: 'Noto Sans Batak', sans-serif;
+}
+
+/* Support RTL untuk Arab */
+[dir='rtl'] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ============================================================
+   src/css/app.scss  — Global custom styles (tambahkan ke file ini)
+   Quasar auto-loads file ini via quasar.config.js
+   ============================================================ */
+
+// ── Google Fonts ──────────────────────────────────────────────
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+// ── Base typography ───────────────────────────────────────────
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+// ── Quasar primary/secondary override ─────────────────────────
+// Letakkan di quasar.config.js → framework.config.brand:
+// primary: '#0d47a1', secondary: '#1976d2', accent: '#d4a017'
+// (Tidak bisa di-override via SCSS langsung di Quasar v2 SPA)
+
+// ── Shared utility classes ────────────────────────────────────
+.max-width-center {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-pill {
+  width: 36px;
+  height: 4px;
+  background: var(--q-primary);
+  border-radius: 2px;
+  margin-bottom: 12px;
+}
+
+.letter-spacing-wide {
+  letter-spacing: 1px;
+}
+.line-height-relaxed {
+  line-height: 1.7;
+}
+
+.lines-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lines-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lines-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ── Smooth scroll global ──────────────────────────────────────
+html {
+  scroll-behavior: smooth;
+}
+
+// ── Quasar carousel arrow override ───────────────────────────
+.q-carousel__arrow .q-btn {
+  background: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(4px);
+  &:hover {
+    background: rgba(0, 0, 0, 0.6) !important;
+  }
+}
+
+// ── Dark mode global fixes ───────────────────────────────────
+.body--dark {
+  .q-card {
+    background: #1e2130;
+  }
+  .q-separator {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}

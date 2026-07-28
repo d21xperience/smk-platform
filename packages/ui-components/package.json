@@ -1,0 +1,31 @@
+{
+  "name": "@smk-platform/ui-components",
+  "version": "1.0.0",
+  "description": "Shared UI components for SMK Platform (FAS v1.0)",
+  "author": "SMK Platform Team",
+  "license": "MIT",
+  "private": true,
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "sideEffects": [
+    "*.css",
+    "*.scss"
+  ],
+  "scripts": {
+    "lint": "eslint --ext .js,.vue ./src",
+    "format": "prettier --write \"src/**/*.{js,vue,scss,html,md,json}\"",
+    "clean": "rm -rf dist node_modules"
+  },
+  "peerDependencies": {
+    "pinia": "^2.1.0",
+    "quasar": "^2.14.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-vue": "^9.20.0",
+    "prettier": "^3.2.0",
+    "quasar": "^2.14.0",
+    "vue": "^3.4.0"
+  }
+}

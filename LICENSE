@@ -1,0 +1,24 @@
+LISENSI SMK PLATFORM (MIT KUSTOM & HAK KEKAYAAN INTELEKTUAL)
+
+Hak Cipta (c) 2026 Deden Moh Jaenudin
+Afiliasi Pengembangan: Tim Skripsi Universitas Al-Masoem
+
+KETENTUAN HAK CIPTA & ASAL-USUL PROYEK:
+1. Ide orisinal, arsitektur dasar, inisialisasi awal, dan keputusan final pengembangan proyek "SMK Platform" ini dimiliki sepenuhnya oleh pencipta asli (Deden Moh Jaenudin).
+2. Kode sumber ini dikembangkan, Diuji, dan disempurnakan bersama Tim Skripsi dari Universitas Al-Masoem untuk keperluan pemenuhan tugas akhir dan aktivitas akademik terkait.
+
+PERIZINAN (BERDASARKAN LISENSI MIT):
+Dengan ini diberikan izin, tanpa biaya, kepada siapa pun yang mendapatkan salinan perangkat lunak ini dan dokumen terkait ("Perangkat Lunak"), untuk memperlakukan Perangkat Lunak ini tanpa batasan akademik, termasuk hak untuk menggunakan, menyalin, memodifikasi, menggabungkan, menerbitkan, dan mendistribusikan salinan Perangkat Lunak untuk keperluan studi, penelitian, atau penggunaan mandiri, dengan syarat:
+* Pemberitahuan hak cipta di atas dan pemberitahuan izin ini wajib dicantumkan dalam semua salinan atau bagian penting dari Perangkat Lunak.
+
+KLAUSUL KOMERSIAL & PENYEDIAAN INFRASTRUKTUR (KUSTOM):
+1. Lisensi gratis ini HANYA mencakup kode sumber aplikasi (application source code) dalam kondisi "sebagaimana adanya".
+2. Hak gratis ini TIDAK mencakup penyediaan, konfigurasi, penataan arsitektur server, penyelarasan kontrak gRPC/Protobuf, maupun deployment infrastruktur produksi secara lengkap (seperti setup PostgreSQL, Redis, MinIO, Edge BFF, dan Core Services di lingkungan komersial/asli).
+3. Jika ada pihak ketiga, instansi, atau sekolah yang ingin mengimplementasikan sistem infrastruktur SMK Platform ini secara utuh, profesional, dan siap pakai, maka akan dikenakan biaya profesional yang meliputi:
+   * Jasa Konsultasi Arsitektur Sistem.
+   * Jasa Konfigurasi & Deployment Infrastruktur (Cloud/Lokal).
+   * Jasa Pemeliharaan (Maintenance) & Dukungan Teknis.
+4. Hubungi pemegang hak cipta (Deden Moh Jaenudin) secara langsung untuk pengajuan kerja sama komersial dan integrasi infrastruktur tersebut.
+
+BATASAN TANGGUNG JAWAB:
+PERANGKAT LUNAK INI DISEDIAKAN "SEBAGAIMANA ADANYA", TANPA JAMINAN DALAM BENTUK APA PUN. PENCIPTA ATAU TIM PENGEMBANG UNIVERSITAS AL-MASOEM TIDAK BERTANGGUNG JAWAB ATAS KLAIM, KERUSAKAN, ATAU TUNTUTAN LAINNYA YANG TIMBUL DARI PENGGUNAAN PERANGKAT LUNAK INI.
