@@ -1,0 +1,172 @@
+syntax = "proto3";
+
+package student.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/student/v1;studentv1";
+
+import "google/protobuf/timestamp.proto";
+
+// StudentService adalah gRPC service untuk domain Student.
+service StudentService {
+  // Register siswa baru
+  rpc RegisterStudent(RegisterStudentRequest) returns (RegisterStudentResponse);
+
+  // Daftarkan siswa ke kelas
+  rpc EnrollStudent(EnrollStudentRequest) returns (EnrollStudentResponse);
+
+  // Luluskan siswa
+  rpc GraduateStudent(GraduateStudentRequest) returns (GraduateStudentResponse);
+
+  // Pindahkan siswa (mutasi keluar)
+  rpc TransferStudent(TransferStudentRequest) returns (TransferStudentResponse);
+
+  // Ambil detail siswa
+  rpc GetStudent(GetStudentRequest) returns (GetStudentResponse);
+
+  // Cek ketersediaan NISN
+  rpc CheckNisnAvailability(CheckNisnRequest) returns (CheckAvailabilityResponse);
+
+  // Cek ketersediaan NIS
+  rpc CheckNisAvailability(CheckNisRequest) returns (CheckAvailabilityResponse);
+
+  // === BARU: LIST, UPDATE, DELETE ===
+  rpc ListStudents(ListStudentsRequest) returns (ListStudentsResponse);
+  rpc UpdateStudent(UpdateStudentRequest) returns (UpdateStudentResponse);
+  rpc DeleteStudent(DeleteStudentRequest) returns (DeleteStudentResponse);
+}
+
+// === Existing Messages ===
+message RegisterStudentRequest {
+  string student_id = 1;
+  string nisn = 2;
+  string nis = 3;
+  FullName full_name = 4;
+  google.protobuf.Timestamp birth_date = 5;
+  Gender gender = 6;
+  Address address = 7;
+  ContactInfo contact_info = 8;
+  GuardianInfo guardian_info = 9;
+}
+
+message RegisterStudentResponse { Student student = 1; }
+message EnrollStudentRequest { string student_id = 1; string enrollment_id = 2; string class_id = 3; }
+message EnrollStudentResponse { Student student = 1; }
+message GraduateStudentRequest { string student_id = 1; }
+message GraduateStudentResponse { Student student = 1; }
+message TransferStudentRequest { string student_id = 1; string target_school = 2; string reason = 3; }
+message TransferStudentResponse { Student student = 1; }
+message GetStudentRequest { string student_id = 1; }
+message GetStudentResponse { Student student = 1; }
+message CheckNisnRequest { string nisn = 1; }
+message CheckNisRequest { string nis = 1; }
+message CheckAvailabilityResponse { bool available = 1; string existing_student_id = 2; }
+
+// === New Messages for BATCH 2.1 ===
+message ListStudentsRequest {
+  string search = 1;
+  string status = 2;
+  string class_id = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+
+message ListStudentsResponse {
+  repeated Student data = 1;
+  int32 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message UpdateStudentRequest {
+  string student_id = 1;
+  FullName full_name = 2;
+  google.protobuf.Timestamp birth_date = 3;
+  string birth_place = 4;
+  Gender gender = 5;
+  Address address = 6;
+  ContactInfo contact_info = 7;
+  GuardianInfo guardian_info = 8;
+  string nis = 9;
+  string nisn = 10;
+  string class_name = 11;
+}
+
+message UpdateStudentResponse { Student student = 1; }
+
+message DeleteStudentRequest { string student_id = 1; }
+
+message DeleteStudentResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// === Value Types ===
+message Student {
+  string student_id = 1;
+  string school_id = 2;
+  string nisn = 3;
+  string nis = 4;
+  FullName full_name = 5;
+  google.protobuf.Timestamp birth_date = 6;
+  Gender gender = 7;
+  Address address = 8;
+  ContactInfo contact_info = 9;
+  GuardianInfo guardian_info = 10;
+  StudentStatus status = 11;
+  repeated Enrollment enrollments = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message FullName {
+  string first_name = 1;
+  string middle_name = 2;
+  string last_name = 3;
+}
+
+message Address {
+  string street = 1;
+  string rt_rw = 2;
+  string village = 3;
+  string district = 4;
+  string city = 5;
+  string postal_code = 6;
+}
+
+message ContactInfo {
+  string phone = 1;
+  string email = 2;
+}
+
+message GuardianInfo {
+  string name = 1;
+  string relation = 2;
+  string phone = 3;
+  string occupation = 4;
+}
+
+message Enrollment {
+  string enrollment_id = 1;
+  string school_id = 2;
+  string period_id = 3;
+  string class_id = 4;
+  google.protobuf.Timestamp enrollment_date = 5;
+  string status = 6;
+}
+
+// === Enums ===
+enum Gender {
+  GENDER_UNSPECIFIED = 0;
+  GENDER_MALE = 1;
+  GENDER_FEMALE = 2;
+}
+
+enum StudentStatus {
+  STUDENT_STATUS_UNSPECIFIED = 0;
+  STUDENT_STATUS_ACTIVE = 1;
+  STUDENT_STATUS_GRADUATED = 2;
+  STUDENT_STATUS_TRANSFERRED = 3;
+  STUDENT_STATUS_DROPPED = 4;
+  STUDENT_STATUS_ALUMNI = 5;
+}

@@ -5,26 +5,38 @@
   <footer class="footer-section q-pt-xl">
     <div class="max-width-center q-mx-auto q-px-md">
       <div class="row q-col-gutter-xl q-pb-xl">
-
         <!-- ── Identitas sekolah ──────────────────── -->
         <div class="col-12 col-md-4">
           <div class="row items-center no-wrap q-mb-md">
             <div class="footer-logo-mark q-mr-sm">
               <!-- <q-avatar size="40px" class="bg-transparent"> -->
-                <img src="~@/assets/logo-smk.png" alt="Logo" onerror="this.style.display='none'" width="40px"/>
+              <img
+                src="~@/assets/logo-smk.png"
+                alt="Logo"
+                onerror="this.style.display = 'none'"
+                width="40px"
+              />
               <!-- </q-avatar> -->
             </div>
             <div class="text-h6 text-weight-bold text-white">SMK Pasundan Jatinangor</div>
           </div>
           <p class="text-caption text-grey-5 line-height-relaxed q-mb-lg">
-            Sekolah vokasi unggulan yang berkomitmen mencetak generasi kompeten,
-            berkarakter, dan siap kerja melalui program penyelarasan kurikulum
-            standar industri internasional.
+            Sekolah vokasi unggulan yang berkomitmen mencetak generasi kompeten, berkarakter, dan
+            siap kerja melalui program penyelarasan kurikulum standar industri internasional.
           </p>
           <!-- Sosmed -->
           <div class="row q-gutter-sm">
-            <q-btn v-for="s in socmedLinks" :key="s.platform" round dense flat :color="s.color" :icon="s.icon"
-              class="footer-sosmed-btn shadow-1" @click="bukaMedsos(s.platform)">
+            <q-btn
+              v-for="s in socmedLinks"
+              :key="s.platform"
+              round
+              dense
+              flat
+              :color="s.color"
+              :icon="s.icon"
+              class="footer-sosmed-btn shadow-1"
+              @click="bukaMedsos(s.platform)"
+            >
               <q-tooltip>{{ s.label }}</q-tooltip>
             </q-btn>
           </div>
@@ -35,7 +47,7 @@
           <div class="footer-heading">Informasi Kontak</div>
           <q-list dense class="footer-list">
             <q-item class="q-px-none items-start">
-              <q-item-section avatar style="min-width:28px">
+              <q-item-section avatar style="min-width: 28px">
                 <q-icon name="place" color="amber-4" size="xs" />
               </q-item-section>
               <q-item-section class="text-caption text-grey-5">
@@ -43,19 +55,23 @@
               </q-item-section>
             </q-item>
             <q-item class="q-px-none">
-              <q-item-section avatar style="min-width:28px">
+              <q-item-section avatar style="min-width: 28px">
                 <q-icon name="phone" color="amber-4" size="xs" />
               </q-item-section>
-              <q-item-section class="text-caption text-grey-5">{{ SCHOOL_INFO.phone }}</q-item-section>
+              <q-item-section class="text-caption text-grey-5">{{
+                SCHOOL_INFO.phone
+              }}</q-item-section>
             </q-item>
             <q-item class="q-px-none">
-              <q-item-section avatar style="min-width:28px">
+              <q-item-section avatar style="min-width: 28px">
                 <q-icon name="mail" color="amber-4" size="xs" />
               </q-item-section>
-              <q-item-section class="text-caption text-grey-5">{{ SCHOOL_INFO.email }}</q-item-section>
+              <q-item-section class="text-caption text-grey-5">{{
+                SCHOOL_INFO.email
+              }}</q-item-section>
             </q-item>
             <q-item class="q-px-none">
-              <q-item-section avatar style="min-width:28px">
+              <q-item-section avatar style="min-width: 28px">
                 <q-icon name="chat" color="green-4" size="xs" />
               </q-item-section>
               <q-item-section class="text-caption text-grey-5">
@@ -68,7 +84,12 @@
         <!-- ── Tautan cepat ───────────────────────── -->
         <div class="col-12 col-sm-6 col-md-4">
           <div class="footer-heading">Tautan Cepat</div>
-          <div v-for="link in quickLinks" :key="link.label" class="footer-link" @click="$router.push(link.to)">
+          <div
+            v-for="link in quickLinks"
+            :key="link.label"
+            class="footer-link"
+            @click="$router.push(link.to)"
+          >
             <q-icon name="chevron_right" size="xs" class="q-mr-xs" />
             {{ link.label }}
           </div>
@@ -78,14 +99,15 @@
       <q-separator dark class="q-mb-md" />
 
       <!-- Copyright -->
-      <div class="row justify-between items-center q-pb-lg text-caption text-grey-6 flex-wrap gap-xs">
-        <div>Made with
+      <div
+        class="row justify-between items-center q-pb-lg text-caption text-grey-6 flex-wrap gap-xs"
+      >
+        <div>
+          Made with
           <q-icon name="favorite" color="red-10" size="xs" class="q-mx-xs" />
           by. Deden Moh Jaenudin.
         </div>
-        <div class="row items-center gap-xs">
-          © {{ currentYear }}. All Rights Reserved.
-        </div>
+        <div class="row items-center gap-xs">© {{ currentYear }}. All Rights Reserved.</div>
       </div>
     </div>
   </footer>
@@ -119,7 +141,7 @@ const quickLinks = [
 <style scoped>
 .footer-section {
   background: #0d1220;
-  color: rgba(255, 255, 255, .7);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .footer-logo-mark {
@@ -142,17 +164,17 @@ const quickLinks = [
   font-size: 13px;
   margin-bottom: 14px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .footer-link {
-  color: rgba(255, 255, 255, .55);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
   padding: 4px 0;
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: color .15s;
+  transition: color 0.15s;
 }
 
 .footer-link:hover {
@@ -160,12 +182,14 @@ const quickLinks = [
 }
 
 .footer-sosmed-btn {
-  background: rgba(255, 255, 255, .07) !important;
-  transition: background .15s, transform .15s !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  transition:
+    background 0.15s,
+    transform 0.15s !important;
 }
 
 .footer-sosmed-btn:hover {
-  background: rgba(255, 255, 255, .15) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
   transform: translateY(-2px);
 }
 

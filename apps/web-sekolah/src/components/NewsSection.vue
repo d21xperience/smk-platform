@@ -2,10 +2,19 @@
   <section id="berita" class="q-py-xl bg-body">
     <div class="news-container">
       <div class="row items-end justify-between q-mb-lg">
-        <SectionHeader title="Berita & Prestasi Terbaru"
-          subtitle="Kabar terkini dari kegiatan akademik, prestasi siswa, dan informasi sekolah." />
-        <q-btn flat color="primary" no-caps label="Semua Berita" icon-right="arrow_forward" to="/berita"
-          class="gt-xs text-weight-bold q-mb-sm modern-btn" />
+        <SectionHeader
+          title="Berita & Prestasi Terbaru"
+          subtitle="Kabar terkini dari kegiatan akademik, prestasi siswa, dan informasi sekolah."
+        />
+        <q-btn
+          flat
+          color="primary"
+          no-caps
+          label="Semua Berita"
+          icon-right="arrow_forward"
+          to="/berita"
+          class="gt-xs text-weight-bold q-mb-sm modern-btn"
+        />
       </div>
 
       <!-- Loading State -->
@@ -54,7 +63,9 @@ const displayNews = computed(() => newsList.value.slice(0, 3))
 }
 
 .modern-btn {
-  transition: transform 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    background 0.2s;
 }
 
 .modern-btn:hover {
@@ -80,7 +91,6 @@ const displayNews = computed(() => newsList.value.slice(0, 3))
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 0.6;

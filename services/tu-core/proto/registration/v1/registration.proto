@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package registration.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/registration/v1;registrationv1";
+
+import "google/protobuf/timestamp.proto";
+
+service RegistrationService {
+  rpc CreateRegistration(CreateRegistrationRequest) returns (CreateRegistrationResponse);
+  rpc SubmitRegistration(SubmitRegistrationRequest) returns (SubmitRegistrationResponse);
+  rpc VerifyRegistration(VerifyRegistrationRequest) returns (VerifyRegistrationResponse);
+  rpc ApproveRegistration(ApproveRegistrationRequest) returns (ApproveRegistrationResponse);
+  rpc RejectRegistration(RejectRegistrationRequest) returns (RejectRegistrationResponse);
+  rpc GetRegistration(GetRegistrationRequest) returns (GetRegistrationResponse);
+  rpc ListRegistrations(ListRegistrationsRequest) returns (ListRegistrationsResponse);
+}
+
+message CreateRegistrationRequest {
+  string calon_nisn = 1;
+  string calon_nama = 2;
+  string calon_jenis_kelamin = 3;
+  string calon_tempat_lahir = 4;
+  google.protobuf.Timestamp calon_tanggal_lahir = 5;
+  string calon_alamat = 6;
+  string calon_telepon = 7;
+  string calon_email = 8;
+  string nama_ayah = 9;
+  string nama_ibu = 10;
+  string telepon_ortu = 11;
+  string pekerjaan_ayah = 12;
+  string pekerjaan_ibu = 13;
+  string asal_sekolah = 14;
+  string jurusan_dipilih = 15;
+  string alasan_memilih = 16;
+}
+
+message CreateRegistrationResponse {
+  Registration registration = 1;
+}
+
+message SubmitRegistrationRequest {
+  string registration_id = 1;
+}
+
+message SubmitRegistrationResponse {
+  Registration registration = 1;
+}
+
+message VerifyRegistrationRequest {
+  string registration_id = 1;
+  string catatan = 2;
+}
+
+message VerifyRegistrationResponse {
+  Registration registration = 1;
+}
+
+message ApproveRegistrationRequest {
+  string registration_id = 1;
+  string catatan = 2;
+}
+
+message ApproveRegistrationResponse {
+  Registration registration = 1;
+}
+
+message RejectRegistrationRequest {
+  string registration_id = 1;
+  string alasan = 2;
+}
+
+message RejectRegistrationResponse {
+  Registration registration = 1;
+}
+
+message GetRegistrationRequest {
+  string registration_id = 1;
+}
+
+message GetRegistrationResponse {
+  Registration registration = 1;
+}
+
+message ListRegistrationsRequest {
+  string status = 1;
+  string search = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListRegistrationsResponse {
+  repeated Registration registrations = 1;
+  int32 total = 2;
+}
+
+message Registration {
+  string id = 1;
+  string school_id = 2;
+  string academic_period_id = 3;
+  string calon_nisn = 4;
+  string calon_nama = 5;
+  string calon_jenis_kelamin = 6;
+  string calon_tempat_lahir = 7;
+  google.protobuf.Timestamp calon_tanggal_lahir = 8;
+  string calon_alamat = 9;
+  string calon_telepon = 10;
+  string calon_email = 11;
+  string nama_ayah = 12;
+  string nama_ibu = 13;
+  string telepon_ortu = 14;
+  string pekerjaan_ayah = 15;
+  string pekerjaan_ibu = 16;
+  string asal_sekolah = 17;
+  string jurusan_dipilih = 18;
+  string alasan_memilih = 19;
+  string status = 20;
+  string catatan_verifikasi = 21;
+  string verified_by = 22;
+  google.protobuf.Timestamp verified_at = 23;
+  google.protobuf.Timestamp created_at = 24;
+  google.protobuf.Timestamp updated_at = 25;
+}

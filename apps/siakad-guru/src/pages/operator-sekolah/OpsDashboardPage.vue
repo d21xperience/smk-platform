@@ -92,17 +92,31 @@ import { ref } from 'vue'
 const chartOptions = {
   chart: { id: 'aktivitas-7hari', toolbar: { show: false } },
   xaxis: { categories: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] },
-  colors: ['#1976d2']
+  colors: ['#1976d2'],
 }
-const chartSeries = [{
-  name: 'Jumlah Tugas',
-  data: [12, 8, 15, 10, 9, 4, 6]
-}]
+const chartSeries = [
+  {
+    name: 'Jumlah Tugas',
+    data: [12, 8, 15, 10, 9, 4, 6],
+  },
+]
 
 // Dummy logs
 const latestLogs = ref([
-  { id: 1, icon: 'check_circle', color: 'green', deskripsi: 'Tugas mutasi siswa A diselesaikan', waktu: '10:30' },
-  { id: 2, icon: 'sync', color: 'blue', deskripsi: 'Sinkronisasi Dapodik berhasil', waktu: '09:15' },
-  { id: 3, icon: 'block', color: 'red', deskripsi: 'Pengajuan biodata B ditolak', waktu: '08:00' }
+  {
+    id: 1,
+    icon: 'check_circle',
+    color: 'green',
+    deskripsi: 'Tugas mutasi siswa A diselesaikan',
+    waktu: '10:30',
+  },
+  {
+    id: 2,
+    icon: 'sync',
+    color: 'blue',
+    deskripsi: 'Sinkronisasi Dapodik berhasil',
+    waktu: '09:15',
+  },
+  { id: 3, icon: 'block', color: 'red', deskripsi: 'Pengajuan biodata B ditolak', waktu: '08:00' },
 ])
 </script>

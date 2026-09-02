@@ -9,7 +9,7 @@ export function useDashboard() {
     stats: [],
     weeklyAttendance: [],
     todaySchedule: [],
-    criticalAlerts: []
+    criticalAlerts: [],
   })
 
   /**
@@ -24,7 +24,7 @@ export function useDashboard() {
         stats: data.stats || [],
         weeklyAttendance: data.weeklyAttendance || [],
         todaySchedule: data.todaySchedule || [],
-        criticalAlerts: data.criticalAlerts || []
+        criticalAlerts: data.criticalAlerts || [],
       }
     }
   }
@@ -32,6 +32,6 @@ export function useDashboard() {
   return {
     loading,
     dashboardData,
-    fetchOverview
+    fetchOverview,
   }
 }

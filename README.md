@@ -9,12 +9,13 @@
 | Node.js        | 20.x LTS | `node --version`   |
 | Make           | -        | `make --version`   |
 | Git            | Latest   | `git --version`    |
+| Yarn           | Latest   | `yarn --version`   |
 
 ## 🚀 Langkah Setup
 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-org/smk-platform.git
+git clone https://github.com/d21xperience/smk-platform.git
 cd smk-platform
 ```

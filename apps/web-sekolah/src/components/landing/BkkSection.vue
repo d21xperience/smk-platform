@@ -6,10 +6,18 @@
   <section id="bkk" :class="['q-py-xl', $q.dark.isActive ? 'bg-grey-10' : 'bg-amber-1']">
     <div class="max-width-center q-mx-auto q-px-md">
       <div class="row items-end justify-between q-mb-lg">
-        <SectionHeader title="Info Lowongan Kerja BKK"
-          subtitle="Pusat penyaluran kerja alumni yang terhubung langsung dengan industri mitra." />
-        <q-btn color="primary" no-caps label="Hubungi Admin BKK" icon="chat" class="gt-xs text-weight-bold"
-          @click="hubungiBkk" />
+        <SectionHeader
+          title="Info Lowongan Kerja BKK"
+          subtitle="Pusat penyaluran kerja alumni yang terhubung langsung dengan industri mitra."
+        />
+        <q-btn
+          color="primary"
+          no-caps
+          label="Hubungi Admin BKK"
+          icon="chat"
+          class="gt-xs text-weight-bold"
+          @click="hubungiBkk"
+        />
       </div>
 
       <div class="row q-col-gutter-lg">
@@ -19,8 +27,13 @@
               <!-- Header perusahaan -->
               <div class="row items-center justify-between no-wrap q-mb-md">
                 <div class="row items-center no-wrap">
-                  <q-avatar :color="job.color" text-color="white" size="44px" class="text-weight-bold shadow-1 q-mr-sm"
-                    font-size="18px">
+                  <q-avatar
+                    :color="job.color"
+                    text-color="white"
+                    size="44px"
+                    class="text-weight-bold shadow-1 q-mr-sm"
+                    font-size="18px"
+                  >
                     {{ job.initial }}
                   </q-avatar>
                   <div>
@@ -31,7 +44,12 @@
                     </div>
                   </div>
                 </div>
-                <q-chip dense :color="job.color" text-color="white" class="text-weight-bold text-caption">
+                <q-chip
+                  dense
+                  :color="job.color"
+                  text-color="white"
+                  class="text-weight-bold text-caption"
+                >
                   Khusus {{ job.majorTarget }}
                 </q-chip>
               </div>
@@ -44,7 +62,7 @@
               <!-- Requirements -->
               <q-list dense class="req-list">
                 <q-item v-for="(req, ri) in job.requirements" :key="ri" class="q-px-none q-py-xs">
-                  <q-item-section avatar style="min-width:20px">
+                  <q-item-section avatar style="min-width: 20px">
                     <q-icon name="check_circle" :color="job.color" size="xs" />
                   </q-item-section>
                   <q-item-section class="text-caption text-grey-7">{{ req }}</q-item-section>
@@ -53,22 +71,38 @@
             </q-card-section>
 
             <q-separator />
-            <q-card-actions class="q-px-lg q-py-sm justify-between items-center"
-              :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-1'">
+            <q-card-actions
+              class="q-px-lg q-py-sm justify-between items-center"
+              :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-1'"
+            >
               <div class="text-caption text-negative text-weight-bold row items-center">
                 <q-icon name="schedule" size="xs" class="q-mr-xs" />
                 Batas: {{ job.deadline }}
               </div>
-              <q-btn unelevated no-caps dense :color="job.color" label="Lamar Sekarang" icon="send"
-                class="text-weight-bold q-px-md" @click="openUrl(job.applyUrl)" />
+              <q-btn
+                unelevated
+                no-caps
+                dense
+                :color="job.color"
+                label="Lamar Sekarang"
+                icon="send"
+                class="text-weight-bold q-px-md"
+                @click="openUrl(job.applyUrl)"
+              />
             </q-card-actions>
           </q-card>
         </div>
       </div>
 
       <div class="row justify-center q-mt-lg lt-sm">
-        <q-btn color="primary" no-caps label="Hubungi Admin BKK" icon="chat" class="full-width text-weight-bold"
-          @click="hubungiBkk" />
+        <q-btn
+          color="primary"
+          no-caps
+          label="Hubungi Admin BKK"
+          icon="chat"
+          class="full-width text-weight-bold"
+          @click="hubungiBkk"
+        />
       </div>
     </div>
   </section>
@@ -87,13 +121,15 @@ const { hubungiBkk, openUrl } = useSchool()
 <style scoped>
 .bkk-card {
   border-radius: 16px;
-  transition: transform .2s, box-shadow .2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   height: 100%;
 }
 
 .bkk-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
 }
 
 .req-list .q-item {

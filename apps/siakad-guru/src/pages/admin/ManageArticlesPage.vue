@@ -7,23 +7,38 @@
           Kelola Berita & Prestasi Terbaru
         </h1>
         <p class="text-grey-6 q-mt-xs q-mb-none text-caption text-sm-body2">
-          Ruang kontributor Guru & Kaprog. Tulis artikel pengumuman, dokumentasi kegiatan, atau publikasi juara prestasi
-          siswa.
+          Ruang kontributor Guru & Kaprog. Tulis artikel pengumuman, dokumentasi kegiatan, atau
+          publikasi juara prestasi siswa.
         </p>
       </div>
       <!-- TOMBOL UNTUK MEMBUKA DIALOG WRITE ARTICLE -->
-      <q-btn color="primary" icon="create" label="Tulis Artikel Baru" class="text-weight-bold shadow-2 q-px-md"
-        @click="bukaFormArtikel" />
+      <q-btn
+        color="primary"
+        icon="create"
+        label="Tulis Artikel Baru"
+        class="text-weight-bold shadow-2 q-px-md"
+        @click="bukaFormArtikel"
+      />
     </div>
 
     <!-- 1. FILTER DAN ARSIP TABEL KONTEN -->
     <q-card flat bordered class="bg-white rounded-borders shadow-1">
-      <q-table title="Daftar Tulisan Berita Anda" :rows="articleRows" :columns="tableColumns" row-key="id" flat
-        class="text-grey-9" no-data-label="Belum ada artikel yang ditulis. Mulai bagikan berita pertama sekolah Anda!">
+      <q-table
+        title="Daftar Tulisan Berita Anda"
+        :rows="articleRows"
+        :columns="tableColumns"
+        row-key="id"
+        flat
+        class="text-grey-9"
+        no-data-label="Belum ada artikel yang ditulis. Mulai bagikan berita pertama sekolah Anda!"
+      >
         <!-- Custom Tampilan Badge Jenis Konten (Berita / Prestasi) -->
         <template v-slot:body-cell-type="props">
           <q-td :props="props">
-            <q-badge :color="props.row.type === 'Prestasi' ? 'positive' : 'info'" class="text-weight-bold">
+            <q-badge
+              :color="props.row.type === 'Prestasi' ? 'positive' : 'info'"
+              class="text-weight-bold"
+            >
               {{ props.row.type }}
             </q-badge>
           </q-td>
@@ -32,7 +47,10 @@
         <!-- Custom Tampilan Status Persetujuan -->
         <template v-slot:body-cell-status="props">
           <q-td :props="props">
-            <q-badge :color="props.row.status === 'Published' ? 'primary' : 'grey-7'" class="text-weight-bold">
+            <q-badge
+              :color="props.row.status === 'Published' ? 'primary' : 'grey-7'"
+              class="text-weight-bold"
+            >
               {{ props.row.status }}
             </q-badge>
           </q-td>
@@ -55,53 +73,93 @@
     <!-- ====================================================================== -->
     <!-- 2. POP-UP MODAL: RICH TEXT EDITOR UNTUK GURU                          -->
     <!-- ====================================================================== -->
-    <q-dialog v-model="formDialogOpen" persistent maximized transition-show="slide-up" transition-hide="slide-down">
+    <q-dialog
+      v-model="formDialogOpen"
+      persistent
+      maximized
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
       <q-card class="bg-grey-1">
         <!-- BAR ATAS MODAL -->
         <q-header class="bg-primary text-white">
           <q-toolbar>
             <q-btn flat label="Batal" v-close-popup class="text-weight-bold" />
-            <q-toolbar-title class="text-center text-weight-bold">Ruang Kerja Penulis Artikel</q-toolbar-title>
-            <q-btn label="Terbitkan Sekarang" color="amber" text-color="black" class="text-weight-bold"
-              :loading="isSaving" @click="simpanArtikel" />
+            <q-toolbar-title class="text-center text-weight-bold"
+              >Ruang Kerja Penulis Artikel</q-toolbar-title
+            >
+            <q-btn
+              label="Terbitkan Sekarang"
+              color="amber"
+              text-color="black"
+              class="text-weight-bold"
+              :loading="isSaving"
+              @click="simpanArtikel"
+            />
           </q-toolbar>
         </q-header>
 
         <!-- WORKSPACE AREA EDITING -->
         <q-page-container class="q-pa-md q-pa-sm-xl flex flex-center">
-          <q-card style="width: 100%; max-width: 900px;" class="q-pa-lg shadow-3 bg-white rounded-borders">
+          <q-card
+            style="width: 100%; max-width: 900px"
+            class="q-pa-lg shadow-3 bg-white rounded-borders"
+          >
             <q-form class="q-gutter-md">
-
               <div class="row q-col-gutter-md">
                 <!-- Input Judul Artikel -->
                 <div class="col-12 col-sm-8">
-                  <q-item-label class="text-weight-bold text-grey-8 q-mb-xs">Judul Berita / Prestasi</q-item-label>
-                  <q-input outlined v-model="newArticle.title"
-                    placeholder="Contoh: Tim TBSM Raih Podium Utama Lomba Mekanik Nasional" dense />
+                  <q-item-label class="text-weight-bold text-grey-8 q-mb-xs"
+                    >Judul Berita / Prestasi</q-item-label
+                  >
+                  <q-input
+                    outlined
+                    v-model="newArticle.title"
+                    placeholder="Contoh: Tim TBSM Raih Podium Utama Lomba Mekanik Nasional"
+                    dense
+                  />
                 </div>
 
                 <!-- Pilihan Tipe Konten -->
                 <div class="col-12 col-sm-4">
-                  <q-item-label class="text-weight-bold text-grey-8 q-mb-xs">Jenis Publikasi</q-item-label>
-                  <q-select outlined v-model="newArticle.type" :options="['Berita Kegiatan', 'Prestasi']" dense />
+                  <q-item-label class="text-weight-bold text-grey-8 q-mb-xs"
+                    >Jenis Publikasi</q-item-label
+                  >
+                  <q-select
+                    outlined
+                    v-model="newArticle.type"
+                    :options="['Berita Kegiatan', 'Prestasi']"
+                    dense
+                  />
                 </div>
               </div>
 
               <!-- Input Gambar Cover Menggunakan URL Gambar Pintar -->
               <div>
-                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs">Tautan Gambar Sampul (Cover
-                  URL)</q-item-label>
-                <q-input outlined v-model="newArticle.cover" placeholder="Masukkan URL gambar dokumentasi (jpg/png)"
-                  dense />
+                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs"
+                  >Tautan Gambar Sampul (Cover URL)</q-item-label
+                >
+                <q-input
+                  outlined
+                  v-model="newArticle.cover"
+                  placeholder="Masukkan URL gambar dokumentasi (jpg/png)"
+                  dense
+                />
               </div>
 
               <!-- KOMPONEN RICH TEXT EDITOR (QEDITOR) -->
               <div>
-                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs">Isi Lengkap Artikel / Berita</q-item-label>
-                <q-editor v-model="newArticle.content" :definitions="editorDefinitions" :toolbar="editorToolbar"
-                  min-height="15rem" class="rounded-borders border-light bg-grey-1" />
+                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs"
+                  >Isi Lengkap Artikel / Berita</q-item-label
+                >
+                <q-editor
+                  v-model="newArticle.content"
+                  :definitions="editorDefinitions"
+                  :toolbar="editorToolbar"
+                  min-height="15rem"
+                  class="rounded-borders border-light bg-grey-1"
+                />
               </div>
-
             </q-form>
           </q-card>
         </q-page-container>
@@ -124,7 +182,7 @@ const newArticle = ref({
   title: '',
   type: 'Berita Kegiatan',
   cover: '',
-  content: ''
+  content: '',
 })
 
 // Skema Kolom Tabel Arsip
@@ -134,18 +192,19 @@ const tableColumns = [
   { name: 'date', align: 'center', label: 'Tanggal Buat', field: 'date' },
   { name: 'author', align: 'center', label: 'Penulis', field: 'author' },
   { name: 'status', align: 'center', label: 'Status', field: 'status' },
-  { name: 'actions', align: 'center', label: 'Aksi', field: 'actions' }
+  { name: 'actions', align: 'center', label: 'Aksi', field: 'actions' },
 ]
 
 // Mock Data Sinkronisasi dengan Baris Berita di IndexPage Utama
 const articleRows = ref([
   {
     id: 1,
-    title: 'Siswa TBSM SMK Pasundan Jatinangor Raih Juara 1 Kompetensi Mekanik Astra Honda Tingkat Provinsi',
+    title:
+      'Siswa TBSM SMK Pasundan Jatinangor Raih Juara 1 Kompetensi Mekanik Astra Honda Tingkat Provinsi',
     type: 'Prestasi',
     date: '30-05-2026',
     author: 'Kaprog TBSM',
-    status: 'Published'
+    status: 'Published',
   },
   {
     id: 2,
@@ -153,20 +212,33 @@ const articleRows = ref([
     type: 'Berita Kegiatan',
     date: '25-05-2026',
     author: 'Humas Hub',
-    status: 'Published'
-  }
+    status: 'Published',
+  },
 ])
 
 // Konfigurasi Tombol Toolbar Pengolah Kata QEditor
 const editorToolbar = [
   ['bold', 'italic', 'underline', 'strike'],
   ['quote', 'unordered', 'ordered'],
-  [{ label: $q.lang.editor.align, icon: $q.iconSet.editor.align, fixedLabel: true, options: ['left', 'center', 'right', 'justify'] }],
-  ['undo', 'redo']
+  [
+    {
+      label: $q.lang.editor.align,
+      icon: $q.iconSet.editor.align,
+      fixedLabel: true,
+      options: ['left', 'center', 'right', 'justify'],
+    },
+  ],
+  ['undo', 'redo'],
 ]
 
 function bukaFormArtikel() {
-  newArticle.value = { id: null, title: '', type: 'Berita Kegiatan', cover: '', content: 'Tulis isi pengumuman atau berita di sini...' }
+  newArticle.value = {
+    id: null,
+    title: '',
+    type: 'Berita Kegiatan',
+    cover: '',
+    content: 'Tulis isi pengumuman atau berita di sini...',
+  }
   formDialogOpen.value = true
 }
 
@@ -188,13 +260,13 @@ function simpanArtikel() {
       type: newArticle.value.type,
       date: '31-05-2026',
       author: localStorage.getItem('user_name') || 'Guru Kontributor',
-      status: 'Published'
+      status: 'Published',
     })
 
     $q.notify({
       type: 'positive',
       message: 'Artikel Berita berhasil disimpan dan otomatis terbit ke halaman depan!',
-      position: 'top'
+      position: 'top',
     })
   }, 1000)
 }
@@ -208,9 +280,9 @@ function hapusArtikel(row) {
   $q.dialog({
     title: 'Hapus Berita',
     message: `Hapus publikasi artikel "${row.title}" dari database sekolah?`,
-    cancel: true
+    cancel: true,
   }).onOk(() => {
-    articleRows.value = articleRows.value.filter(a => a.id !== row.id)
+    articleRows.value = articleRows.value.filter((a) => a.id !== row.id)
     $q.notify({ type: 'info', message: 'Artikel berhasil dihapus.' })
   })
 }

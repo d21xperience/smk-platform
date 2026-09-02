@@ -7,7 +7,13 @@
         <q-toolbar-title>Operator Sekolah</q-toolbar-title>
 
         <!-- Indikator Koneksi Dapodik -->
-        <q-chip :color="dapodikStatus.color" text-color="white" dense icon-right="circle" class="q-mr-sm">
+        <q-chip
+          :color="dapodikStatus.color"
+          text-color="white"
+          dense
+          icon-right="circle"
+          class="q-mr-sm"
+        >
           {{ dapodikStatus.label }}
         </q-chip>
 
@@ -16,18 +22,37 @@
     </q-header>
 
     <!-- Sidebar Drawer -->
-    <q-drawer v-model="drawerLeft" show-if-above :mini="miniState" @mouseover="miniState = false"
-      @mouseout="miniState = true" :width="250" :breakpoint="700" bordered>
+    <q-drawer
+      v-model="drawerLeft"
+      show-if-above
+      :mini="miniState"
+      @mouseover="miniState = false"
+      @mouseout="miniState = true"
+      :width="250"
+      :breakpoint="700"
+      bordered
+    >
       <q-scroll-area class="fit">
         <q-list padding>
           <!-- Dashboard -->
-          <q-item clickable v-ripple :to="{ name: 'ops-dashboard' }" exact active-class="text-primary">
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'ops-dashboard' }"
+            exact
+            active-class="text-primary"
+          >
             <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
             <q-item-section>Dashboard</q-item-section>
           </q-item>
 
           <!-- Antrean Tugas (dengan badge) -->
-          <q-item clickable v-ripple :to="{ name: 'ops-antrean-tugas' }" active-class="text-primary">
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'ops-antrean-tugas' }"
+            active-class="text-primary"
+          >
             <q-item-section avatar><q-icon name="assignment" /></q-item-section>
             <q-item-section>Antrean Tugas</q-item-section>
             <q-item-section side>

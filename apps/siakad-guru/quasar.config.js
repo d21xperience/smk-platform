@@ -13,9 +13,9 @@ export default defineConfig((/* ctx */) => {
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
     boot: [
       'axios', // Inisialisasi Axios dan interceptor
-      'services', // Inisialisasi adapter, service, store
-      'events',
-      'shared-components',
+      'services',
+      'auth',
+      'context',
     ],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css

@@ -194,7 +194,53 @@ services:
         max-size: "10m"
         max-file: "3"
 
+    # ===========================================================================
+  # NATS - Event-Driven Message Broker (JetStream)
+  # ===========================================================================
+  # Digunakan untuk:
+  # - Distribusi Domain Events (Event-Driven Architecture)
+  # - Transactional Outbox Pattern worker
+  # - Projection updates (CQRS Read Models)
 
+  nats:
+    image: nats:latest
+    container_name: smk-nats
+    restart: unless-stopped
+
+    # Enable JetStream dengan penyimpanan data di disk (persistent)
+    command: -js -sd /data
+
+    ports:
+      - "4222:4222" # Client port (untuk aplikasi Go)
+      - "8222:8222" # Monitoring/HTTP port
+
+    volumes:
+      - nats_data:/data
+
+    networks:
+      - backend
+
+    healthcheck:
+      test: ["CMD", "nats-server", "--check", "server"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   # ===========================================================================
   # REDIS COMMANDER - Redis GUI (Optional)
   # ===========================================================================
@@ -279,6 +325,9 @@ volumes:
   pgadmin_data:
     driver: local
     name: smk_pgadmin_data
+  nats_data:          # <-- TAMBAHKAN INI
+    driver: local
+    name: smk_nats_data
 
 
 # =============================================================================

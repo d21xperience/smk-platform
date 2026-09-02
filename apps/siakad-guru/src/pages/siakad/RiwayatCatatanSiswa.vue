@@ -6,15 +6,32 @@
         <div class="text-h6 text-weight-bold text-grey-9">Riwayat Catatan Siswa</div>
         <div class="text-caption text-grey-6">Prestasi & pelanggaran selama masa pendidikan</div>
       </div>
-      <q-btn no-caps unelevated color="primary" icon="add" label="Tambah Catatan" @click="openAddDialog" />
+      <q-btn
+        no-caps
+        unelevated
+        color="primary"
+        icon="add"
+        label="Tambah Catatan"
+        @click="openAddDialog"
+      />
     </div>
 
     <!-- PILIH SISWA -->
     <q-card flat bordered class="q-mb-md">
       <q-card-section>
-        <q-select outlined dense v-model="selectedStudentId" :options="studentOptions" emit-value map-options
-          label="Pilih Siswa" use-input input-debounce="200" @filter="filterStudentOptions"
-          @update:model-value="handleStudentChange">
+        <q-select
+          outlined
+          dense
+          v-model="selectedStudentId"
+          :options="studentOptions"
+          emit-value
+          map-options
+          label="Pilih Siswa"
+          use-input
+          input-debounce="200"
+          @filter="filterStudentOptions"
+          @update:model-value="handleStudentChange"
+        >
           <template v-slot:prepend>
             <q-icon name="person_search" />
           </template>
@@ -112,16 +129,33 @@
           </q-input>
         </div>
         <div class="col-12 col-sm-4">
-          <q-select dense outlined v-model="filterTingkat" :options="tingkatFilterOptions" emit-value map-options
-            label="Tingkat Kelas" />
+          <q-select
+            dense
+            outlined
+            v-model="filterTingkat"
+            :options="tingkatFilterOptions"
+            emit-value
+            map-options
+            label="Tingkat Kelas"
+          />
         </div>
         <div class="col-12 col-sm-3">
-          <q-btn-toggle v-model="filterJenis" no-caps unelevated dense spread toggle-color="primary" color="white"
-            text-color="grey-8" :options="[
+          <q-btn-toggle
+            v-model="filterJenis"
+            no-caps
+            unelevated
+            dense
+            spread
+            toggle-color="primary"
+            color="white"
+            text-color="grey-8"
+            :options="[
               { label: 'Semua', value: 'semua' },
               { label: 'Prestasi', value: 'prestasi' },
-              { label: 'Pelanggaran', value: 'pelanggaran' }
-            ]" class="jenis-toggle" />
+              { label: 'Pelanggaran', value: 'pelanggaran' },
+            ]"
+            class="jenis-toggle"
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -129,9 +163,13 @@
     <!-- RIWAYAT PER TINGKAT / TAHUN AJARAN -->
     <div v-if="groupedRecords.length">
       <q-card flat bordered class="q-mb-md" v-for="group in groupedRecords" :key="group.tingkat">
-        <q-expansion-item :label="`Kelas ${group.tingkat} &middot; Tahun Ajaran ${group.tahunAjaran}`"
-          :caption="`${group.records.length} catatan`" header-class="text-weight-bold" icon="school"
-          :default-opened="group.isOngoing">
+        <q-expansion-item
+          :label="`Kelas ${group.tingkat} &middot; Tahun Ajaran ${group.tahunAjaran}`"
+          :caption="`${group.records.length} catatan`"
+          header-class="text-weight-bold"
+          icon="school"
+          :default-opened="group.isOngoing"
+        >
           <template v-slot:header>
             <q-item-section avatar>
               <q-icon name="school" color="primary" />
@@ -149,30 +187,55 @@
 
           <q-separator />
           <q-card-section class="q-gutter-sm">
-            <div v-for="record in group.records" :key="record.id" class="record-card"
-              :class="record.jenis === 'prestasi' ? 'record-card--prestasi' : 'record-card--pelanggaran'">
+            <div
+              v-for="record in group.records"
+              :key="record.id"
+              class="record-card"
+              :class="
+                record.jenis === 'prestasi' ? 'record-card--prestasi' : 'record-card--pelanggaran'
+              "
+            >
               <div class="row items-start no-wrap q-gutter-sm">
-                <q-icon :name="record.jenis === 'prestasi' ? 'emoji_events' : 'report_problem'"
-                  :color="record.jenis === 'prestasi' ? 'positive' : 'red'" size="24px" class="q-mt-xs" />
+                <q-icon
+                  :name="record.jenis === 'prestasi' ? 'emoji_events' : 'report_problem'"
+                  :color="record.jenis === 'prestasi' ? 'positive' : 'red'"
+                  size="24px"
+                  class="q-mt-xs"
+                />
                 <div class="col">
                   <div class="row items-center justify-between wrap q-gutter-xs">
                     <div class="text-weight-medium">{{ record.judul }}</div>
-                    <q-badge :color="record.jenis === 'prestasi' ? 'positive' : categoryBadgeColor(record.kategori)"
-                      outline>
+                    <q-badge
+                      :color="
+                        record.jenis === 'prestasi'
+                          ? 'positive'
+                          : categoryBadgeColor(record.kategori)
+                      "
+                      outline
+                    >
                       {{ record.kategori }}
                     </q-badge>
                   </div>
                   <div class="text-caption text-grey-7 q-mt-xs">
                     {{ formatDate(record.tanggal) }}
-                    <span v-if="record.jenis === 'pelanggaran'"> &middot; Poin: {{ record.poin }}</span>
+                    <span v-if="record.jenis === 'pelanggaran'">
+                      &middot; Poin: {{ record.poin }}</span
+                    >
                   </div>
                   <div class="text-body2 q-mt-xs">{{ record.keterangan }}</div>
                   <div class="text-caption text-grey-6 q-mt-xs">
                     Dicatat oleh: {{ record.pencatat }}
                   </div>
                   <div class="q-mt-xs" v-if="record.lampiran">
-                    <q-btn no-caps dense flat color="primary" icon="attach_file" :label="record.lampiran"
-                      @click="handleDownloadLampiran(record)" />
+                    <q-btn
+                      no-caps
+                      dense
+                      flat
+                      color="primary"
+                      icon="attach_file"
+                      :label="record.lampiran"
+                      @click="handleDownloadLampiran(record)"
+                    />
                   </div>
                 </div>
               </div>
@@ -199,26 +262,64 @@
         <q-separator />
         <q-form @submit="submitNewRecord">
           <q-card-section class="q-gutter-md">
-            <q-btn-toggle v-model="newRecord.jenis" no-caps unelevated spread toggle-color="primary" color="white"
-              text-color="grey-8" :options="[
+            <q-btn-toggle
+              v-model="newRecord.jenis"
+              no-caps
+              unelevated
+              spread
+              toggle-color="primary"
+              color="white"
+              text-color="grey-8"
+              :options="[
                 { label: 'Prestasi', value: 'prestasi', icon: 'emoji_events' },
-                { label: 'Pelanggaran', value: 'pelanggaran', icon: 'report_problem' }
-              ]" />
+                { label: 'Pelanggaran', value: 'pelanggaran', icon: 'report_problem' },
+              ]"
+            />
 
-            <q-input outlined dense type="date" v-model="newRecord.tanggal" label="Tanggal"
-              :rules="[val => !!val || 'Tanggal wajib diisi']" />
+            <q-input
+              outlined
+              dense
+              type="date"
+              v-model="newRecord.tanggal"
+              label="Tanggal"
+              :rules="[(val) => !!val || 'Tanggal wajib diisi']"
+            />
 
-            <q-select outlined dense v-model="newRecord.kategori" :options="kategoriOptionsForJenis" label="Kategori"
-              :rules="[val => !!val || 'Kategori wajib dipilih']" />
+            <q-select
+              outlined
+              dense
+              v-model="newRecord.kategori"
+              :options="kategoriOptionsForJenis"
+              label="Kategori"
+              :rules="[(val) => !!val || 'Kategori wajib dipilih']"
+            />
 
-            <q-input outlined dense v-model="newRecord.judul" label="Judul Catatan"
-              :rules="[val => val && val.length > 0 || 'Judul wajib diisi']" />
+            <q-input
+              outlined
+              dense
+              v-model="newRecord.judul"
+              label="Judul Catatan"
+              :rules="[(val) => (val && val.length > 0) || 'Judul wajib diisi']"
+            />
 
-            <q-input outlined dense type="textarea" autogrow v-model="newRecord.keterangan" label="Keterangan" />
+            <q-input
+              outlined
+              dense
+              type="textarea"
+              autogrow
+              v-model="newRecord.keterangan"
+              label="Keterangan"
+            />
 
-            <q-input v-if="newRecord.jenis === 'pelanggaran'" outlined dense type="number"
-              v-model.number="newRecord.poin" label="Poin Pelanggaran"
-              :rules="[val => val >= 0 || 'Poin tidak boleh negatif']" />
+            <q-input
+              v-if="newRecord.jenis === 'pelanggaran'"
+              outlined
+              dense
+              type="number"
+              v-model.number="newRecord.poin"
+              label="Poin Pelanggaran"
+              :rules="[(val) => val >= 0 || 'Poin tidak boleh negatif']"
+            />
           </q-card-section>
 
           <q-card-actions align="right" class="q-pa-md">
@@ -238,8 +339,18 @@ import { useQuasar } from 'quasar'
 const $q = useQuasar()
 
 const MONTHS_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
 ]
 function formatDate(iso) {
   const [y, m, d] = iso.split('-').map(Number)
@@ -255,15 +366,31 @@ const allStudents = reactive([
     nisn: '0051234567',
     kelasSaatIni: 'XII RPL 1',
     waliKelas: 'Siti Nurhaliza, S.Pd.',
-    foto: ''
+    foto: '',
   },
-  { id: 'std-2', nama: 'Nabila Putri', nis: '2021100155', nisn: '0051234321', kelasSaatIni: 'XII RPL 2', waliKelas: 'Dedi Supriadi, S.Kom.', foto: '' },
-  { id: 'std-3', nama: 'Fajar Nugraha', nis: '2022100088', nisn: '0059876543', kelasSaatIni: 'XI RPL 1', waliKelas: 'Rina Marlina, S.Pd.', foto: '' }
+  {
+    id: 'std-2',
+    nama: 'Nabila Putri',
+    nis: '2021100155',
+    nisn: '0051234321',
+    kelasSaatIni: 'XII RPL 2',
+    waliKelas: 'Dedi Supriadi, S.Kom.',
+    foto: '',
+  },
+  {
+    id: 'std-3',
+    nama: 'Fajar Nugraha',
+    nis: '2022100088',
+    nisn: '0059876543',
+    kelasSaatIni: 'XI RPL 1',
+    waliKelas: 'Rina Marlina, S.Pd.',
+    foto: '',
+  },
 ])
 
 const selectedStudentId = ref('std-1')
 const studentOptions = ref(
-  allStudents.map(s => ({ label: `${s.nama} - ${s.kelasSaatIni}`, value: s.id }))
+  allStudents.map((s) => ({ label: `${s.nama} - ${s.kelasSaatIni}`, value: s.id })),
 )
 
 // Filter opsi dropdown siswa saat mengetik (client-side sederhana)
@@ -271,18 +398,21 @@ const studentOptions = ref(
 function filterStudentOptions(query, update) {
   update(() => {
     if (!query) {
-      studentOptions.value = allStudents.map(s => ({ label: `${s.nama} - ${s.kelasSaatIni}`, value: s.id }))
+      studentOptions.value = allStudents.map((s) => ({
+        label: `${s.nama} - ${s.kelasSaatIni}`,
+        value: s.id,
+      }))
       return
     }
     const q = query.toLowerCase()
     studentOptions.value = allStudents
-      .filter(s => s.nama.toLowerCase().includes(q) || s.nis.includes(q))
-      .map(s => ({ label: `${s.nama} - ${s.kelasSaatIni}`, value: s.id }))
+      .filter((s) => s.nama.toLowerCase().includes(q) || s.nis.includes(q))
+      .map((s) => ({ label: `${s.nama} - ${s.kelasSaatIni}`, value: s.id }))
   })
 }
 
 const student = computed(() => {
-  return allStudents.find(s => s.id === selectedStudentId.value) || allStudents[0]
+  return allStudents.find((s) => s.id === selectedStudentId.value) || allStudents[0]
 })
 
 function handleStudentChange() {
@@ -292,7 +422,7 @@ function handleStudentChange() {
       type: 'info',
       message: 'Data riwayat untuk siswa ini belum tersedia pada contoh ini.',
       position: 'top',
-      timeout: 2000
+      timeout: 2000,
     })
   }
 }
@@ -310,7 +440,7 @@ const records = reactive([
     judul: 'Juara 2 Lomba LKS Web Design Tingkat Kabupaten',
     keterangan: 'Mewakili sekolah pada ajang Lomba Kompetensi Siswa (LKS) bidang Web Design.',
     pencatat: 'Kaprog RPL',
-    lampiran: 'Sertifikat-LKS-2023.pdf'
+    lampiran: 'Sertifikat-LKS-2023.pdf',
   },
   {
     id: 'r2',
@@ -323,7 +453,7 @@ const records = reactive([
     judul: 'Terlambat Masuk Sekolah 3 Kali dalam Sebulan',
     keterangan: 'Ditegur lisan dan diminta membuat surat pernyataan.',
     pencatat: 'Guru BK',
-    lampiran: ''
+    lampiran: '',
   },
   {
     id: 'r3',
@@ -336,7 +466,7 @@ const records = reactive([
     judul: 'Tidak Mengikuti Upacara Bendera',
     keterangan: 'Tanpa keterangan yang jelas.',
     pencatat: 'Guru Piket',
-    lampiran: ''
+    lampiran: '',
   },
   {
     id: 'r4',
@@ -348,7 +478,7 @@ const records = reactive([
     judul: 'Anggota Terbaik Ekstrakurikuler Pramuka',
     keterangan: 'Aktif dan berprestasi dalam kegiatan kepramukaan tingkat gugus depan.',
     pencatat: 'Pembina Pramuka',
-    lampiran: ''
+    lampiran: '',
   },
   {
     id: 'r5',
@@ -361,7 +491,7 @@ const records = reactive([
     judul: 'Berkelahi dengan Teman Sekelas',
     keterangan: 'Dipanggil orang tua/wali untuk pembinaan bersama pihak sekolah.',
     pencatat: 'Guru BK',
-    lampiran: 'BA-Pelanggaran-2024-11.pdf'
+    lampiran: 'BA-Pelanggaran-2024-11.pdf',
   },
   {
     id: 'r6',
@@ -373,7 +503,7 @@ const records = reactive([
     judul: 'Juara 1 Lomba Debat Bahasa Inggris Tingkat Provinsi',
     keterangan: 'Mewakili sekolah dan meraih peringkat pertama tingkat provinsi.',
     pencatat: 'Guru Bahasa Inggris',
-    lampiran: 'Sertifikat-Debat-2025.pdf'
+    lampiran: 'Sertifikat-Debat-2025.pdf',
   },
   {
     id: 'r7',
@@ -386,7 +516,7 @@ const records = reactive([
     judul: 'Tidak Mengerjakan Tugas Berturut-turut',
     keterangan: 'Sudah diingatkan oleh guru mata pelajaran terkait.',
     pencatat: 'Wali Kelas',
-    lampiran: ''
+    lampiran: '',
   },
   {
     id: 'r8',
@@ -398,8 +528,8 @@ const records = reactive([
     judul: 'Lolos Seleksi PKL di Perusahaan Mitra Unggulan',
     keterangan: 'Diterima Praktik Kerja Lapangan di salah satu mitra industri utama sekolah.',
     pencatat: 'Kaprog RPL',
-    lampiran: ''
-  }
+    lampiran: '',
+  },
 ])
 
 const searchQuery = ref('')
@@ -410,7 +540,7 @@ const tingkatFilterOptions = [
   { label: 'Semua Tingkat', value: 'semua' },
   { label: 'Kelas X', value: 'X' },
   { label: 'Kelas XI', value: 'XI' },
-  { label: 'Kelas XII', value: 'XII' }
+  { label: 'Kelas XII', value: 'XII' },
 ]
 
 function categoryBadgeColor(kategori) {
@@ -424,10 +554,11 @@ function categoryBadgeColor(kategori) {
 const filteredRecords = computed(() => {
   const query = (searchQuery.value || '').toLowerCase().trim()
   return records
-    .filter(r => {
-      const matchQuery = !query
-        || r.judul.toLowerCase().includes(query)
-        || r.keterangan.toLowerCase().includes(query)
+    .filter((r) => {
+      const matchQuery =
+        !query ||
+        r.judul.toLowerCase().includes(query) ||
+        r.keterangan.toLowerCase().includes(query)
       const matchJenis = filterJenis.value === 'semua' || r.jenis === filterJenis.value
       const matchTingkat = filterTingkat.value === 'semua' || r.tingkat === filterTingkat.value
       return matchQuery && matchJenis && matchTingkat
@@ -439,15 +570,17 @@ const filteredRecords = computed(() => {
 // Dikelompokkan per tingkat & tahun ajaran, diurutkan dari yang terbaru
 const groupedRecords = computed(() => {
   const groups = []
-  filteredRecords.value.forEach(record => {
-    let group = groups.find(g => g.tingkat === record.tingkat && g.tahunAjaran === record.tahunAjaran)
+  filteredRecords.value.forEach((record) => {
+    let group = groups.find(
+      (g) => g.tingkat === record.tingkat && g.tahunAjaran === record.tahunAjaran,
+    )
     if (!group) {
       group = {
         tingkat: record.tingkat,
         tahunAjaran: record.tahunAjaran,
         // TODO: tandai tahun ajaran yang sedang berjalan berdasarkan data resmi dari backend, bukan hardcode
         isOngoing: record.tahunAjaran === '2025/2026',
-        records: []
+        records: [],
       }
       groups.push(group)
     }
@@ -456,10 +589,10 @@ const groupedRecords = computed(() => {
   return groups.sort((a, b) => (a.tahunAjaran < b.tahunAjaran ? 1 : -1))
 })
 
-const totalPrestasi = computed(() => records.filter(r => r.jenis === 'prestasi').length)
-const totalPelanggaran = computed(() => records.filter(r => r.jenis === 'pelanggaran').length)
+const totalPrestasi = computed(() => records.filter((r) => r.jenis === 'prestasi').length)
+const totalPelanggaran = computed(() => records.filter((r) => r.jenis === 'pelanggaran').length)
 const totalPoinPelanggaran = computed(() =>
-  records.filter(r => r.jenis === 'pelanggaran').reduce((sum, r) => sum + (r.poin || 0), 0)
+  records.filter((r) => r.jenis === 'pelanggaran').reduce((sum, r) => sum + (r.poin || 0), 0),
 )
 
 // TODO: ganti ambang batas poin ini sesuai aturan tata tertib resmi sekolah dari backend
@@ -477,7 +610,7 @@ function handleDownloadLampiran(record) {
     type: 'positive',
     message: `Mengunduh "${record.lampiran}"...`,
     position: 'top',
-    timeout: 1500
+    timeout: 1500,
   })
 }
 
@@ -489,7 +622,7 @@ const newRecord = reactive({
   kategori: null,
   judul: '',
   keterangan: '',
-  poin: 0
+  poin: 0,
 })
 
 const kategoriOptionsForJenis = computed(() => {
@@ -525,14 +658,14 @@ function submitNewRecord() {
     judul: newRecord.judul,
     keterangan: newRecord.keterangan,
     pencatat: 'Anda', // TODO: isi otomatis dari authStore.user.name
-    lampiran: ''
+    lampiran: '',
   })
 
   $q.notify({
     type: 'positive',
     message: 'Catatan berhasil ditambahkan.',
     position: 'top',
-    timeout: 2000
+    timeout: 2000,
   })
 
   addDialogOpen.value = false

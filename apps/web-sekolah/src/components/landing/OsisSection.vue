@@ -12,20 +12,18 @@
       />
 
       <div class="row q-col-gutter-lg justify-center">
-        <div
-          v-for="(o, i) in OSIS"
-          :key="i"
-          class="col-12 col-sm-4"
-        >
-          <q-card flat bordered class="osis-card text-center" :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-white'">
+        <div v-for="(o, i) in OSIS" :key="i" class="col-12 col-sm-4">
+          <q-card
+            flat
+            bordered
+            class="osis-card text-center"
+            :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-white'"
+          >
             <!-- Header gradient -->
             <div class="osis-header" />
 
             <q-card-section class="q-pt-none osis-body">
-              <q-avatar
-                size="88px"
-                class="osis-avatar shadow-3"
-              >
+              <q-avatar size="88px" class="osis-avatar shadow-3">
                 <img :src="o.photo" :alt="o.name" />
               </q-avatar>
 
@@ -44,7 +42,9 @@
 
       <div class="row justify-center q-mt-xl">
         <q-btn
-          outline color="primary" no-caps
+          outline
+          color="primary"
+          no-caps
           label="Lihat Program Kerja & Kegiatan OSIS"
           icon="collections"
           to="/mading"
@@ -67,11 +67,13 @@ const $q = useQuasar()
 .osis-card {
   border-radius: 16px;
   overflow: hidden;
-  transition: transform .2s, box-shadow .2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 .osis-card:hover {
   transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 10px 28px rgba(0,0,0,.1) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1) !important;
 }
 .osis-header {
   height: 72px;
@@ -86,5 +88,7 @@ const $q = useQuasar()
   background: white;
   margin-bottom: -44px;
 }
-.max-width-center { max-width: 1100px; }
+.max-width-center {
+  max-width: 1100px;
+}
 </style>

@@ -6,7 +6,6 @@ import {
   createWebHashHistory,
 } from 'vue-router'
 import routes from './routes'
-import { guestGuard } from './guards'
 
 export default route(function (/* { store, ssrContext } */) {
   // MENGGUNAKAN FORMAT VITE (import.meta.env) YANG AMAN
@@ -23,13 +22,19 @@ export default route(function (/* { store, ssrContext } */) {
     history: createHistory(import.meta.env.VUE_ROUTER_BASE),
   })
 
-  Router.beforeEach(async (to) => {
-    if (to.meta.public) {
-      const guestRedirect = guestGuard(to) // 🚀 Jalankan guest guard
-      if (guestRedirect) return guestRedirect
-      return true
-    }
+  Router.onError((error) => {
+    console.error('❌Terjadi error saat navigasi rute:', error)
+    // console.log(Router.currentRoute.value)
+    // if (error) {
+    //   Router.push({
+    //     name: 'ErrorServer',
+    //     query: { message: error.message || 'Terjadi kesalahan sistem' },
+    //   })
+    // }
+    // Contoh penanganan: Jika error karena file chunk gagal dimuat (misal setelah deploy baru)
+    // if (error.message.includes('Failed to fetch dynamically imported module')) {
+    //   window.location.reload()
+    // }
   })
-
   return Router
 })

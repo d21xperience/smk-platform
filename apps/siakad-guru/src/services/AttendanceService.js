@@ -1,55 +1,125 @@
+import { AttendanceEngine } from '../domain/attendance/engine/AttendanceEngine.js'
+import { AttendanceSession } from '../domain/attendance/models/AttendanceSession.js'
+import { AttendanceRecord } from '../domain/attendance/models/AttendanceRecord.js'
+import { AttendanceDraftedEvent } from '../domain/attendance/events/AttendanceDrafted.js'
+import { AttendanceSubmittedEvent } from '../domain/attendance/events/AttendanceSubmitted.js'
+
 export class AttendanceService {
-  /**
-   * @param {Object} adapter - objek dengan kontrak attendance (mock/api)
-   */
-  constructor(adapter) {
-    this.adapter = adapter
+  constructor({ attendanceAdapter, eventDispatcher }) {
+    this.attendanceAdapter = attendanceAdapter
+    this.eventDispatcher = eventDispatcher
   }
 
-  /**
-   * Mendapatkan daftar siswa untuk sesi tertentu.
-   * @param {number} sessionId
-   * @param {string} className
-   * @returns {Promise<Array<{ studentId: number|string, studentName: string, nis: string, status: string, note: string }>>}
-   */
-  async fetchStudents(sessionId, className) {
-    return this.adapter.fetchStudentsForSession(sessionId, className)
+  async loadStudentsByClass({ classId }) {
+    return await this.attendanceAdapter.fetchStudentsByClass({ classId })
   }
 
-  /**
-   * Mendapatkan attendance record yang sudah ada (draft/submitted) untuk sesi.
-   * @param {number} sessionId
-   * @returns {Promise<import('src/models/Attendance').AttendanceRecord|null>}
-   */
-  async fetchRecord(sessionId) {
-    return this.adapter.fetchAttendanceRecord(sessionId)
+  async loadAttendanceSession({ teachingSessionId }) {
+    const rawData = await this.attendanceAdapter.loadAttendanceSession({ teachingSessionId })
+
+    if (!rawData) {
+      return null
+    }
+
+    const records = rawData.records.map(r => new AttendanceRecord(r))
+    const session = new AttendanceSession({
+      ...rawData,
+      records
+    })
+
+    AttendanceEngine.validateSession(session)
+    return session
   }
 
-  /**
-   * Menyimpan draft absensi (create atau update).
-   * @param {Object} session - data sesi dari TeachingSession
-   * @param {Array} students - array student attendance items
-   * @returns {Promise<import('src/models/Attendance').AttendanceRecord>}
-   */
-  async saveDraft(session, students) {
-    return this.adapter.saveDraft(session, students)
+  async createAttendanceSession({
+    teachingSessionId,
+    classId,
+    className,
+    subjectId,
+    subjectName,
+    date,
+    schoolId,
+    academicYearId,
+    semesterId
+  }) {
+    const students = await this.attendanceAdapter.fetchStudentsByClass({ classId })
+
+    if (students.length === 0) {
+      throw new Error('No students found for this class')
+    }
+
+    const rawData = await this.attendanceAdapter.createAttendanceSession({
+      teachingSessionId,
+      classId,
+      className,
+      subjectId,
+      subjectName,
+      date,
+      students,
+      schoolId,
+      academicYearId,
+      semesterId
+    })
+
+    const records = rawData.records.map(r => new AttendanceRecord(r))
+    const session = new AttendanceSession({
+      ...rawData,
+      records
+    })
+
+    AttendanceEngine.validateSession(session)
+
+    if (this.eventDispatcher) {
+      this.eventDispatcher.dispatch(new AttendanceDraftedEvent(session))
+    }
+
+    return session
   }
 
-  /**
-   * Submit final absensi (status menjadi 'submitted').
-   * @param {number} sessionId
-   * @returns {Promise<import('src/models/Attendance').AttendanceRecord>}
-   */
-  async submit(sessionId) {
-    return this.adapter.submitAttendance(sessionId)
+  async saveDraft({ sessionId, records }) {
+    const domainRecords = records.map(r => new AttendanceRecord(r))
+    AttendanceEngine.validateRecords(domainRecords)
+
+    const rawData = await this.attendanceAdapter.saveAttendanceDraft({
+      sessionId,
+      records: records.map(r => ({
+        studentId: r.studentId,
+        status: r.status,
+        note: r.note
+      }))
+    })
+
+    const updatedRecords = rawData.records.map(r => new AttendanceRecord(r))
+    const session = new AttendanceSession({
+      ...rawData,
+      records: updatedRecords
+    })
+
+    AttendanceEngine.validateSession(session)
+
+    if (this.eventDispatcher) {
+      this.eventDispatcher.dispatch(new AttendanceDraftedEvent(session))
+    }
+
+    return session
   }
 
-  /**
-   * Mendapatkan ringkasan absensi (data mentah, summary dihitung Engine).
-   * @param {number} sessionId
-   * @returns {Promise<Object|null>}
-   */
-  async getSummary(sessionId) {
-    return this.adapter.getAttendanceSummary(sessionId)
+  async submitAttendance({ sessionId }) {
+    const submittedData = await this.attendanceAdapter.submitAttendance({ sessionId })
+
+    const records = submittedData.records.map(r => new AttendanceRecord(r))
+    const session = new AttendanceSession({
+      ...submittedData,
+      records
+    })
+
+    AttendanceEngine.validateSession(session)
+    AttendanceEngine.submitSession(session)
+
+    if (this.eventDispatcher) {
+      this.eventDispatcher.dispatch(new AttendanceSubmittedEvent(session))
+    }
+
+    return session
   }
 }

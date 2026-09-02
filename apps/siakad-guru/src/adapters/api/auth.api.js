@@ -1,19 +1,8 @@
-import { api as apiClient } from '@/boot/axios'
-import { User } from '@/models/User'
+import { api } from '@/boot/axios'
 
-export const authApiAdapter = {
-  async login({ username, password }) {
-    const { data } = await apiClient.post('/auth/login', { username, password })
-    return {
-      user: new User(data.user),
-      token: data.token,
-    }
-  },
-
-  async me(token) {
-    const { data } = await apiClient.get('/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    return new User(data)
-  },
+export const AuthApi = {
+  login: (email, password) => api.post('/auth/login', { email, password }),
+  logout: () => api.post('/auth/logout'),
+  refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
+  getProfile: () => api.get('/auth/profile'),
 }

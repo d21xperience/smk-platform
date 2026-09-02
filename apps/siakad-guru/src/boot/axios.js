@@ -1,46 +1,56 @@
-// src/boot/axios.js
-// ✅ PERBAIKAN: Impor menggunakan boot dari #q-app/wrappers
-import { boot } from 'quasar/wrappers'
+// FILE: src/boot/axios.js
+// STATUS: MODIFY
+// STATUS IMPLEMENTASI: COMPLETE
+
 import axios from 'axios'
-import { useAuthStore } from '@/stores/auth.store'
+import { boot } from 'quasar/wrappers'
+import { getRequestHeaders, getRequestMeta } from '../utils/requestContextRegistry.js'
+import { ensureRequestAllowed } from '../adapters/http/RequestGuard.js'
 
 const api = axios.create({
-  baseURL: import.meta.env.QCLI_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.QCLI_API_BASE_URL || '/api/v1',
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  },
 })
 
-export default boot(async ({ app, router }) => {
-  // Request interceptor: sisipkan token JWT jika ada
-  api.interceptors.request.use(
-    (config) => {
-      const auth = useAuthStore()
-      if (auth.token) {
-        config.headers.Authorization = `Bearer ${auth.token}`
-      }
-      return config
-    },
-    (error) => Promise.reject(error),
-  )
+api.interceptors.request.use((config) => {
+  const requestMeta = getRequestMeta()
 
-  // Response interceptor: tangani 401 Unauthorized
-  api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        const auth = useAuthStore()
-        auth.logout()
-        // router.push('/login')
-        router.push('/unauthorized')
-      }
-      return Promise.reject(error)
-    },
-  )
-  // Pasang instance axios ke global properties agar bisa diakses adapter/komponen
-  app.config.globalProperties.$axios = api
-  app.config.globalProperties.$api = api // Tambahan opsional jika ada komponen yang memanggil $api
+  try {
+    ensureRequestAllowed({
+      method: config.method,
+      url: config.url,
+      mode: requestMeta.mode,
+      context: requestMeta.context,
+    })
+  } catch (err) {
+    return Promise.reject(err)
+  }
+
+  const headers = getRequestHeaders()
+
+  if (!config.headers) {
+    config.headers = {}
+  }
+
+  Object.entries(headers).forEach(([key, value]) => {
+    if (typeof config.headers.set === 'function') {
+      config.headers.set(key, value)
+      return
+    }
+
+    config.headers[key] = value
+  })
+
+  return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => Promise.reject(error),
+)
+
 export { api }
+
+export default boot(({ app }) => {
+  app.config.globalProperties.$api = api
+})

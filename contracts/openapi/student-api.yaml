@@ -1,0 +1,99 @@
+# smk-platform/contracts/openapi/student-api.yaml
+
+openapi: 3.0.3
+info:
+  title: Student API Contract (Frontend Driven)
+  version: 1.0.0
+  description: |
+    Kontrak ini dihasilkan dari kebutuhan Frontend (Mock Adapter). 
+    Backend WAJIB mengikuti struktur request dan response ini.
+
+servers:
+  - url: /api/v1
+
+paths:
+  /students:
+    post:
+      summary: Register siswa baru
+      operationId: registerStudent
+      parameters:
+        - in: header
+          name: X-School-Id
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Academic-Period
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterStudentRequest'
+      responses:
+        '200':
+          description: Sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validasi Gagal (misal: NISN Duplikat)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RegisterStudentRequest:
+      type: object
+      required: [nisn, nis, fullName, birthDate, gender, address, contactInfo, guardianInfo]
+      properties:
+        studentId: { type: string } # Diisi oleh frontend via idGenerator
+        nisn: { type: string, pattern: '^\d{10}$' }
+        nis: { type: string }
+        fullName:
+          type: object
+          properties:
+            firstName: { type: string }
+            middleName: { type: string }
+            lastName: { type: string }
+        birthDate: { type: string, format: date }
+        gender: { type: string, enum: [MALE, FEMALE] }
+        address:
+          type: object
+          properties:
+            street: { type: string }
+            village: { type: string }
+            city: { type: string }
+        contactInfo:
+          type: object
+          properties:
+            phone: { type: string }
+            email: { type: string, format: email }
+        guardianInfo:
+          type: object
+          properties:
+            name: { type: string }
+            relation: { type: string, enum: [father, mother, guardian] }
+
+    SuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { type: object } # Berisi object student yang sama dengan request + metadata
+        error: { type: object, nullable: true }
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        data: { type: object, nullable: true }
+        error:
+          type: object
+          properties:
+            code: { type: string, example: "NISN_DUPLICATE" }
+            message: { type: string, example: "NISN sudah terdaftar." }
+            details: { type: object, nullable: true }

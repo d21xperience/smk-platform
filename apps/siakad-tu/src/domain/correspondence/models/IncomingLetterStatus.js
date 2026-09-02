@@ -1,0 +1,6 @@
+export const IncomingLetterStatus = Object.freeze({
+  BARU: 'BARU',
+  DIDISPOSISIKAN: 'DIDISPOSISIKAN',
+  DITINDAKLANJUTI: 'DITINDAKLANJUTI',
+  DIARSIPKAN: 'DIARSIPKAN',
+})

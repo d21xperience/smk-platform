@@ -4,16 +4,53 @@
 // Semua tanggal disimpan/diteruskan dalam format ISO 'YYYY-MM-DD'.
 
 export const MONTHS_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
 ]
 
 export const MONTHS_SHORT_ID = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
 ]
 
-export const WEEKDAYS_MONDAY_FIRST = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
-export const WEEKDAYS_SUNDAY_FIRST = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+export const WEEKDAYS_MONDAY_FIRST = [
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+  'Sabtu',
+  'Minggu',
+]
+export const WEEKDAYS_SUNDAY_FIRST = [
+  'Minggu',
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+  'Sabtu',
+]
 
 /** Parse 'YYYY-MM-DD' menjadi objek Date lokal (hindari pergeseran timezone). */
 export function parseISO(iso) {
@@ -77,13 +114,13 @@ export function buildMonthGrid(year, month, events = [], weekStart = 'monday') {
   for (let i = 0; i < 42; i++) {
     const d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i)
     const iso = toISO(d)
-    const dayEvents = events.filter(e => e.startDate <= iso && iso <= e.endDate)
+    const dayEvents = events.filter((e) => e.startDate <= iso && iso <= e.endDate)
     cells.push({
       iso,
       date: d.getDate(),
       inCurrentMonth: d.getMonth() === month,
       jsWeekday: d.getDay(),
-      events: dayEvents
+      events: dayEvents,
     })
   }
   return cells

@@ -1,58 +1,107 @@
+import { TeachingEngine } from '../domain/teaching/engine/TeachingEngine.js'
+import { TeachingSchedule } from '../domain/teaching/models/TeachingSchedule.js'
+import { TeachingSession } from '../domain/teaching/models/TeachingSession.js'
+import { TeachingSessionStartedEvent } from '../domain/teaching/events/TeachingSessionStarted.js'
+import { TeachingSessionEndedEvent } from '../domain/teaching/events/TeachingSessionEnded.js'
+
 export class TeachingService {
-  constructor(adapter) {
-    this.adapter = adapter
+  constructor({ teachingAdapter, eventDispatcher }) {
+    this.teachingAdapter = teachingAdapter
+    this.eventDispatcher = eventDispatcher
   }
 
-  // --- Jadwal ---
-  async fetchTeacherSchedule(academicYearId, semesterId) {
-    return this.adapter.getTeacherSchedule(academicYearId, semesterId)
+  async loadSchedulesByContext({ schoolId, academicYearId, semesterId, teacherId }) {
+    const rawData = await this.teachingAdapter.fetchSchedulesByContext({
+      schoolId,
+      academicYearId,
+      semesterId,
+      teacherId,
+    })
+
+    return rawData.map((item) => new TeachingSchedule(item))
   }
 
-  // --- Sesi (lifecycle) ---
-  async fetchSessionsByDate(date) {
-    return this.adapter.getTeachingSessions(date)
+  async loadSessionsByDate({ schoolId, academicYearId, semesterId, teacherId, date }) {
+    const rawData = await this.teachingAdapter.fetchSessionsByDate({
+      schoolId,
+      academicYearId,
+      semesterId,
+      teacherId,
+      date,
+    })
+
+    return rawData.map((item) => new TeachingSession(item))
   }
 
-  async startSession(sessionId) {
-    return this.adapter.startSession(sessionId)
+  async createSession({ scheduleId, date, schoolId, academicYearId, semesterId, teacherId }) {
+    const rawData = await this.teachingAdapter.createSession({
+      scheduleId,
+      date,
+      schoolId,
+      academicYearId,
+      semesterId,
+      teacherId,
+    })
+
+    const session = new TeachingSession(rawData)
+    TeachingEngine.validateSession(session)
+
+    return session
   }
 
-  async beginProgress(sessionId) {
-    return this.adapter.beginProgress(sessionId)
+  // eslint-disable-next-line no-unused-vars
+  async startSession({ sessionId, teacherPresence, schoolId, academicYearId, semesterId }) {
+    // Validate teacher presence using domain engine
+    TeachingEngine.validateTeacherPresence(teacherPresence)
+
+    const rawData = await this.teachingAdapter.startSession({
+      sessionId,
+      teacherPresence,
+    })
+
+    const session = new TeachingSession(rawData)
+    TeachingEngine.validateSession(session)
+
+    // Dispatch event
+    if (this.eventDispatcher) {
+      this.eventDispatcher.dispatch(new TeachingSessionStartedEvent(session))
+    }
+
+    return session
   }
 
-  async completeSession(sessionId) {
-    return this.adapter.completeSession(sessionId)
+  async endSession({ sessionId, notes, schoolId, academicYearId, semesterId }) {
+    const rawData = await this.teachingAdapter.endSession({
+      sessionId,
+      notes,
+      schoolId,
+      academicYearId,
+      semesterId,
+    })
+
+    const session = new TeachingSession(rawData)
+    TeachingEngine.validateSession(session)
+
+    // Dispatch event
+    if (this.eventDispatcher) {
+      this.eventDispatcher.dispatch(new TeachingSessionEndedEvent(session))
+    }
+
+    return session
   }
 
-  async lockSession(sessionId) {
-    return this.adapter.lockSession(sessionId)
-  }
+  async cancelSession({ sessionId, reason, schoolId, academicYearId, semesterId }) {
+    const rawData = await this.teachingAdapter.cancelSession({
+      sessionId,
+      reason,
+      schoolId,
+      academicYearId,
+      semesterId,
+    })
 
-  // --- Teacher Presence ---
-  async checkInTeacher(sessionId, teacherId, checkInTime) {
-    return this.adapter.checkInTeacher(sessionId, teacherId, checkInTime)
-  }
+    const session = new TeachingSession(rawData)
+    TeachingEngine.validateSession(session)
 
-  async checkOutTeacher(sessionId, checkOutTime) {
-    return this.adapter.checkOutTeacher(sessionId, checkOutTime)
-  }
-
-  // --- Audit Trail ---
-  async getAuditTrail(sessionId) {
-    return this.adapter.getAuditTrail(sessionId)
-  }
-
-  async addAuditEntry(sessionId, action, details) {
-    return this.adapter.addAuditEntry(sessionId, action, details)
-  }
-
-  // --- Jurnal ---
-  async saveJournal(sessionId, journalData) {
-    return this.adapter.saveJournal(sessionId, journalData)
-  }
-
-  async getJournalBySession(sessionId) {
-    return this.adapter.getJournalBySession(sessionId)
+    return session
   }
 }

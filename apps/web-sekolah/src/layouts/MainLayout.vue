@@ -4,12 +4,20 @@
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
         <!-- TOMBOL HAMBURGER: Hanya muncul di layar HP/Tablet kecil (lt-sm) -->
-        <q-btn flat dense round icon="menu" aria-label="Menu" class="lt-sm q-mr-sm" @click="toggleLeftDrawer" />
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          class="lt-sm q-mr-sm"
+          @click="toggleLeftDrawer"
+        />
 
         <!-- Logo dan Judul Sekolah -->
         <q-toolbar-title class="row items-center no-wrap">
           <q-avatar size="32px">
-            <img src="~@/assets/logo-smk.png" alt="Logo" onerror="this.style.display='none'" />
+            <img src="~@/assets/logo-smk.png" alt="Logo" onerror="this.style.display = 'none'" />
           </q-avatar>
           <!-- text-subtitle1 pada HP agar teks tidak terlalu besar dan terpotong -->
           <span class="q-ml-sm text-weight-bold text-subtitle1 text-sm-h6 ellipsis">
@@ -17,7 +25,6 @@
           </span>
         </q-toolbar-title>
         <div class="gt-xs row items-center no-wrap text-weight-medium">
-
           <!-- 1. GRUP TAB UTAMA -->
           <q-tabs v-model="currentTab" align="left" shrink stretch class="text-white">
             <q-route-tab to="/" label="Beranda" exact />
@@ -27,8 +34,14 @@
           </q-tabs>
 
           <!-- 2. SUB-MENU DROPDOWN 1: JURUSAN -->
-          <q-btn-dropdown flat stretch no-caps label="PROFIL" content-class="bg-white text-grey-9 shadow-5"
-            class="text-white font-tab-match">
+          <q-btn-dropdown
+            flat
+            stretch
+            no-caps
+            label="PROFIL"
+            content-class="bg-white text-grey-9 shadow-5"
+            class="text-white font-tab-match"
+          >
             <q-list min-width="180px">
               <q-item clickable v-ripple to="/jurusan/tbsm">
                 <!-- <q-item-section avatar><q-icon name="motorcycle" color="red-7" /></q-item-section> -->
@@ -54,8 +67,14 @@
           </q-btn-dropdown>
 
           <!-- 3. SUB-MENU DROPDOWN 2: SIAKAD (PORTAL INTERNAL) -->
-          <q-btn-dropdown flat stretch no-caps label="PORTAL" content-class="bg-white text-grey-9 shadow-5"
-            class="text-white font-tab-match">
+          <q-btn-dropdown
+            flat
+            stretch
+            no-caps
+            label="PORTAL"
+            content-class="bg-white text-grey-9 shadow-5"
+            class="text-white font-tab-match"
+          >
             <q-list min-width="180px">
               <!-- Jika SIAKAD menggunakan link eksternal web lain, pakai href dan target="_blank" -->
               <q-item clickable v-ripple :to="{ name: 'siakadLogin' }" target="_blank">
@@ -74,12 +93,17 @@
               </q-item>
             </q-list>
           </q-btn-dropdown>
-
         </div>
 
         <q-space class="gt-xs" />
         <!-- Tombol Dark Mode -->
-        <q-btn flat round dense :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="toggleDarkMode" />
+        <q-btn
+          flat
+          round
+          dense
+          :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
+          @click="toggleDarkMode"
+        />
         <q-btn flat round dense :icon="loggedin ? 'logout' : 'login'" @click="handleLogin">
           <q-tooltip>{{ loggedin ? 'Logout' : 'Login' }}</q-tooltip>
         </q-btn>
@@ -90,9 +114,7 @@
     <q-drawer v-model="leftDrawerOpen" side="left" bordered behavior="mobile" class="bg-grey-1">
       <q-scroll-area class="fit">
         <q-list padding class="text-grey-8">
-          <q-item-label header class="text-weight-bold text-primary">
-            MENU NAVIGASI
-          </q-item-label>
+          <q-item-label header class="text-weight-bold text-primary"> MENU NAVIGASI </q-item-label>
 
           <q-item clickable v-ripple to="/" exact active-class="text-primary text-weight-bold">
             <q-item-section avatar><q-icon name="home" /></q-item-section>
@@ -112,8 +134,13 @@
           <q-separator q-my-md />
 
           <!-- Tombol PPDB Darurat di dalam Menu HP jika status aktif -->
-          <q-item v-if="ppdbStatus === 'ACTIVE'" clickable v-ripple @click="bukaFormPPDB"
-            class="bg-accent text-white rounded-borders q-mx-md">
+          <q-item
+            v-if="ppdbStatus === 'ACTIVE'"
+            clickable
+            v-ripple
+            @click="bukaFormPPDB"
+            class="bg-accent text-white rounded-borders q-mx-md"
+          >
             <q-item-section avatar><q-icon name="school" color="white" /></q-item-section>
             <q-item-section class="text-weight-bold">Daftar PPDB Online</q-item-section>
           </q-item>
@@ -124,8 +151,10 @@
     <!-- Konten Halaman Aktif -->
     <q-page-container>
       <!-- Banner Pengumuman Dinamis Sebelum PPDB Dibuka -->
-      <q-banner v-if="ppdbStatus === 'UPCOMING'"
-        class="bg-amber text-black text-center text-weight-bold text-caption text-sm-body2">
+      <q-banner
+        v-if="ppdbStatus === 'UPCOMING'"
+        class="bg-amber text-black text-center text-weight-bold text-caption text-sm-body2"
+      >
         <q-icon name="info" size="xs" /> PPDB TA 2026/2027 dibuka dalam {{ daysLeft }} hari lagi!
       </q-banner>
 
@@ -134,13 +163,22 @@
 
     <!-- Sticky Button PPDB DINAMIS (Responsif dengan ukuran mini pada HP) -->
     <q-page-sticky v-if="ppdbStatus === 'ACTIVE'" position="bottom-right" :offset="[16, 16]">
-      <q-btn fab :mini="$q.screen.xs" icon="school" color="accent" :label="$q.screen.xs ? '' : 'Daftar PPDB'"
-        @click="bukaFormPPDB" class="shadow-5" :class="{ 'q-px-md': !$q.screen.xs }">
+      <q-btn
+        fab
+        :mini="$q.screen.xs"
+        icon="school"
+        color="accent"
+        :label="$q.screen.xs ? '' : 'Daftar PPDB'"
+        @click="bukaFormPPDB"
+        class="shadow-5"
+        :class="{ 'q-px-md': !$q.screen.xs }"
+      >
         <q-badge color="red" floating animate>Buka</q-badge>
-        <q-tooltip v-if="$q.screen.xs" anchor="center left" self="center right">Daftar PPDB</q-tooltip>
+        <q-tooltip v-if="$q.screen.xs" anchor="center left" self="center right"
+          >Daftar PPDB</q-tooltip
+        >
       </q-btn>
     </q-page-sticky>
-
   </q-layout>
 </template>
 
@@ -156,7 +194,7 @@ const loggedin = ref(false)
 // Pengaturan Jadwal PPDB
 const ppdbConfig = ref({
   startDate: new Date('2026-06-01T00:00:00'),
-  endDate: new Date('2026-07-15T23:59:59')
+  endDate: new Date('2026-07-15T23:59:59'),
 })
 
 const ppdbStatus = computed(() => {
@@ -186,10 +224,6 @@ function bukaFormPPDB() {
 const handleLogin = () => {
   router.push({ name: 'webLogin' })
 }
-
-
-
-
 </script>
 
 <style scoped>
@@ -201,7 +235,7 @@ const handleLogin = () => {
 }
 
 .bg-gradient-cta {
-  background: linear-gradient(135deg, #1976D2 0%, #0D47A1 100%);
+  background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
 }
 
 .z-top {

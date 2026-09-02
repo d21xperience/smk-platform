@@ -1,11 +1,11 @@
-// src/pages/siakad/teaching/useAttendancePage.js
+// @/pages/siakad/teaching/useAttendancePage.js
 
 import { ref, computed, watch } from 'vue'
-import { useOperationalContext } from 'src/composables/context/useOperationalContext'
-import { usePermission } from 'src/composables/permission/usePermission'
+import { useOperationalContext } from '@/composables/context/useOperationalContext'
+import { usePermission } from '@/composables/permission/usePermission'
 // Nanti akan ada composable domain
-// import { useTeaching } from 'src/composables/domain/useTeaching'
-// import { useAttendance } from 'src/composables/domain/useAttendance'
+// import { useTeaching } from '@/composables/domain/useTeaching'
+// import { useAttendance } from '@/composables/domain/useAttendance'
 
 export function useAttendancePage() {
   // ------------------------------------------------------------
@@ -22,7 +22,9 @@ export function useAttendancePage() {
   // ------------------------------------------------------------
   // 2. COMPUTED
   // ------------------------------------------------------------
-  const isLoading = computed(() => pageState.value === 'loading' || pageState.value === 'initializing')
+  const isLoading = computed(
+    () => pageState.value === 'loading' || pageState.value === 'initializing',
+  )
   const isReady = computed(() => pageState.value === 'ready')
   const hasError = computed(() => pageState.value === 'error')
 
@@ -76,7 +78,7 @@ export function useAttendancePage() {
     // attendanceList.value = await fetchAttendance(teachingSession.value.id)
 
     // Untuk Sprint A, kita hanya mensimulasikan
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     teachingSession.value = { id: 1, name: 'Matematika Kelas X-A' }
     attendanceList.value = []
   }
@@ -106,6 +108,8 @@ export function useAttendancePage() {
     hasError,
     // Methods
     initialize,
-    retry: () => { retryCount.value++ },
+    retry: () => {
+      retryCount.value++
+    },
   }
 }

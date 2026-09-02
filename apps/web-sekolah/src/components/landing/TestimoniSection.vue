@@ -6,12 +6,32 @@
     <div class="max-width-center q-mx-auto q-px-md text-center">
       <SectionHeader title="Apa Kata Mereka?" align="center" />
 
-      <q-carousel v-model="activeIdx" transition-prev="scale" transition-next="scale" swipeable animated
-        control-color="primary" navigation padding arrows infinite :autoplay="6000" height="auto"
-        class="bg-transparent testi-carousel">
-        <q-carousel-slide v-for="(t, i) in TESTIMONIES" :key="i" :name="i" class="column no-wrap flex-center q-pa-sm">
-          <q-card flat :class="['testi-card q-pa-xl', $q.dark.isActive ? 'bg-grey-8' : 'bg-white']"
-            style="max-width:680px;margin:0 auto">
+      <q-carousel
+        v-model="activeIdx"
+        transition-prev="scale"
+        transition-next="scale"
+        swipeable
+        animated
+        control-color="primary"
+        navigation
+        padding
+        arrows
+        infinite
+        :autoplay="6000"
+        height="auto"
+        class="bg-transparent testi-carousel"
+      >
+        <q-carousel-slide
+          v-for="(t, i) in TESTIMONIES"
+          :key="i"
+          :name="i"
+          class="column no-wrap flex-center q-pa-sm"
+        >
+          <q-card
+            flat
+            :class="['testi-card q-pa-xl', $q.dark.isActive ? 'bg-grey-8' : 'bg-white']"
+            style="max-width: 680px; margin: 0 auto"
+          >
             <!-- Quote icon -->
             <q-icon name="format_quote" size="48px" color="primary" class="q-mb-md opacity-30" />
 

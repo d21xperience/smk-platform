@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md dashboard-page">
     <!-- LOADING STATE -->
-    <div v-if="loading" class="row justify-center items-center" style="min-height: 60vh;">
+    <div v-if="loading" class="row justify-center items-center" style="min-height: 60vh">
       <q-spinner-dots color="primary" size="50px" />
       <div class="text-grey-7 q-ml-sm">Memuat data dashboard...</div>
     </div>
@@ -51,19 +51,31 @@
               </div>
 
               <div class="bar-chart" v-if="dashboardData.weeklyAttendance.length > 0">
-                <div class="bar-chart__col" v-for="day in dashboardData.weeklyAttendance" :key="day.day">
+                <div
+                  class="bar-chart__col"
+                  v-for="day in dashboardData.weeklyAttendance"
+                  :key="day.day"
+                >
                   <div class="bar-chart__bars">
-                    <div class="bar-chart__bar bar-chart__bar--hadir" :style="{ height: day.hadir + '%' }">
+                    <div
+                      class="bar-chart__bar bar-chart__bar--hadir"
+                      :style="{ height: day.hadir + '%' }"
+                    >
                       <q-tooltip>Hadir: {{ day.hadir }}%</q-tooltip>
                     </div>
-                    <div class="bar-chart__bar bar-chart__bar--alpha" :style="{ height: day.alpha + '%' }">
+                    <div
+                      class="bar-chart__bar bar-chart__bar--alpha"
+                      :style="{ height: day.alpha + '%' }"
+                    >
                       <q-tooltip>Alpha: {{ day.alpha }}%</q-tooltip>
                     </div>
                   </div>
                   <div class="text-caption text-grey-7 q-mt-xs">{{ day.day }}</div>
                 </div>
               </div>
-              <div v-else class="text-center text-grey-6 q-pa-lg">Tidak ada data kehadiran minggu ini.</div>
+              <div v-else class="text-center text-grey-6 q-pa-lg">
+                Tidak ada data kehadiran minggu ini.
+              </div>
 
               <div class="row items-center q-gutter-md q-mt-md">
                 <div class="row items-center">
@@ -94,7 +106,9 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label class="text-weight-medium">{{ jadwal.mapel }}</q-item-label>
-                    <q-item-label caption>{{ jadwal.kelas }} &middot; {{ jadwal.ruang }}</q-item-label>
+                    <q-item-label caption
+                      >{{ jadwal.kelas }} &middot; {{ jadwal.ruang }}</q-item-label
+                    >
                   </q-item-section>
                   <q-item-section side>
                     <q-badge :color="jadwal.status === 'selesai' ? 'positive' : 'grey-5'" outline>
@@ -117,7 +131,11 @@
       <div class="q-mt-md">
         <div class="text-subtitle1 text-weight-bold q-mb-sm">Perlu Perhatian</div>
         <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-6" v-for="alert in dashboardData.criticalAlerts" :key="alert.id">
+          <div
+            class="col-12 col-md-6"
+            v-for="alert in dashboardData.criticalAlerts"
+            :key="alert.id"
+          >
             <q-card flat bordered class="alert-card">
               <q-card-section class="row items-center no-wrap">
                 <q-icon :name="alert.icon" color="red" size="28px" class="q-mr-md" />
@@ -166,20 +184,19 @@ const { greetingTime, todayLabel } = useUtils()
 const userName = computed(() => auth.user.value?.name || 'Guru')
 const roleLabel = computed(() => {
   const roleMap = {
-    'guru': 'Guru Mata Pelajaran',
-    'wali_kelas': 'Wali Kelas',
-    'admin': 'Administrator SIAKAD'
+    guru: 'Guru Mata Pelajaran',
+    wali_kelas: 'Wali Kelas',
+    admin: 'Administrator SIAKAD',
   }
   return roleMap[auth.user.value?.role] || 'Guru'
 })
-
 
 // Quick links disesuaikan dengan path route yang sudah kita buat
 const quickLinks = [
   { label: 'Input Absensi', icon: 'fact_check', to: { name: 'input-absensi' } },
   { label: 'Input Nilai', icon: 'assessment', to: '/siakad/nilai' }, // Nanti dibuat
   { label: 'Jadwal Mengajar', icon: 'schedule', to: '/siakad/jadwal' },
-  { label: 'Koreksi Data', icon: 'edit_note', to: '/siakad/koreksi' } // Nanti dibuat
+  { label: 'Koreksi Data', icon: 'edit_note', to: '/siakad/koreksi' }, // Nanti dibuat
 ]
 
 onMounted(() => {

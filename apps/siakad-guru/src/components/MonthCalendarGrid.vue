@@ -18,23 +18,38 @@
     <div class="mcg__header">{{ monthLabel }}</div>
 
     <div class="mcg__weekdays">
-      <div v-for="label in weekdayLabels" :key="label" class="mcg__weekday"
-        :class="{ 'mcg__weekday--sunday': label === 'Minggu' }">
+      <div
+        v-for="label in weekdayLabels"
+        :key="label"
+        class="mcg__weekday"
+        :class="{ 'mcg__weekday--sunday': label === 'Minggu' }"
+      >
         {{ label }}
       </div>
     </div>
 
     <div class="mcg__grid">
-      <div v-for="cell in cells" :key="cell.iso" class="mcg__cell" :class="{
-        'mcg__cell--muted': !cell.inCurrentMonth,
-        'mcg__cell--today': cell.iso === today,
-        'mcg__cell--clickable': variant === 'interactive'
-      }" :style="cellFillStyle(cell)" @click="$emit('day-click', cell)">
+      <div
+        v-for="cell in cells"
+        :key="cell.iso"
+        class="mcg__cell"
+        :class="{
+          'mcg__cell--muted': !cell.inCurrentMonth,
+          'mcg__cell--today': cell.iso === today,
+          'mcg__cell--clickable': variant === 'interactive',
+        }"
+        :style="cellFillStyle(cell)"
+        @click="$emit('day-click', cell)"
+      >
         <div class="mcg__date" :style="dateTextStyle(cell)">{{ cell.date }}</div>
 
         <div v-if="variant === 'interactive'" class="mcg__events">
-          <div v-for="ev in cell.events.slice(0, 2)" :key="ev.id" class="mcg__event-chip"
-            :style="{ backgroundColor: colorFor(ev.kategori).chip }">
+          <div
+            v-for="ev in cell.events.slice(0, 2)"
+            :key="ev.id"
+            class="mcg__event-chip"
+            :style="{ backgroundColor: colorFor(ev.kategori).chip }"
+          >
             <span class="mcg__event-text">{{ ev.nama }}</span>
           </div>
           <div v-if="cell.events.length > 2" class="mcg__event-more">
@@ -62,7 +77,7 @@ import {
   todayISO,
   formatRange,
   monthBoundsISO,
-  buildMonthGrid
+  buildMonthGrid,
 } from '@/composables/useCalendarDate'
 
 const props = defineProps({
@@ -72,7 +87,7 @@ const props = defineProps({
   variant: { type: String, default: 'interactive' }, // 'interactive' | 'compact'
   weekStart: { type: String, default: 'monday' }, // 'monday' | 'sunday'
   showLegend: { type: Boolean, default: false },
-  categoryColors: { type: Array, default: null } // override CALENDAR_CATEGORIES bila perlu
+  categoryColors: { type: Array, default: null }, // override CALENDAR_CATEGORIES bila perlu
 })
 defineEmits(['day-click'])
 
@@ -81,12 +96,12 @@ const DEFAULT_COLORS = {
   kbm: { fill: '#e3f2fd', text: '#1a4a7a', chip: '#1a4a7a' },
   ujian: { fill: '#ede7f6', text: '#5e35b1', chip: '#5e35b1' },
   kegiatan: { fill: '#e0f2f1', text: '#00695c', chip: '#00695c' },
-  rapor: { fill: '#e8f5e9', text: '#2e7d32', chip: '#21ba45' }
+  rapor: { fill: '#e8f5e9', text: '#2e7d32', chip: '#21ba45' },
 }
 
 function colorFor(kategori) {
   if (props.categoryColors) {
-    const found = props.categoryColors.find(c => c.value === kategori)
+    const found = props.categoryColors.find((c) => c.value === kategori)
     if (found) return { fill: found.fill, text: found.text, chip: found.chip }
   }
   return DEFAULT_COLORS[kategori] || { fill: '#f5f5f5', text: '#616161', chip: '#9e9e9e' }
@@ -96,7 +111,7 @@ const today = todayISO()
 
 const monthLabel = computed(() => `${MONTHS_ID[props.month]} ${props.year}`)
 const weekdayLabels = computed(() =>
-  props.weekStart === 'sunday' ? WEEKDAYS_SUNDAY_FIRST : WEEKDAYS_MONDAY_FIRST
+  props.weekStart === 'sunday' ? WEEKDAYS_SUNDAY_FIRST : WEEKDAYS_MONDAY_FIRST,
 )
 
 const cells = computed(() => buildMonthGrid(props.year, props.month, props.events, props.weekStart))
@@ -104,14 +119,14 @@ const cells = computed(() => buildMonthGrid(props.year, props.month, props.event
 // Mode compact: sel diberi warna latar solid untuk event dengan fillStyle 'solid' (default)
 function cellFillStyle(cell) {
   if (props.variant !== 'compact') return {}
-  const fillEvent = cell.events.find(e => (e.fillStyle || 'solid') === 'solid')
+  const fillEvent = cell.events.find((e) => (e.fillStyle || 'solid') === 'solid')
   if (fillEvent) return { backgroundColor: colorFor(fillEvent.kategori).fill }
   return {}
 }
 
 // Tanggal Minggu & libur nasional (fillStyle 'text-only') ditulis merah tebal, meniru kalender resmi
 function dateTextStyle(cell) {
-  const textOnlyEvent = cell.events.find(e => e.fillStyle === 'text-only')
+  const textOnlyEvent = cell.events.find((e) => e.fillStyle === 'text-only')
   if (textOnlyEvent) {
     return { color: colorFor(textOnlyEvent.kategori).text, fontWeight: 700 }
   }
@@ -125,13 +140,13 @@ function dateTextStyle(cell) {
 const legendItems = computed(() => {
   const [monthStart, monthEnd] = monthBoundsISO(props.year, props.month)
   return props.events
-    .filter(e => e.endDate >= monthStart && e.startDate <= monthEnd)
+    .filter((e) => e.endDate >= monthStart && e.startDate <= monthEnd)
     .slice()
     .sort((a, b) => (a.startDate < b.startDate ? -1 : 1))
-    .map(e => ({
+    .map((e) => ({
       id: e.id,
       dateLabel: formatRange(e.startDate, e.endDate),
-      nama: e.keterangan ? `${e.nama} (${e.keterangan})` : e.nama
+      nama: e.keterangan ? `${e.nama} (${e.keterangan})` : e.nama,
     }))
 })
 </script>

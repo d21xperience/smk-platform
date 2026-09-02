@@ -7,7 +7,9 @@
     <!-- ── Carousel ───────────────────────────────────────── -->
     <q-carousel
       v-model="slide"
-      animated arrows infinite
+      animated
+      arrows
+      infinite
       :autoplay="5000"
       transition-prev="slide-right"
       transition-next="slide-left"
@@ -26,9 +28,11 @@
 
         <!-- Content -->
         <div class="hero-content absolute-full flex flex-center">
-          <div class="text-center text-white q-px-md" style="max-width:700px">
+          <div class="text-center text-white q-px-md" style="max-width: 700px">
             <transition appear enter-active-class="animated fadeInDown">
-              <div class="hero-eyebrow text-amber-4 text-weight-bold text-caption text-uppercase letter-spacing-wide q-mb-sm">
+              <div
+                class="hero-eyebrow text-amber-4 text-weight-bold text-caption text-uppercase letter-spacing-wide q-mb-sm"
+              >
                 {{ s.eyebrow }}
               </div>
             </transition>
@@ -61,7 +65,8 @@
         <q-carousel-control position="bottom" :offset="[0, 16]" class="flex flex-center">
           <div class="hero-dots">
             <button
-              v-for="s in HERO_SLIDES" :key="s.id"
+              v-for="s in HERO_SLIDES"
+              :key="s.id"
               :class="['hero-dot', { active: slide === s.id }]"
               @click="slide = s.id"
             />
@@ -74,11 +79,7 @@
     <div class="stats-bar bg-primary text-white">
       <div class="max-width-center q-mx-auto q-px-md">
         <div class="row q-col-gutter-xs text-center">
-          <div
-            v-for="(stat, i) in STATS"
-            :key="i"
-            class="col-6 col-sm-3 stats-item"
-          >
+          <div v-for="(stat, i) in STATS" :key="i" class="col-6 col-sm-3 stats-item">
             <q-icon :name="stat.icon" color="amber-4" size="sm" class="q-mb-xs" />
             <div class="text-h5 text-weight-black text-amber-3">{{ stat.value }}</div>
             <div class="text-caption text-blue-2 text-weight-medium">{{ stat.label }}</div>
@@ -122,70 +123,100 @@ function handleCta(cta) {
 </script>
 
 <style scoped>
-.hero-carousel { overflow: hidden; }
+.hero-carousel {
+  overflow: hidden;
+}
 
 .hero-bg {
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   background-size: cover;
   background-position: center;
   transition: transform 8s ease;
   transform: scale(1.05);
 }
-.hero-slide:hover .hero-bg { transform: scale(1); }
+.hero-slide:hover .hero-bg {
+  transform: scale(1);
+}
 
 .hero-overlay {
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     160deg,
-    rgba(13, 27, 62, .85) 0%,
-    rgba(13, 27, 62, .55) 60%,
-    rgba(0, 0, 0, .4) 100%
+    rgba(13, 27, 62, 0.85) 0%,
+    rgba(13, 27, 62, 0.55) 60%,
+    rgba(0, 0, 0, 0.4) 100%
   );
 }
 
-.hero-content { z-index: 2; }
+.hero-content {
+  z-index: 2;
+}
 
 .hero-eyebrow {
   letter-spacing: 2px;
-  text-shadow: 0 1px 8px rgba(0,0,0,.5);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
 }
 .hero-title {
-  text-shadow: 0 2px 20px rgba(0,0,0,.5);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
   line-height: 1.1;
 }
 .hero-sub {
-  text-shadow: 0 1px 8px rgba(0,0,0,.4);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
   line-height: 1.6;
 }
 .hero-cta {
   border-radius: 50px;
-  letter-spacing: .5px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.3);
-  transition: transform .2s, box-shadow .2s;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
-.hero-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,.4); }
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
 
 /* Dots navigation */
-.hero-dots { display: flex; gap: 8px; }
+.hero-dots {
+  display: flex;
+  gap: 8px;
+}
 .hero-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: rgba(255,255,255,.45); border: none; cursor: pointer;
-  transition: all .3s;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 .hero-dot.active {
-  width: 28px; border-radius: 4px;
+  width: 28px;
+  border-radius: 4px;
   background: #ffca28;
 }
 
 /* Stats bar */
-.stats-bar { padding: 20px 0; }
+.stats-bar {
+  padding: 20px 0;
+}
 .stats-item {
   padding: 10px 8px;
-  border-right: 1px solid rgba(255,255,255,.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
-.stats-item:last-child { border-right: none; }
+.stats-item:last-child {
+  border-right: none;
+}
 
-.ppdb-fab { border-radius: 50px !important; padding: 0 20px !important; }
+.ppdb-fab {
+  border-radius: 50px !important;
+  padding: 0 20px !important;
+}
 
-.max-width-center { max-width: 1100px; }
+.max-width-center {
+  max-width: 1100px;
+}
 </style>

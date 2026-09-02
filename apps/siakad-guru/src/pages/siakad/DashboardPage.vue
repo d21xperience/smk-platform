@@ -53,17 +53,25 @@
               <div class="bar-chart" v-if="weeklyAttendance.length > 0">
                 <div class="bar-chart__col" v-for="day in weeklyAttendance" :key="day.day">
                   <div class="bar-chart__bars">
-                    <div class="bar-chart__bar bar-chart__bar--hadir" :style="{ height: day.hadir + '%' }">
+                    <div
+                      class="bar-chart__bar bar-chart__bar--hadir"
+                      :style="{ height: day.hadir + '%' }"
+                    >
                       <q-tooltip>Hadir: {{ day.hadir }}%</q-tooltip>
                     </div>
-                    <div class="bar-chart__bar bar-chart__bar--alpha" :style="{ height: day.alpha + '%' }">
+                    <div
+                      class="bar-chart__bar bar-chart__bar--alpha"
+                      :style="{ height: day.alpha + '%' }"
+                    >
                       <q-tooltip>Alpha: {{ day.alpha }}%</q-tooltip>
                     </div>
                   </div>
                   <div class="text-caption text-grey-7 q-mt-xs">{{ day.day }}</div>
                 </div>
               </div>
-              <div v-else class="text-center text-grey-6 q-pa-lg">Tidak ada data kehadiran minggu ini.</div>
+              <div v-else class="text-center text-grey-6 q-pa-lg">
+                Tidak ada data kehadiran minggu ini.
+              </div>
 
               <div class="row items-center q-gutter-md q-mt-md">
                 <div class="row items-center">
@@ -160,7 +168,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useTeaching } from '@/composables/useTeaching'
 // import { useDashboard } from '@/composables/useDashboard'      // dari statistics cache
 import { useStudentProgressStore } from '@/stores/studentProgress.store'
-import { useUtils } from '@/composables/helper/useUtils'        // untuk greetingTime, todayLabel
+import { useUtils } from '@/composables/helper/useUtils' // untuk greetingTime, todayLabel
 
 const auth = useAuth()
 const teaching = useTeaching()
@@ -175,7 +183,7 @@ const roleLabel = computed(() => {
   const roleMap = {
     guru: 'Guru Mata Pelajaran',
     wali_kelas: 'Wali Kelas',
-    admin: 'Administrator SIAKAD'
+    admin: 'Administrator SIAKAD',
   }
   return roleMap[auth.user.value?.role] || 'Guru'
 })
@@ -183,15 +191,17 @@ const roleLabel = computed(() => {
 // STATS: dihitung dari sessions hari ini dan global stats
 const stats = computed(() => {
   const sessions = teaching.sessions.value
-  const completed = sessions.filter(s => s.status === 'completed' || s.status === 'locked').length
-  const ongoing = sessions.filter(s => s.status === 'started' || s.status === 'in_progress').length
-  const scheduled = sessions.filter(s => s.status === 'scheduled').length
+  const completed = sessions.filter((s) => s.status === 'completed' || s.status === 'locked').length
+  const ongoing = sessions.filter(
+    (s) => s.status === 'started' || s.status === 'in_progress',
+  ).length
+  const scheduled = sessions.filter((s) => s.status === 'scheduled').length
 
   return [
     { label: 'Sesi Hari Ini', value: sessions.length, icon: 'event', color: 'primary' },
     { label: 'Sedang Berlangsung', value: ongoing, icon: 'play_circle', color: 'green' },
     { label: 'Selesai', value: completed, icon: 'check_circle', color: 'orange' },
-    { label: 'Terjadwal', value: scheduled, icon: 'schedule', color: 'blue' }
+    { label: 'Terjadwal', value: scheduled, icon: 'schedule', color: 'blue' },
   ]
 })
 
@@ -203,13 +213,13 @@ const weeklyAttendance = computed(() => {
 
 // TODAY SCHEDULE: dari sessions yang sudah dimuat
 const todaySchedule = computed(() => {
-  return teaching.sessions.value.map(session => ({
+  return teaching.sessions.value.map((session) => ({
     id: session.id,
     startTime: session.startTime,
     endTime: session.endTime,
     subject: session.subject,
     className: session.className,
-    status: session.status
+    status: session.status,
   }))
 })
 
@@ -217,14 +227,14 @@ const todaySchedule = computed(() => {
 const criticalAlerts = computed(() => {
   const alerts = []
   const allProgress = studentProgressStore.getAllProgress
-  Object.values(allProgress).forEach(student => {
+  Object.values(allProgress).forEach((student) => {
     const attendance = student.attendanceSummary
     if (attendance && attendance.alpha > 3) {
       alerts.push({
         id: student.studentId,
         title: `${student.studentName} - Alpha Tinggi`,
         description: `Tercatat ${attendance.alpha} kali alpha. Segera tindak lanjuti.`,
-        icon: 'warning'
+        icon: 'warning',
       })
     }
   })
@@ -235,12 +245,18 @@ const quickLinks = [
   { label: 'Input Absensi', icon: 'fact_check', to: { name: 'input-absensi' } },
   { label: 'Input Nilai', icon: 'assessment', to: '/siakad/nilai' },
   { label: 'Jadwal Mengajar', icon: 'schedule', to: '/siakad/jadwal-pelajaran' },
-  { label: 'Koreksi Data', icon: 'edit_note', to: '/siakad/koreksi' }
+  { label: 'Koreksi Data', icon: 'edit_note', to: '/siakad/koreksi' },
 ]
 
 // Helper untuk label status
 function statusLabel(status) {
-  const map = { scheduled: 'Terjadwal', started: 'Dimulai', in_progress: 'Berlangsung', completed: 'Selesai', locked: 'Terkunci' }
+  const map = {
+    scheduled: 'Terjadwal',
+    started: 'Dimulai',
+    in_progress: 'Berlangsung',
+    completed: 'Selesai',
+    locked: 'Terkunci',
+  }
   return map[status] || status
 }
 

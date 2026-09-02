@@ -1,7 +1,7 @@
 /**
  * Handler yang dipanggil oleh EventDispatcher setiap ada event.
  * Bertugas menyimpan event ke backend/mock untuk persistence.
- * @param {import('src/events/DomainEvent').DomainEvent} event
+ * @param {import('@/events/DomainEvent').DomainEvent} event
  */
 export async function eventPersistenceHandler(event) {
   // Di development: log ke console

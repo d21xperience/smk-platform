@@ -1,0 +1,179 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/inventory/v1";
+import "google/protobuf/timestamp.proto";
+
+service InventoryService {
+  rpc CreateAsset (CreateAssetRequest) returns (CreateAssetResponse);
+  rpc MoveAsset (MoveAssetRequest) returns (MoveAssetResponse);
+  rpc BorrowAsset (BorrowAssetRequest) returns (BorrowAssetResponse);
+  rpc ReturnAsset (ReturnAssetRequest) returns (ReturnAssetResponse);
+  rpc ReportDamage (ReportDamageRequest) returns (ReportDamageResponse);
+  rpc DisposeAsset (DisposeAssetRequest) returns (DisposeAssetResponse);
+  rpc GetAsset (GetAssetRequest) returns (GetAssetResponse);
+  rpc ListAssets (ListAssetsRequest) returns (ListAssetsResponse);
+}
+
+// Definisikan message-message...
+// InventoryService mendefinisikan semua operasi untuk modul Inventaris.
+
+// --- Request & Response Messages ---
+
+// CreateAsset
+message CreateAssetRequest {
+  string id            = 1;
+  string qr_code       = 2;
+  string name          = 3;
+  string serial_number = 4;
+  int64  purchase_date = 5; // UNIX timestamp
+
+  string building_id     = 6;
+  string floor_id        = 7;
+  string room_id         = 8;
+  string location_detail = 9;
+
+  string owner_id   = 10;
+  string owner_type = 11; // "School", "Teacher", "Department"
+
+  string brand = 12;
+  string model = 13;
+  int32  year  = 14;
+  string color = 15;
+  string size  = 16;
+
+  string vendor      = 17;
+  double price       = 18;
+  string invoice_no  = 19;
+  int64  received_at = 20; // UNIX timestamp
+}
+
+message CreateAssetResponse {
+  string id = 1;
+}
+
+// UpdateAsset
+message UpdateAssetRequest {
+  string id              = 1;
+  string name            = 2;
+  string building_id     = 3;
+  string floor_id        = 4;
+  string room_id         = 5;
+  string location_detail = 6;
+  string condition       = 7; // "Good", "Fair", "Damaged", dll.
+    // field lain yang dapat diupdate
+}
+
+message UpdateAssetResponse {}
+
+// MoveAsset
+message MoveAssetRequest {
+  string id              = 1;
+  string building_id     = 2;
+  string floor_id        = 3;
+  string room_id         = 4;
+  string location_detail = 5;
+}
+
+message MoveAssetResponse {}
+
+// BorrowAsset
+message BorrowAssetRequest {
+  string id          = 1;
+  string borrower_id = 2; // ID peminjam (guru, siswa, dll.)
+}
+
+message BorrowAssetResponse {}
+
+// ReturnAsset
+message ReturnAssetRequest {
+  string id                  = 1;
+  string condition_after_use = 2; // kondisi setelah dipakai
+}
+
+message ReturnAssetResponse {}
+
+// ReportDamage
+message ReportDamageRequest {
+  string          asset_id     = 1;
+  string          reporter_id  = 2;
+  string          room_id      = 3;
+  string          description  = 4;
+  repeated string photos       = 5;
+  string          damage_level = 6; // "Light", "Moderate", "Severe"
+}
+
+message ReportDamageResponse {
+  string issue_id = 1;
+}
+
+// RequestMaintenance
+message RequestMaintenanceRequest {
+  string asset_id     = 1;
+  string requester_id = 2;
+  string description  = 3;
+  string priority     = 4; // "Low", "Medium", "High"
+}
+
+message RequestMaintenanceResponse {
+  string issue_id = 1;
+}
+
+// DisposeAsset
+message DisposeAssetRequest {
+  string id          = 1;
+  string reason      = 2;
+  string approved_by = 3;
+}
+
+message DisposeAssetResponse {}
+
+// GetAsset
+message GetAssetRequest {
+  string id = 1;
+}
+
+message GetAssetResponse {
+  string id              = 1;
+  string qr_code         = 2;
+  string name            = 3;
+  string serial_number   = 4;
+  int64  purchase_date   = 5;
+  string building_id     = 6;
+  string floor_id        = 7;
+  string room_id         = 8;
+  string location_detail = 9;
+  string condition       = 10;
+  string owner_id        = 11;
+  string owner_type      = 12;
+  string brand           = 13;
+  string model           = 14;
+  int32  year            = 15;
+  string color           = 16;
+  string size            = 17;
+  string vendor          = 18;
+  double price           = 19;
+  string invoice_no      = 20;
+  int64  received_at     = 21;
+  int64  created_at      = 22;
+  int64  updated_at      = 23;
+}
+
+// ListAssets
+message ListAssetsRequest {
+  string building_id = 1;
+  string floor_id    = 2;
+  string room_id     = 3;
+  string condition   = 4;
+  string search      = 5; // pencarian teks bebas
+  int32  page        = 6;
+  int32  page_size   = 7;
+}
+
+message ListAssetsResponse {
+  repeated GetAssetResponse items     = 1;
+  int32                     total     = 2;
+  int32                     page      = 3;
+  int32                     page_size = 4;
+}

@@ -42,7 +42,9 @@ const AgendaSection = defineAsyncComponent(() => import('@/components/landing/Ag
 const BkkSection = defineAsyncComponent(() => import('@/components/landing/BkkSection.vue'))
 const NewsSection = defineAsyncComponent(() => import('@/components/landing/NewsSection.vue'))
 const OsisSection = defineAsyncComponent(() => import('@/components/landing/OsisSection.vue'))
-const TestimoniSection = defineAsyncComponent(() => import('@/components/landing/TestimoniSection.vue'))
+const TestimoniSection = defineAsyncComponent(
+  () => import('@/components/landing/TestimoniSection.vue'),
+)
 const CtaSection = defineAsyncComponent(() => import('@/components/landing/CtaSection.vue'))
 const FooterSection = defineAsyncComponent(() => import('@/components/landing/FooterSection.vue'))
 const EkskulSection = defineAsyncComponent(() => import('@/components/landing/EkskulSection.vue'))

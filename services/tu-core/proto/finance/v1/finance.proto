@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package finance.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/finance/v1;financev1";
+
+import "google/protobuf/timestamp.proto";
+
+service FinanceService {
+  // Invoice operations
+  rpc CreateInvoice(CreateInvoiceRequest) returns (CreateInvoiceResponse);
+  rpc GetInvoice(GetInvoiceRequest) returns (GetInvoiceResponse);
+  rpc ListInvoices(ListInvoicesRequest) returns (ListInvoicesResponse);
+  rpc GetStudentOutstanding(GetStudentOutstandingRequest) returns (GetStudentOutstandingResponse);
+
+  // Payment operations
+  rpc CreatePayment(CreatePaymentRequest) returns (CreatePaymentResponse);
+  rpc ListPayments(ListPaymentsRequest) returns (ListPaymentsResponse);
+
+  // Reports
+  rpc GetPaymentSummary(GetPaymentSummaryRequest) returns (GetPaymentSummaryResponse);
+}
+
+// === INVOICE MESSAGES ===
+message CreateInvoiceRequest {
+  string student_id = 1;
+  string component_type = 2; // SPP, UNIFORM, BOOK, EXAM
+  int32 month = 3; // 1-12, 0 untuk non-SPP
+  int32 year = 4;
+  double amount = 5;
+  google.protobuf.Timestamp due_date = 6;
+  string notes = 7;
+}
+
+message CreateInvoiceResponse {
+  Invoice invoice = 1;
+}
+
+message GetInvoiceRequest {
+  string invoice_id = 1;
+}
+
+message GetInvoiceResponse {
+  Invoice invoice = 1;
+}
+
+message ListInvoicesRequest {
+  string student_id = 1;
+  string component_type = 2;
+  string status = 3;
+  int32 month = 4;
+  int32 year = 5;
+  int32 limit = 6;
+  int32 offset = 7;
+}
+
+message ListInvoicesResponse {
+  repeated Invoice invoices = 1;
+  int32 total = 2;
+}
+
+message GetStudentOutstandingRequest {
+  string student_id = 1;
+}
+
+message GetStudentOutstandingResponse {
+  string student_id = 1;
+  double total_outstanding = 2;
+  int32 unpaid_invoices = 3;
+  repeated Invoice unpaid_invoices_list = 4;
+}
+
+// === PAYMENT MESSAGES ===
+message CreatePaymentRequest {
+  string invoice_id = 1;
+  double amount = 2;
+  string payment_method = 3; // CASH, TRANSFER, VA, QRIS
+  google.protobuf.Timestamp payment_date = 4;
+  string reference_number = 5;
+  string notes = 6;
+}
+
+message CreatePaymentResponse {
+  Payment payment = 1;
+  Invoice updated_invoice = 2;
+}
+
+message ListPaymentsRequest {
+  string invoice_id = 1;
+  string payment_method = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+
+message ListPaymentsResponse {
+  repeated Payment payments = 1;
+  int32 total = 2;
+}
+
+// === REPORT MESSAGES ===
+message GetPaymentSummaryRequest {
+  int32 month = 1;
+  int32 year = 2;
+  string component_type = 3;
+}
+
+message GetPaymentSummaryResponse {
+  int32 total_invoices = 1;
+  int32 paid_invoices = 2;
+  int32 unpaid_invoices = 3;
+  double total_amount = 4;
+  double total_paid = 5;
+  double total_outstanding = 6;
+  double payment_percentage = 7;
+}
+
+// === DATA STRUCTURES ===
+message Invoice {
+  string id = 1;
+  string school_id = 2;
+  string academic_period_id = 3;
+  string student_id = 4;
+  string student_name = 5;
+  string component_type = 6;
+  int32 month = 7;
+  int32 year = 8;
+  double amount = 9;
+  google.protobuf.Timestamp due_date = 10;
+  string status = 11;
+  double paid_amount = 12;
+  google.protobuf.Timestamp paid_at = 13;
+  string notes = 14;
+  string created_by = 15;
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp updated_at = 17;
+}
+
+message Payment {
+  string id = 1;
+  string school_id = 2;
+  string academic_period_id = 3;
+  string invoice_id = 4;
+  double amount = 5;
+  string payment_method = 6;
+  google.protobuf.Timestamp payment_date = 7;
+  string reference_number = 8;
+  string notes = 9;
+  string created_by = 10;
+  google.protobuf.Timestamp created_at = 11;
+}

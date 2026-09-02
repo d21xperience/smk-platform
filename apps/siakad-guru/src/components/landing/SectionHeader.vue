@@ -17,20 +17,26 @@
 
 <script setup>
 defineProps({
-  title:    { type: String, required: true },
+  title: { type: String, required: true },
   subtitle: { type: String, default: '' },
-  align:    { type: String, default: 'left' },
+  align: { type: String, default: 'left' },
 })
 </script>
 
 <style scoped>
-.section-header { margin-bottom: 28px; }
+.section-header {
+  margin-bottom: 28px;
+}
 
 .section-pill {
-  width: 36px; height: 4px;
+  width: 36px;
+  height: 4px;
   background: var(--q-primary);
   border-radius: 2px;
   margin-bottom: 12px;
 }
-.section-subtitle { max-width: 560px; line-height: 1.7; }
+.section-subtitle {
+  max-width: 560px;
+  line-height: 1.7;
+}
 </style>

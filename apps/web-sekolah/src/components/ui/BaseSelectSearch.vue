@@ -50,9 +50,26 @@ const filterFn = (val, update) => {
 }
 </script> -->
 <template>
-  <q-select ref="selectRef" v-model="modelValueComputed" :options="filteredOptions" :option-label="optionLabel"
-    :option-value="optionValue" :label="label" :disable="disable" :rules="rules" emit-value map-options outlined dense
-    use-input fill-input hide-selected input-debounce="300" @filter="filterFn" @input-value="setInputValue" />
+  <q-select
+    ref="selectRef"
+    v-model="modelValueComputed"
+    :options="filteredOptions"
+    :option-label="optionLabel"
+    :option-value="optionValue"
+    :label="label"
+    :disable="disable"
+    :rules="rules"
+    emit-value
+    map-options
+    outlined
+    dense
+    use-input
+    fill-input
+    hide-selected
+    input-debounce="300"
+    @filter="filterFn"
+    @input-value="setInputValue"
+  />
 </template>
 
 <script setup>
@@ -65,7 +82,7 @@ const props = defineProps({
   optionValue: { type: String, default: 'value' },
   label: { type: String, default: 'Pilih Data' },
   disable: { type: Boolean, default: false },
-  rules: { type: Array, default: () => [] }
+  rules: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -76,7 +93,7 @@ const filteredOptions = ref([])
 // Computed properti untuk sinkronisasi v-model
 const modelValueComputed = computed({
   get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val)
+  set: (val) => emit('update:modelValue', val),
 })
 
 // Fungsi bantu untuk memperbarui teks yang terlihat di dalam q-select
@@ -92,7 +109,7 @@ watch(
   (newVal) => {
     if (newVal && props.options.length > 0) {
       // Cari objek siswa di dalam list berdasarkan ID yang dikirim
-      const selectedItem = props.options.find(item => item[props.optionValue] === newVal)
+      const selectedItem = props.options.find((item) => item[props.optionValue] === newVal)
       if (selectedItem) {
         // Paksa input teks menampilkan nama siswa (bukan ID)
         setTimeout(() => {
@@ -103,7 +120,7 @@ watch(
       setInputValue('')
     }
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 // Fungsi pencarian teks input
@@ -117,7 +134,7 @@ const filterFn = (val, update) => {
 
   update(() => {
     const needle = val.toLowerCase()
-    filteredOptions.value = props.options.filter(item => {
+    filteredOptions.value = props.options.filter((item) => {
       const labelText = item[props.optionLabel] ? String(item[props.optionLabel]) : ''
       return labelText.toLowerCase().indexOf(needle) > -1
     })

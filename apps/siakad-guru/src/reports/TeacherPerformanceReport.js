@@ -1,11 +1,11 @@
-// src/reports/TeacherPerformanceReport.js
+// @/reports/TeacherPerformanceReport.js
 import {
   ReportDefinition,
   ColumnDefinition,
   // FilterDefinition,
   SortDefinition,
   AggregateDefinition,
-} from 'src/models/ReportDefinition'
+} from '@/models/ReportDefinition'
 
 export const teacherPerformanceReport = new ReportDefinition({
   id: 'teacher-performance',

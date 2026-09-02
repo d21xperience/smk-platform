@@ -1,6 +1,11 @@
 <template>
-  <AppLayout app-title="SIAKAD - SMK Pasundan Jatinangor" :logo="logoUrl" :user-name="userName"
-    :menu-groups="menuGroups" @logout="handleLogout">
+  <AppLayout
+    app-title="SIAKAD - SMK Pasundan Jatinangor"
+    :logo="logoUrl"
+    :user-name="userName"
+    :menu-groups="menuGroups"
+    @logout="handleLogout"
+  >
     <!-- Slot default: konten utama halaman -->
     <router-view />
   </AppLayout>

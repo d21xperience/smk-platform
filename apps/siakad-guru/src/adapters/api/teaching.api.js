@@ -1,40 +1,13 @@
-import { api as apiClient } from '@/boot/axios'
-import { TeacherSchedule } from '@/models/TeacherSchedule'
-import { TeachingSession } from '@/models/TeachingSession'
-import { JournalEntry } from '@/models/JournalEntry'
+import { api } from '@/boot/axios'
 
-export const teachingApiAdapter = {
-  async getTeacherSchedule(academicYearId, semesterId) {
-    const { data } = await apiClient.get('/teaching/schedule', {
-      params: { academicYearId, semesterId },
-    })
-    return data.map((item) => new TeacherSchedule(item))
-  },
-
-  async getTeachingSessions(date) {
-    const { data } = await apiClient.get('/teaching/sessions', {
-      params: { date },
-    })
-    return data.map((item) => new TeachingSession(item))
-  },
-
-  async startSession(sessionId) {
-    const { data } = await apiClient.patch(`/teaching/sessions/${sessionId}/start`)
-    return new TeachingSession(data)
-  },
-
-  async completeSession(sessionId) {
-    const { data } = await apiClient.patch(`/teaching/sessions/${sessionId}/complete`)
-    return new TeachingSession(data)
-  },
-
-  async saveJournal(sessionId, journalData) {
-    const { data } = await apiClient.post(`/teaching/sessions/${sessionId}/journal`, journalData)
-    return new JournalEntry(data)
-  },
-
-  async getJournalBySession(sessionId) {
-    const { data } = await apiClient.get(`/teaching/sessions/${sessionId}/journal`)
-    return data ? new JournalEntry(data) : null
-  },
+export const TeachingApi = {
+  getTodaySchedule: (params) => api.get('/teaching/schedule', { params }),
+  getSessionDetail: (sessionId) => api.get(`/teaching/session/${sessionId}`),
+  getActiveSessions: (params) => api.get('/teaching/active', { params }),
+  startSession: (sessionId) => api.post(`/teaching/session/${sessionId}/start`),
+  endSession: (sessionId) => api.post(`/teaching/session/${sessionId}/end`),
+  loadOrCreateJournal: (sessionId) => api.get(`/teaching/session/${sessionId}/journal`),
+  getJournal: (journalId) => api.get(`/teaching/journal/${journalId}`),
+  saveJournalDraft: (journalId, data) => api.post(`/teaching/journal/${journalId}/draft`, data),
+  finalizeJournal: (journalId) => api.post(`/teaching/journal/${journalId}/finalize`),
 }

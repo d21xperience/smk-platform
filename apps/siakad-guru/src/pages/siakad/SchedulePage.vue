@@ -106,13 +106,13 @@ onMounted(async () => {
 // function akhiriSesi(id) {
 //   completeSession(id)
 // }
-
-
 </script>
 
 <style scoped>
 .schedule-card {
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .schedule-card:hover {

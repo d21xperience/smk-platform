@@ -1,143 +1,98 @@
-/**
- * Event Dispatcher — Pure JavaScript
- * Tidak bergantung pada framework.
- * Bertanggung jawab:
- * - Menerima DomainEvent dari Engine/Store
- * - Meneruskan event ke Service (untuk persistence/log)
- * - Mendistribusikan event ke semua listener yang terdaftar
- */
+// src/events/EventDispatcher.js
 export class EventDispatcher {
   constructor() {
-    // Map<eventType, Set<callback>>
-    this._listeners = new Map()
+    this.listeners = new Map()
+    this.wildcardListeners = []
   }
 
-  /**
-   * Kirim event ke semua listener + persistence handler.
-   * @param {import('./DomainEvent').DomainEvent} event
-   */
-  dispatch(event) {
-    // 1. Kirim ke service handler (persistence/log/audit)
-    if (this._serviceHandler) {
-      this._serviceHandler(event).catch((err) => {
-        console.error('[EventDispatcher] Service handler error:', err)
-      })
+  on(event, listener, options = {}) {
+    const { priority = 0, once = false } = options
+    if (typeof listener !== 'function') {
+      throw new Error('Listener must be a function.')
     }
 
-    // 2. Distribusikan ke listener
-    const listeners = this._listeners.get(event.type)
-    if (listeners) {
-      for (const callback of listeners) {
-        try {
-          callback(event)
-        } catch (err) {
-          console.error(`[EventDispatcher] Listener error for ${event.type}:`, err)
-        }
+    if (event === '*') {
+      this.wildcardListeners.push({ fn: listener, priority, once })
+      this.wildcardListeners.sort((a, b) => b.priority - a.priority)
+      return () => this.off('*', listener)
+    }
+
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, [])
+    }
+    const listeners = this.listeners.get(event)
+    listeners.push({ fn: listener, priority, once })
+    listeners.sort((a, b) => b.priority - a.priority)
+    return () => this.off(event, listener)
+  }
+
+  once(event, listener, options = {}) {
+    return this.on(event, listener, { ...options, once: true })
+  }
+
+  off(event, listener) {
+    if (event === '*') {
+      this.wildcardListeners = this.wildcardListeners.filter((l) => l.fn !== listener)
+      return
+    }
+    if (this.listeners.has(event)) {
+      const listeners = this.listeners.get(event)
+      const filtered = listeners.filter((l) => l.fn !== listener)
+      if (filtered.length === 0) {
+        this.listeners.delete(event)
+      } else {
+        this.listeners.set(event, filtered)
       }
     }
+  }
 
-    // 3. Kirim juga ke wildcard listener "*" (mendengarkan semua event)
-    const wildcardListeners = this._listeners.get('*')
-    if (wildcardListeners) {
-      for (const callback of wildcardListeners) {
-        try {
-          callback(event)
-        } catch (err) {
-          console.error('[EventDispatcher] Wildcard listener error:', err)
-        }
+  removeAllListeners(event) {
+    if (event) {
+      this.listeners.delete(event)
+    } else {
+      this.listeners.clear()
+      this.wildcardListeners = []
+    }
+  }
+
+  // Method emit (synchronous)
+  emit(event, payload) {
+    const listeners = this.listeners.get(event) || []
+    // Execute wildcard listeners first
+    for (const wildcard of this.wildcardListeners) {
+      if (wildcard.once) {
+        this.off('*', wildcard.fn)
       }
+      wildcard.fn({ event, payload })
+    }
+    // Execute specific listeners
+    for (const listener of listeners) {
+      if (listener.once) {
+        this.off(event, listener.fn)
+      }
+      listener.fn(payload)
     }
   }
 
-  /**
-   * Daftarkan listener untuk event tertentu.
-   * @param {string} eventType - dari DomainEventType
-   * @param {Function} callback - function(event: DomainEvent)
-   */
-  on(eventType, callback) {
-    if (!this._listeners.has(eventType)) {
-      this._listeners.set(eventType, new Set())
+  // Method emitAsync (asynchronous)
+  async emitAsync(event, payload) {
+    const listeners = this.listeners.get(event) || []
+    for (const wildcard of this.wildcardListeners) {
+      if (wildcard.once) {
+        this.off('*', wildcard.fn)
+      }
+      await wildcard.fn({ event, payload })
     }
-    this._listeners.get(eventType).add(callback)
-  }
-
-  /**
-   * Hapus listener.
-   * @param {string} eventType
-   * @param {Function} callback
-   */
-  off(eventType, callback) {
-    const listeners = this._listeners.get(eventType)
-    if (listeners) {
-      listeners.delete(callback)
+    for (const listener of listeners) {
+      if (listener.once) {
+        this.off(event, listener.fn)
+      }
+      await listener.fn(payload)
     }
   }
 
-  /**
-   * Hapus semua listener (untuk reset/cleanup).
-   */
-  removeAllListeners() {
-    this._listeners.clear()
-  }
-
-  /**
-   * Pasang service handler — dipanggil saat event akan disimpan ke backend/audit.
-   * Handler menerima DomainEvent dan mengembalikan Promise.
-   * @param {Function} handler - async (event) => { ... }
-   */
-  setServiceHandler(handler) {
-    this._serviceHandler = handler
+  listenerCount(event) {
+    if (event === '*') return this.wildcardListeners.length
+    return this.listeners.get(event)?.length || 0
   }
 }
-
-// export class EventDispatcher {
-//   constructor() {
-//     this._listeners = new Map()
-//   }
-
-//   dispatch(event) {
-//     if (this._serviceHandler) {
-//       this._serviceHandler(event).catch((err) =>
-//         console.error('[EventDispatcher] Service handler error:', err),
-//       )
-//     }
-//     const listeners = this._listeners.get(event.type)
-//     if (listeners) {
-//       for (const callback of listeners) {
-//         try {
-//           callback(event)
-//         } catch (err) {
-//           console.error(`[EventDispatcher] Listener error for ${event.type}:`, err)
-//         }
-//       }
-//     }
-//     const wildcardListeners = this._listeners.get('*')
-//     if (wildcardListeners) {
-//       for (const callback of wildcardListeners) {
-//         try {
-//           callback(event)
-//         } catch (err) {
-//           console.error('[EventDispatcher] Wildcard listener error:', err)
-//         }
-//       }
-//     }
-//   }
-
-//   on(eventType, callback) {
-//     if (!this._listeners.has(eventType)) this._listeners.set(eventType, new Set())
-//     this._listeners.get(eventType).add(callback)
-//   }
-
-//   off(eventType, callback) {
-//     const listeners = this._listeners.get(eventType)
-//     if (listeners) listeners.delete(callback)
-//   }
-
-//   removeAllListeners() {
-//     this._listeners.clear()
-//   }
-
-//   setServiceHandler(handler) {
-//     this._serviceHandler = handler
-//   }
-// }

@@ -2,44 +2,20 @@
 -- SMK PLATFORM - DATABASE INITIALIZATION
 -- =============================================================================
 -- Script ini dijalankan otomatis saat PostgreSQL container pertama kali start.
--- File akan dijalankan sesuai urutan nama file (001, 002, dst).
---
--- CATATAN:
--- - Script ini HANYA dijalankan sekali (saat volume pertama kali dibuat)
--- - Jika ingin re-run, hapus volume: docker-compose down -v
--- - Untuk migration selanjutnya, gunakan golang-migrate
+-- Schema disesuaikan dengan repository backend (student_repository.go, dll).
 -- =============================================================================
 
--- Create schemas untuk setiap Bounded Context
-CREATE SCHEMA IF NOT EXISTS academic;
-CREATE SCHEMA IF NOT EXISTS student;
-CREATE SCHEMA IF NOT EXISTS attendance;
-CREATE SCHEMA IF NOT EXISTS assessment;
-CREATE SCHEMA IF NOT EXISTS teaching;
-CREATE SCHEMA IF NOT EXISTS reporting;
-
--- Grant permissions
-GRANT ALL PRIVILEGES ON SCHEMA academic TO smk_dev;
-GRANT ALL PRIVILEGES ON SCHEMA student TO smk_dev;
-GRANT ALL PRIVILEGES ON SCHEMA attendance TO smk_dev;
-GRANT ALL PRIVILEGES ON SCHEMA assessment TO smk_dev;
-GRANT ALL PRIVILEGES ON SCHEMA teaching TO smk_dev;
-GRANT ALL PRIVILEGES ON SCHEMA reporting TO smk_dev;
-
--- Create extension untuk UUID generation
+-- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Create extension untuk full-text search
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- =============================================================================
--- ACADEMIC SCHEMA
+-- ACADEMIC TABLES
 -- =============================================================================
 
--- Academic Years
-CREATE TABLE IF NOT EXISTS academic.academic_years (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    year VARCHAR(9) NOT NULL UNIQUE,  -- Format: 2025/2026
+CREATE TABLE IF NOT EXISTS academic_years (
+    id VARCHAR(36) PRIMARY KEY,
+    year VARCHAR(9) NOT NULL UNIQUE,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     is_active BOOLEAN DEFAULT FALSE,
@@ -47,36 +23,33 @@ CREATE TABLE IF NOT EXISTS academic.academic_years (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Curriculums
-CREATE TABLE IF NOT EXISTS academic.curriculums (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS curriculums (
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20) NOT NULL UNIQUE,
     description TEXT,
-    academic_year_id UUID REFERENCES academic.academic_years(id),
+    academic_year_id VARCHAR(36) REFERENCES academic_years(id),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Subjects
-CREATE TABLE IF NOT EXISTS academic.subjects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS subjects (
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20) NOT NULL UNIQUE,
     description TEXT,
     credit_hours INTEGER NOT NULL DEFAULT 0,
-    curriculum_id UUID REFERENCES academic.curriculums(id),
+    curriculum_id VARCHAR(36) REFERENCES curriculums(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Classes
-CREATE TABLE IF NOT EXISTS academic.classes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(50) NOT NULL,  -- Contoh: X IPA 1
-    grade INTEGER NOT NULL,  -- 10, 11, 12
-    academic_year_id UUID REFERENCES academic.academic_years(id),
+CREATE TABLE IF NOT EXISTS classes (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    grade INTEGER NOT NULL,
+    academic_year_id VARCHAR(36) REFERENCES academic_years(id),
     capacity INTEGER NOT NULL DEFAULT 30,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -84,45 +57,63 @@ CREATE TABLE IF NOT EXISTS academic.classes (
 );
 
 -- =============================================================================
--- STUDENT SCHEMA
+-- STUDENT TABLES (sesuai repository/student_repository.go)
 -- =============================================================================
 
--- Students
-CREATE TABLE IF NOT EXISTS student.students (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nis VARCHAR(20) NOT NULL UNIQUE,  -- Nomor Induk Siswa
-    nisn VARCHAR(20) UNIQUE,  -- NISN Nasional
-    full_name VARCHAR(200) NOT NULL,
-    email VARCHAR(100) UNIQUE,
-    phone VARCHAR(20),
-    birth_date DATE,
-    gender VARCHAR(10) CHECK (gender IN ('M', 'F')),
-    address TEXT,
-    photo_url VARCHAR(500),
-    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'GRADUATED', 'DROPPED')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Student Enrollments
-CREATE TABLE IF NOT EXISTS student.enrollments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID NOT NULL REFERENCES student.students(id) ON DELETE CASCADE,
-    class_id UUID NOT NULL REFERENCES academic.classes(id),
-    academic_year_id UUID NOT NULL REFERENCES academic.academic_years(id),
-    enrollment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'TRANSFERRED')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(student_id, academic_year_id)
-);
-
--- Guardians
-CREATE TABLE IF NOT EXISTS student.guardians (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID NOT NULL REFERENCES student.students(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS students (
+    id VARCHAR(36) PRIMARY KEY,
+    school_id VARCHAR(36) NOT NULL,
+    academic_period_id VARCHAR(20) NOT NULL,
+    nis VARCHAR(20) NOT NULL,
+    nisn VARCHAR(10) NOT NULL,
     name VARCHAR(200) NOT NULL,
-    relationship VARCHAR(50) NOT NULL,  -- Father, Mother, Guardian
+    gender VARCHAR(10) NOT NULL,
+    birth_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    birth_place VARCHAR(100),
+    address TEXT,
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    parent_name VARCHAR(100),
+    parent_phone VARCHAR(20),
+    parent_email VARCHAR(100),
+    class_name VARCHAR(50),
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT uq_students_school_period_nis UNIQUE (school_id, academic_period_id, nis),
+    CONSTRAINT uq_students_school_period_nisn UNIQUE (school_id, academic_period_id, nisn)
+);
+
+CREATE INDEX IF NOT EXISTS idx_students_school_period ON students(school_id, academic_period_id);
+CREATE INDEX IF NOT EXISTS idx_students_nis ON students(nis);
+CREATE INDEX IF NOT EXISTS idx_students_nisn ON students(nisn);
+CREATE INDEX IF NOT EXISTS idx_students_status ON students(status);
+CREATE INDEX IF NOT EXISTS idx_students_class ON students(school_id, academic_period_id, class_name);
+CREATE INDEX IF NOT EXISTS idx_students_deleted_at ON students(deleted_at);
+
+CREATE TABLE IF NOT EXISTS enrollments (
+    id VARCHAR(36) PRIMARY KEY,
+    student_id VARCHAR(36) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    school_id VARCHAR(36) NOT NULL,
+    period_id VARCHAR(20) NOT NULL,
+    class_id VARCHAR(36) NOT NULL,
+    enrollment_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_enrollments_student ON enrollments(student_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_school_period ON enrollments(school_id, period_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_class ON enrollments(class_id);
+
+CREATE TABLE IF NOT EXISTS guardians (
+    id VARCHAR(36) PRIMARY KEY,
+    student_id VARCHAR(36) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    name VARCHAR(200) NOT NULL,
+    relationship VARCHAR(50) NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
     occupation VARCHAR(100),
@@ -133,139 +124,65 @@ CREATE TABLE IF NOT EXISTS student.guardians (
 );
 
 -- =============================================================================
--- ATTENDANCE SCHEMA
+-- OUTBOX TABLE (sesuai outbox/worker.go)
 -- =============================================================================
 
--- Attendance Sessions
-CREATE TABLE IF NOT EXISTS attendance.sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    date DATE NOT NULL,
-    class_id UUID NOT NULL REFERENCES academic.classes(id),
-    subject_id UUID REFERENCES academic.subjects(id),
-    teacher_id UUID REFERENCES student.students(id),  -- Simplified, should reference teachers table
-    status VARCHAR(20) DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'SUBMITTED', 'CLOSED')),
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date, class_id, subject_id)
+CREATE TABLE IF NOT EXISTS outbox_events (
+    id VARCHAR(36) PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    aggregate_type VARCHAR(50) NOT NULL,
+    aggregate_id VARCHAR(36) NOT NULL,
+    payload JSONB NOT NULL,
+    school_id VARCHAR(36),
+    academic_period_id VARCHAR(20),
+    correlation_id VARCHAR(36),
+    trace_id VARCHAR(36),
+    version VARCHAR(10) DEFAULT 'v1',
+    attempts INT NOT NULL DEFAULT 0,
+    last_error TEXT,
+    next_retry TIMESTAMP WITH TIME ZONE,
+    published_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Attendance Records
-CREATE TABLE IF NOT EXISTS attendance.records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    session_id UUID NOT NULL REFERENCES attendance.sessions(id) ON DELETE CASCADE,
-    student_id UUID NOT NULL REFERENCES student.students(id),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('PRESENT', 'ABSENT', 'SICK', 'PERMISSION')),
-    note TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(session_id, student_id)
-);
+CREATE INDEX IF NOT EXISTS idx_outbox_unpublished ON outbox_events(created_at ASC) WHERE published_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_outbox_retry ON outbox_events(next_retry) WHERE next_retry IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_outbox_type ON outbox_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_outbox_aggregate ON outbox_events(aggregate_type, aggregate_id);
 
 -- =============================================================================
--- ASSESSMENT SCHEMA
+-- SEED DATA
 -- =============================================================================
 
--- Assessments
-CREATE TABLE IF NOT EXISTS assessment.assessments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(200) NOT NULL,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('EXAM', 'QUIZ', 'ASSIGNMENT', 'PRACTICE')),
-    subject_id UUID NOT NULL REFERENCES academic.subjects(id),
-    class_id UUID NOT NULL REFERENCES academic.classes(id),
-    max_score DECIMAL(5,2) DEFAULT 100.00,
-    weight DECIMAL(5,2) DEFAULT 1.00,
-    assessment_date DATE NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Grades
-CREATE TABLE IF NOT EXISTS assessment.grades (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    assessment_id UUID NOT NULL REFERENCES assessment.assessments(id) ON DELETE CASCADE,
-    student_id UUID NOT NULL REFERENCES student.students(id),
-    score DECIMAL(5,2) NOT NULL,
-    predicate VARCHAR(5),  -- A, B, C, D, E
-    note TEXT,
-    graded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(assessment_id, student_id)
-);
-
--- =============================================================================
--- INDEXES - Performance Optimization
--- =============================================================================
-
--- Student indexes
-CREATE INDEX IF NOT EXISTS idx_students_nis ON student.students(nis);
-CREATE INDEX IF NOT EXISTS idx_students_nisn ON student.students(nisn);
-CREATE INDEX IF NOT EXISTS idx_students_status ON student.students(status);
-
--- Enrollment indexes
-CREATE INDEX IF NOT EXISTS idx_enrollments_student ON student.enrollments(student_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_class ON student.enrollments(class_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_year ON student.enrollments(academic_year_id);
-
--- Attendance indexes
-CREATE INDEX IF NOT EXISTS idx_attendance_sessions_date ON attendance.sessions(date);
-CREATE INDEX IF NOT EXISTS idx_attendance_sessions_class ON attendance.sessions(class_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_records_session ON attendance.records(session_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_records_student ON attendance.records(student_id);
-
--- Assessment indexes
-CREATE INDEX IF NOT EXISTS idx_assessments_subject ON assessment.assessments(subject_id);
-CREATE INDEX IF NOT EXISTS idx_assessments_class ON assessment.assessments(class_id);
-CREATE INDEX IF NOT EXISTS idx_grades_assessment ON assessment.grades(assessment_id);
-CREATE INDEX IF NOT EXISTS idx_grades_student ON assessment.grades(student_id);
-
--- =============================================================================
--- SEED DATA - Initial Data for Development
--- =============================================================================
-
--- Insert sample academic year
-INSERT INTO academic.academic_years (year, start_date, end_date, is_active)
-VALUES ('2025/2026', '2025-07-01', '2026-06-30', TRUE)
+INSERT INTO academic_years(id, year, start_date, end_date, is_active)
+VALUES ('ay-2025-2026', '2025/2026', '2025-07-01', '2026-06-30', TRUE)
 ON CONFLICT (year) DO NOTHING;
 
--- Insert sample curriculum
-INSERT INTO academic.curriculums (name, code, description, academic_year_id, is_active)
-VALUES (
-    'Kurikulum Merdeka',
-    'KM-2025',
-    'Kurikulum Merdeka untuk SMK',
-    (SELECT id FROM academic.academic_years WHERE year = '2025/2026'),
-    TRUE
-)
+INSERT INTO curriculums(id, name, code, description, academic_year_id, is_active)
+VALUES ('cur-km-2025', 'Kurikulum Merdeka', 'KM-2025', 'Kurikulum Merdeka untuk SMK', 'ay-2025-2026', TRUE)
 ON CONFLICT (code) DO NOTHING;
 
--- Insert sample subjects
-INSERT INTO academic.subjects (name, code, description, credit_hours, curriculum_id)
+INSERT INTO subjects(id, name, code, description, credit_hours, curriculum_id)
 VALUES
-    ('Matematika', 'MTK', 'Matematika Umum', 4, (SELECT id FROM academic.curriculums WHERE code = 'KM-2025')),
-    ('Bahasa Indonesia', 'BIND', 'Bahasa Indonesia', 3, (SELECT id FROM academic.curriculums WHERE code = 'KM-2025')),
-    ('Bahasa Inggris', 'BING', 'Bahasa Inggris', 3, (SELECT id FROM academic.curriculums WHERE code = 'KM-2025')),
-    ('Pemrograman Web', 'PMW', 'Pemrograman Web Dasar', 6, (SELECT id FROM academic.curriculums WHERE code = 'KM-2025'))
+    ('sub-mtk', 'Matematika', 'MTK', 'Matematika Umum', 4, 'cur-km-2025'),
+    ('sub-bind', 'Bahasa Indonesia', 'BIND', 'Bahasa Indonesia', 3, 'cur-km-2025'),
+    ('sub-bing', 'Bahasa Inggris', 'BING', 'Bahasa Inggris', 3, 'cur-km-2025'),
+    ('sub-pmw', 'Pemrograman Web', 'PMW', 'Pemrograman Web Dasar', 6, 'cur-km-2025')
 ON CONFLICT (code) DO NOTHING;
 
--- Insert sample classes
-INSERT INTO academic.classes (name, grade, academic_year_id, capacity)
+INSERT INTO classes(id, name, grade, academic_year_id, capacity)
 VALUES
-    ('X IPA 1', 10, (SELECT id FROM academic.academic_years WHERE year = '2025/2026'), 30),
-    ('X IPA 2', 10, (SELECT id FROM academic.academic_years WHERE year = '2025/2026'), 30),
-    ('XI RPL 1', 11, (SELECT id FROM academic.academic_years WHERE year = '2025/2026'), 25)
+    ('cls-x-ipa-1', 'X IPA 1', 10, 'ay-2025-2026', 30),
+    ('cls-x-ipa-2', 'X IPA 2', 10, 'ay-2025-2026', 30),
+    ('cls-xi-rpl-1', 'XI RPL 1', 11, 'ay-2025-2026', 25)
 ON CONFLICT (name, academic_year_id) DO NOTHING;
 
 -- =============================================================================
 -- VERIFICATION
 -- =============================================================================
-
--- Verify schemas created
 DO $$
 BEGIN
     RAISE NOTICE 'Database initialization completed successfully!';
-    RAISE NOTICE 'Schemas created: academic, student, attendance, assessment, teaching, reporting';
+    RAISE NOTICE 'Tables created: academic_years, curriculums, subjects, classes, students, enrollments, guardians, outbox_events';
     RAISE NOTICE 'Extensions enabled: uuid-ossp, pg_trgm';
 END $$;

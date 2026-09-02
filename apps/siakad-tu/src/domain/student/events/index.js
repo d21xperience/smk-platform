@@ -1,0 +1,5 @@
+export { StudentEnrolled } from './StudentEnrolled.js'
+export { StudentGraduated } from './StudentGraduated.js'
+export { StudentProfileUpdated } from './StudentProfileUpdated.js'
+export { StudentRegistered } from './StudentRegistered.js'
+export { StudentTransferred } from './StudentTransferred.js'

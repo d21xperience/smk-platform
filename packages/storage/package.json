@@ -1,0 +1,30 @@
+{
+  "name": "@sdp/storage",
+  "version": "0.1.0",
+  "description": "Shared Storage abstraction for School Digital Platform. Provides unified interface for localStorage, sessionStorage, and memory storage with context-aware key building.",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0",
+    "lint": "echo \"No lint config yet\" && exit 0"
+  },
+  "keywords": [
+    "sdp",
+    "school-digital-platform",
+    "storage",
+    "localstorage",
+    "sessionstorage"
+  ],
+  "license": "UNLICENSED",
+  "private": true
+}

@@ -14,7 +14,12 @@
 
         <!-- INFO PROFIL USER YANG SEDANG LOGIN -->
         <div class="row items-center no-wrap q-gutter-sm">
-          <q-chip icon="account_circle" color="grey-8" text-color="white" class="q-px-md text-weight-medium">
+          <q-chip
+            icon="account_circle"
+            color="grey-8"
+            text-color="white"
+            class="q-px-md text-weight-medium"
+          >
             {{ currentUserName }}
             <q-badge color="amber-9" class="q-ml-sm text-weight-bold uppercase-text">
               {{ currentUserRole }}
@@ -41,7 +46,13 @@
           <q-item-label header class="text-weight-bold text-grey-7">MENU UTAMA</q-item-label>
 
           <!-- MENU UNTUK SEMUA ROLE (Dashboard Ringkasan) -->
-          <q-item clickable v-ripple to="/admin/dashboard" exact active-class="text-primary text-weight-bold bg-blue-1">
+          <q-item
+            clickable
+            v-ripple
+            to="/admin/dashboard"
+            exact
+            active-class="text-primary text-weight-bold bg-blue-1"
+          >
             <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
             <q-item-section>Ringkasan Sistem</q-item-section>
           </q-item>
@@ -49,18 +60,35 @@
           <!-- ========================================== -->
           <!-- KELOMPOK MENU: HANYA UNTUK SUPER ADMIN & TU -->
           <!-- ========================================== -->
-          <q-expansion-item v-if="['admin', 'tu'].includes(currentUserRole)" icon="assignment" label="Manajemen PPDB"
-            header-class="text-weight-medium text-grey-8" default-opened>
+          <q-expansion-item
+            v-if="['admin', 'tu'].includes(currentUserRole)"
+            icon="assignment"
+            label="Manajemen PPDB"
+            header-class="text-weight-medium text-grey-8"
+            default-opened
+          >
             <q-list class="q-pl-md">
               <!-- Menu Setting Waktu Hanya untuk Super Admin -->
-              <q-item v-if="currentUserRole === 'admin'" clickable v-ripple to="/admin/ppdb-config"
-                active-class="text-primary text-weight-bold">
+              <q-item
+                v-if="currentUserRole === 'admin'"
+                clickable
+                v-ripple
+                to="/admin/ppdb-config"
+                active-class="text-primary text-weight-bold"
+              >
                 <q-item-section avatar><q-icon name="date_range" size="xs" /></q-item-section>
-                <q-item-section class="text-caption text-sm-body2">Jadwal & Kuota PPDB</q-item-section>
+                <q-item-section class="text-caption text-sm-body2"
+                  >Jadwal & Kuota PPDB</q-item-section
+                >
               </q-item>
 
               <!-- Menu Validasi Data Berkas untuk Admin & TU -->
-              <q-item clickable v-ripple to="/admin/ppdb-data" active-class="text-primary text-weight-bold">
+              <q-item
+                clickable
+                v-ripple
+                to="/admin/ppdb-data"
+                active-class="text-primary text-weight-bold"
+              >
                 <q-item-section avatar><q-icon name="groups" size="xs" /></q-item-section>
                 <q-item-section class="text-caption text-sm-body2">Data Pendaftar</q-item-section>
               </q-item>
@@ -70,8 +98,13 @@
           <!-- ========================================== -->
           <!-- KELOMPOK MENU: UNTUK OSIS & KAPROG (POSTER)-->
           <!-- ========================================== -->
-          <q-item v-if="['admin', 'osis', 'kaprog'].includes(currentUserRole)" clickable v-ripple to="/admin/posters"
-            active-class="text-primary text-weight-bold bg-blue-1">
+          <q-item
+            v-if="['admin', 'osis', 'kaprog'].includes(currentUserRole)"
+            clickable
+            v-ripple
+            to="/admin/posters"
+            active-class="text-primary text-weight-bold bg-blue-1"
+          >
             <q-item-section avatar><q-icon name="add_photo_alternate" /></q-item-section>
             <q-item-section>Kelola Poster Mading</q-item-section>
           </q-item>
@@ -79,8 +112,13 @@
           <!-- ========================================== -->
           <!-- KELOMPOK MENU: UNTUK GURU & KAPROG (ARTIKEL)-->
           <!-- ========================================== -->
-          <q-item v-if="['admin', 'guru', 'kaprog'].includes(currentUserRole)" clickable v-ripple to="/admin/articles"
-            active-class="text-primary text-weight-bold bg-blue-1">
+          <q-item
+            v-if="['admin', 'guru', 'kaprog'].includes(currentUserRole)"
+            clickable
+            v-ripple
+            to="/admin/articles"
+            active-class="text-primary text-weight-bold bg-blue-1"
+          >
             <q-item-section avatar><q-icon name="newspaper" /></q-item-section>
             <q-item-section>Tulis Artikel Berita</q-item-section>
           </q-item>
@@ -90,7 +128,9 @@
           <!-- MENU UTK KEMBALI LIHAT HALAMAN DEPAN WEB PUBLIK -->
           <q-item clickable v-ripple to="/" target="_blank">
             <q-item-section avatar><q-icon name="open_in_new" color="grey-6" /></q-item-section>
-            <q-item-section class="text-grey-6 text-weight-medium">Lihat Website Utama</q-item-section>
+            <q-item-section class="text-grey-6 text-weight-medium"
+              >Lihat Website Utama</q-item-section
+            >
           </q-item>
         </q-list>
       </q-scroll-area>
@@ -119,7 +159,6 @@ onMounted(() => {
   // Ambil data session role dan nama yang di-set sewaktu login
   // currentUserRole.value = localStorage.getItem('user_role') || 'guest'
   // currentUserName.value = localStorage.getItem('user_name') || 'User Internal'
-
   // // Pengamanan Darurat: Jika tidak sengaja bypass url tanpa login, tendang balik ke /login
   // if (currentUserRole.value === 'guest') {
   //   router.push('/login')
@@ -137,14 +176,14 @@ function confirmLogout() {
     message: 'Apakah Anda yakin ingin keluar dari sesi administrasi ini?',
     cancel: { label: 'Batal', flat: true },
     ok: { label: 'Ya, Keluar', color: 'negative', unelevated: true },
-    persistent: true
+    persistent: true,
   }).onOk(() => {
     // Bersihkan sesi di browser
     localStorage.clear()
     $q.notify({
       type: 'info',
       message: 'Sesi ditutup. Anda berhasil keluar.',
-      position: 'top'
+      position: 'top',
     })
     // Kembalikan ke halaman login utama
     router.push('/login')

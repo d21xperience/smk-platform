@@ -11,35 +11,30 @@
           subtitle="Kabar terkini dari kegiatan akademik, prestasi siswa, dan informasi sekolah."
         />
         <q-btn
-          flat color="primary" no-caps
-          label="Semua Berita" icon-right="arrow_forward"
-          to="/berita" class="gt-xs text-weight-bold q-mb-sm"
+          flat
+          color="primary"
+          no-caps
+          label="Semua Berita"
+          icon-right="arrow_forward"
+          to="/berita"
+          class="gt-xs text-weight-bold q-mb-sm"
         />
       </div>
 
       <div class="row q-col-gutter-md">
-        <div
-          v-for="(n, i) in NEWS"
-          :key="n.id"
-          class="col-12 col-sm-4"
-        >
+        <div v-for="(n, i) in NEWS" :key="n.id" class="col-12 col-sm-4">
           <q-card
-            flat bordered
+            flat
+            bordered
             class="news-card"
             :class="i === 0 ? 'news-card--featured' : ''"
-            clickable v-ripple
+            clickable
+            v-ripple
             @click="$router.push(n.to)"
           >
-            <q-img
-              :src="n.img"
-              loading="lazy"
-              :ratio="i === 0 ? 16/9 : 4/3"
-              class="news-img"
-            >
+            <q-img :src="n.img" loading="lazy" :ratio="i === 0 ? 16 / 9 : 4 / 3" class="news-img">
               <div v-if="i === 0" class="absolute-top-left q-ma-sm">
-                <q-badge color="red-7" class="text-weight-bold q-px-sm">
-                  🔥 Featured
-                </q-badge>
+                <q-badge color="red-7" class="text-weight-bold q-px-sm"> 🔥 Featured </q-badge>
               </div>
             </q-img>
             <q-card-section class="q-pa-md">
@@ -56,7 +51,9 @@
             </q-card-section>
             <q-card-actions class="q-pt-none q-px-md q-pb-md">
               <q-btn
-                flat dense no-caps
+                flat
+                dense
+                no-caps
                 color="primary"
                 label="Baca Selengkapnya"
                 icon-right="arrow_forward"
@@ -80,12 +77,14 @@ import SectionHeader from './SectionHeader.vue'
 .news-card {
   border-radius: 14px;
   overflow: hidden;
-  transition: transform .2s, box-shadow .2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   height: 100%;
 }
 .news-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
 }
 .news-title {
   display: -webkit-box;
@@ -94,7 +93,13 @@ import SectionHeader from './SectionHeader.vue'
   overflow: hidden;
   line-height: 1.5;
 }
-.news-img { transition: transform .4s; }
-.news-card:hover .news-img { transform: scale(1.03); }
-.max-width-center { max-width: 1100px; }
+.news-img {
+  transition: transform 0.4s;
+}
+.news-card:hover .news-img {
+  transform: scale(1.03);
+}
+.max-width-center {
+  max-width: 1100px;
+}
 </style>

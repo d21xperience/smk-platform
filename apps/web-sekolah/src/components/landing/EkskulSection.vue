@@ -4,7 +4,6 @@
   <!-- ====================================================================== -->
   <section class="q-py-xl bg-grey-1 border-top-light">
     <div class="container q-px-md max-width-center">
-
       <!-- HEADER SECTION -->
       <div class="text-center q-mb-xl">
         <div class="text-h5 text-sm-h4 text-weight-bold text-primary">Kegiatan Ekstrakurikuler</div>
@@ -20,7 +19,10 @@
             <!-- Foto Dokumentasi Ekskul -->
             <q-img :src="ekskul.image" :ratio="4 / 3">
               <div class="absolute-top-right q-ma-sm q-pa-none bg-transparent">
-                <q-badge :color="getEkskulBadgeColor(ekskul.category)" class="text-weight-bold q-px-sm q-py-xs">
+                <q-badge
+                  :color="getEkskulBadgeColor(ekskul.category)"
+                  class="text-weight-bold q-px-sm q-py-xs"
+                >
                   {{ ekskul.category }}
                 </q-badge>
               </div>
@@ -40,12 +42,17 @@
             <q-separator />
 
             <!-- Info Jadwal Latihan -->
-            <q-card-actions class="bg-grey-1 q-px-md q-py-xs justify-between items-center text-caption text-grey-6">
+            <q-card-actions
+              class="bg-grey-1 q-px-md q-py-xs justify-between items-center text-caption text-grey-6"
+            >
               <div class="row items-center">
                 <q-icon name="schedule" size="xs" class="q-mr-xs" />
                 <span>{{ ekskul.schedule }}</span>
               </div>
-              <div class="text-weight-bold text-primary cursor-pointer" @click="gabungEkskul(ekskul.name)">
+              <div
+                class="text-weight-bold text-primary cursor-pointer"
+                @click="gabungEkskul(ekskul.name)"
+              >
                 Gabung <q-icon name="chevron_right" />
               </div>
             </q-card-actions>
@@ -55,14 +62,17 @@
 
       <!-- VIEW MORE LINK -->
       <div class="row justify-center q-mt-xl">
-        <q-btn flat color="primary" label="Lihat Galeri Prestasi & Liputan Ekskul" icon="collections_bookmark"
-          to="/mading" class="text-weight-bold" />
+        <q-btn
+          flat
+          color="primary"
+          label="Lihat Galeri Prestasi & Liputan Ekskul"
+          icon="collections_bookmark"
+          to="/mading"
+          class="text-weight-bold"
+        />
       </div>
-
     </div>
   </section>
-
-
 </template>
 
 <script setup>
@@ -76,33 +86,37 @@ const ekstraList = ref([
     category: 'Olahraga',
     icon: 'sports_soccer',
     schedule: 'Rabu & Jumat (15.30)',
-    description: 'Mengembangkan bakat kerja sama tim, taktik, Fisik, dan teknik futsal siswa untuk kompetisi antar sekolah.',
-    image: 'https://unsplash.com'
+    description:
+      'Mengembangkan bakat kerja sama tim, taktik, Fisik, dan teknik futsal siswa untuk kompetisi antar sekolah.',
+    image: 'https://unsplash.com',
   },
   {
     name: 'Road Race & Racing Club',
     category: 'Teknologi',
     icon: 'motorcycle',
     schedule: 'Sabtu (09.00)',
-    description: 'Wadah khusus siswa TBSM mendalami teknik modifikasi mesin balap, manajemen mekanik pit-stop, dan keselamatan berkendara.',
-    image: 'https://unsplash.com'
+    description:
+      'Wadah khusus siswa TBSM mendalami teknik modifikasi mesin balap, manajemen mekanik pit-stop, dan keselamatan berkendara.',
+    image: 'https://unsplash.com',
   },
   {
     name: 'Cyber Security & Robotik',
     category: 'Teknologi',
     icon: 'smart_toy',
     schedule: 'Kamis (15.30)',
-    description: 'Eksplorasi pembuatan robotika berbasis IoT, pemrograman mikrokontroler, dan latihan dasar pertahanan siber (CTF).',
-    image: 'https://unsplash.com'
+    description:
+      'Eksplorasi pembuatan robotika berbasis IoT, pemrograman mikrokontroler, dan latihan dasar pertahanan siber (CTF).',
+    image: 'https://unsplash.com',
   },
   {
     name: 'Pramuka Garuda',
     category: 'Kerohanian',
     icon: 'military_tech',
     schedule: 'Sabtu (13.00)',
-    description: 'Pembentukan mental kepemimpinan mandiri, kedisiplinan tinggi, ketangkasan bertahan hidup, dan pengabdian masyarakat.',
-    image: 'https://unsplash.com'
-  }
+    description:
+      'Pembentukan mental kepemimpinan mandiri, kedisiplinan tinggi, ketangkasan bertahan hidup, dan pengabdian masyarakat.',
+    image: 'https://unsplash.com',
+  },
 ])
 
 function getEkskulBadgeColor(category) {
@@ -116,16 +130,17 @@ function gabungEkskul(namaEkskul) {
     type: 'info',
     message: `Pendaftaran ekskul ${namaEkskul} dapat dilakukan secara mandiri oleh siswa aktif melalui portal internal SIAKAD setelah masuk tahun ajaran baru.`,
     position: 'bottom',
-    timeout: 3500
+    timeout: 3500,
   })
 }
-
 </script>
 
 <style scoped>
 .ekskul-card {
   border-radius: 14px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   height: 100%;
 }
 

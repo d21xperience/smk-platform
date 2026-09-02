@@ -1,57 +1,77 @@
+// FILE: src/services/ContextService.js
+// STATUS: MODIFY
+// STATUS IMPLEMENTASI: COMPLETE
+
+import { ContextEngine } from '@/domain/context/engine/ContextEngine.js'
+import { ContextSelectedEvent } from '@/domain/context/events/ContextSelected.js'
+import { normalizeAvailableHistory } from '@/contracts/contextContract.js'
+
 export class ContextService {
-  /**
-   * @param {Object} adapter - Objek dengan method getAcademicYears(), getSemesters(), getAcademicPeriods()
-   */
-  constructor(adapter) {
-    this.adapter = adapter
+  constructor({ contextAdapter, eventDispatcher }) {
+    this.contextAdapter = contextAdapter
+    this.eventDispatcher = eventDispatcher
   }
 
-  /**
-   * Ambil daftar semua tahun ajaran
-   * @returns {Promise<import('src/models/AcademicYear').AcademicYear[]>}
-   */
-  async fetchAcademicYears() {
-    // const tes = await this.adapter.getAcademicYears()
-    return this.adapter.getAcademicYears()
+  async loadAvailableContexts() {
+    return await this.contextAdapter.fetchAvailableContexts()
   }
 
-  /**
-   * Ambil daftar semester berdasarkan tahun ajaran
-   * @param {number} academicYearId
-   * @returns {Promise<import('src/models/Semester').Semester[]>}
-   */
-  async fetchSemesters(academicYearId) {
-    return this.adapter.getSemesters(academicYearId)
+  async selectContext({ schoolId, academicYearId, semesterId, user }) {
+    const context = await this.contextAdapter.selectContext({
+      schoolId,
+      academicYearId,
+      semesterId,
+      user,
+    })
+
+    ContextEngine.validate(context)
+    this.dispatchContextSelected(context)
+
+    return context
   }
 
-  /**
-   * Ambil daftar periode akademik berdasarkan semester
-   * @param {number} semesterId
-   * @returns {Promise<import('src/models/AcademicPeriod').AcademicPeriod[]>}
-   */
-  async fetchAcademicPeriods(semesterId) {
-    return this.adapter.getAcademicPeriods(semesterId)
+  async loadCurrentOperationalContext({ user }) {
+    const context = await this.contextAdapter.fetchActiveOperationalContext({ user })
+
+    ContextEngine.validate(context)
+    this.dispatchContextSelected(context)
+
+    return context
   }
 
-  /**
-   * Membentuk objek Operational Context dari data yang dipilih
-   * @param {import('src/models/AcademicYear').AcademicYear} academicYear
-   * @param {import('src/models/Semester').Semester} semester
-   * @param {import('src/models/AcademicPeriod').AcademicPeriod} [academicPeriod=null]
-   * @returns {{ academicYearId: number, academicYearName: string, semesterId: number, semesterName: string, academicPeriodId: number|null, academicPeriodName: string|null }}
-   */
-  buildOperationalContext(academicYear, semester, academicPeriod = null) {
-    if (!academicYear || !semester) {
-      throw new Error('AcademicYear dan Semester wajib diisi')
-    }
+  async loadAvailableHistory({ user }) {
+    const history = await this.contextAdapter.fetchAvailableHistory({ user })
 
-    return {
-      academicYearId: academicYear.id,
-      academicYearName: academicYear.name,
-      semesterId: semester.id,
-      semesterName: semester.name,
-      academicPeriodId: academicPeriod?.id || null,
-      academicPeriodName: academicPeriod?.name || null,
-    }
+    return normalizeAvailableHistory(history)
+  }
+
+  async enterHistoricalContext({ user, academicYearId, semesterId }) {
+    const historicalContext = await this.contextAdapter.fetchHistoricalContext({
+      user,
+      academicYearId,
+      semesterId,
+    })
+
+    ContextEngine.validateHistoricalContext(historicalContext)
+
+    return historicalContext
+  }
+
+  resolveRequestContext({ isHistoryMode, currentContext, historicalContext }) {
+    return ContextEngine.resolveRequestContext({
+      isHistoryMode,
+      currentContext,
+      historicalContext,
+    })
+  }
+
+  assertMutationAllowed({ isHistoryMode, user }) {
+    ContextEngine.assertMutationAllowed({ isHistoryMode, user })
+  }
+
+  dispatchContextSelected(context) {
+    if (!this.eventDispatcher) return
+
+    this.eventDispatcher.dispatch(new ContextSelectedEvent(context))
   }
 }

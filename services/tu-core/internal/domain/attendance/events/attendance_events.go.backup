@@ -1,0 +1,115 @@
+package events
+
+import (
+	"time"
+
+	"sekolah-platform/platform/context"
+	"sekolah-platform/platform/events/types"
+
+	"github.com/google/uuid"
+)
+
+const (
+	EventAttendanceSubmitted = "AttendanceSubmitted"
+	EventAttendanceCorrected = "AttendanceCorrected"
+)
+
+// === Payload Structs ===
+
+type AttendanceRecordPayload struct {
+	RecordID  string
+	StudentID string
+	Status    string
+	Notes     string
+}
+
+type AttendanceStatisticsPayload struct {
+	Total          int
+	Present        int
+	Absent         int
+	Sick           int
+	Leave          int
+	AttendanceRate float64
+}
+
+type AttendanceSubmittedPayload struct {
+	SessionID      string
+	ClassID        string
+	TeacherID      string
+	Date           string
+	AttendanceType string
+	SubjectID      string
+	Records        []AttendanceRecordPayload
+	Statistics     AttendanceStatisticsPayload
+	SubmittedAt    time.Time
+}
+
+type AttendanceCorrectedPayload struct {
+	SessionID   string
+	RecordID    string
+	StudentID   string
+	NewStatus   string
+	Reason      string
+	CorrectedAt time.Time
+}
+
+// === Helper ===
+
+func baseBuilder(eventName, aggregateID string, ctx *context.OperationalContext) *types.BaseEventBuilder {
+	builder := types.NewBaseEventBuilder(eventName, "AttendanceSession", aggregateID).
+		WithEventID(uuid.New().String()).
+		WithVersion(1)
+	if ctx != nil {
+		builder.WithContext(ctx)
+	}
+	return builder
+}
+
+// === Event Factories ===
+
+func NewAttendanceSubmitted(p AttendanceSubmittedPayload, ctx *context.OperationalContext) *types.BaseEvent {
+	// Convert records to []map
+	records := make([]map[string]interface{}, 0, len(p.Records))
+	for _, r := range p.Records {
+		records = append(records, map[string]interface{}{
+			"recordId":  r.RecordID,
+			"studentId": r.StudentID,
+			"status":    r.Status,
+			"notes":     r.Notes,
+		})
+	}
+
+	return baseBuilder(EventAttendanceSubmitted, p.SessionID, ctx).
+		WithPayload(map[string]interface{}{
+			"sessionId":      p.SessionID,
+			"classId":        p.ClassID,
+			"teacherId":      p.TeacherID,
+			"date":           p.Date,
+			"attendanceType": p.AttendanceType,
+			"subjectId":      p.SubjectID,
+			"records":        records,
+			"statistics": map[string]interface{}{
+				"total":          p.Statistics.Total,
+				"present":        p.Statistics.Present,
+				"absent":         p.Statistics.Absent,
+				"sick":           p.Statistics.Sick,
+				"leave":          p.Statistics.Leave,
+				"attendanceRate": p.Statistics.AttendanceRate,
+			},
+			"submittedAt": p.SubmittedAt.Format(time.RFC3339),
+		}).
+		Build()
+}
+
+func NewAttendanceCorrected(p AttendanceCorrectedPayload, ctx *context.OperationalContext) *types.BaseEvent {
+	return baseBuilder(EventAttendanceCorrected, p.SessionID, ctx).
+		WithPayload(map[string]interface{}{
+			"sessionId":   p.SessionID,
+			"recordId":    p.RecordID,
+			"studentId":   p.StudentID,
+			"newStatus":   p.NewStatus,
+			"reason":      p.Reason,
+			"correctedAt": p.CorrectedAt.Format(time.RFC3339),
+		}).
+		Build()
+}

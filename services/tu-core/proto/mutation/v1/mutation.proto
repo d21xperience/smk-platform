@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package mutation.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/mutation/v1;mutationv1";
+
+service MutationService {
+  rpc CreateMutation(CreateMutationRequest) returns (CreateMutationResponse);
+  rpc ApproveMutation(ApproveMutationRequest) returns (ApproveMutationResponse);
+  rpc RejectMutation(RejectMutationRequest) returns (RejectMutationResponse);
+  rpc ListMutations(ListMutationsRequest) returns (ListMutationsResponse);
+}
+
+message CreateMutationRequest {
+  string student_id = 1; // Kosong untuk mutasi masuk
+  string mutation_type = 2; // "MASUK" atau "KELUAR"
+  string calon_nama = 3;
+  string calon_nisn = 4;
+  string asal_sekolah = 5;
+  string tujuan_sekolah = 6;
+  string alasan = 7;
+  string dokumen_url = 8;
+}
+
+message CreateMutationResponse { Mutation mutation = 1; }
+
+message ApproveMutationRequest {
+  string mutation_id = 1;
+  string catatan = 2;
+}
+
+message ApproveMutationResponse { Mutation mutation = 1; }
+
+message RejectMutationRequest {
+  string mutation_id = 1;
+  string catatan = 2;
+}
+
+message RejectMutationResponse { Mutation mutation = 1; }
+
+message ListMutationsRequest {
+  string status = 1; // "PENDING", "DISETUJUI", "DITOLAK", atau "" untuk semua
+  string type = 2;   // "MASUK", "KELUAR", atau "" untuk semua
+}
+
+message ListMutationsResponse {
+  repeated Mutation mutations = 1;
+}
+
+message Mutation {
+  string id = 1;
+  string school_id = 2;
+  string academic_period_id = 3;
+  string student_id = 4;
+  string mutation_type = 5;
+  string calon_nama = 6;
+  string calon_nisn = 7;
+  string asal_sekolah = 8;
+  string tujuan_sekolah = 9;
+  string alasan = 10;
+  string dokumen_url = 11;
+  string status = 12;
+  string catatan_verifikasi = 13;
+  string created_at = 14;
+}

@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package attendance.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/attendance/v1;attendancev1";
+
+import "google/protobuf/timestamp.proto";
+
+service AttendanceService {
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc SubmitAttendance(SubmitAttendanceRequest) returns (SubmitAttendanceResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc GetStudentAttendance(GetStudentAttendanceRequest) returns (GetStudentAttendanceResponse);
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc GetAttendanceSummary(GetAttendanceSummaryRequest) returns (GetAttendanceSummaryResponse);
+}
+
+message CreateSessionRequest {
+  string class_id = 1;
+  string subject_id = 2;
+  string teacher_id = 3;
+  google.protobuf.Timestamp session_date = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  string notes = 7;
+}
+
+message CreateSessionResponse {
+  AttendanceSession session = 1;
+}
+
+message SubmitAttendanceRequest {
+  string session_id = 1;
+  repeated AttendanceRecord records = 2;
+}
+
+message SubmitAttendanceResponse {
+  AttendanceSession session = 1;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  AttendanceSession session = 1;
+}
+
+message GetStudentAttendanceRequest {
+  string student_id = 1;
+  int32 month = 2;
+  int32 year = 3;
+}
+
+message GetStudentAttendanceResponse {
+  repeated AttendanceRecord records = 1;
+  AttendanceSummary summary = 2;
+}
+
+message ListSessionsRequest {
+  string class_id = 1;
+  string status = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+
+message ListSessionsResponse {
+  repeated AttendanceSession sessions = 1;
+  int32 total = 2;
+}
+
+message GetAttendanceSummaryRequest {
+  string class_id = 1;
+  int32 month = 2;
+  int32 year = 3;
+}
+
+message GetAttendanceSummaryResponse {
+  repeated StudentAttendanceSummary students = 1;
+}
+
+message AttendanceSession {
+  string id = 1;
+  string school_id = 2;
+  string academic_period_id = 3;
+  string class_id = 4;
+  string subject_id = 5;
+  string teacher_id = 6;
+  google.protobuf.Timestamp session_date = 7;
+  google.protobuf.Timestamp start_time = 8;
+  google.protobuf.Timestamp end_time = 9;
+  string status = 10;
+  string notes = 11;
+  repeated AttendanceRecord records = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message AttendanceRecord {
+  string id = 1;
+  string session_id = 2;
+  string student_id = 3;
+  string student_name = 4;
+  string status = 5;
+  string note = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message AttendanceSummary {
+  int32 total_sessions = 1;
+  int32 present_count = 2;
+  int32 absent_count = 3;
+  int32 late_count = 4;
+  int32 sick_count = 5;
+  int32 permission_count = 6;
+  double attendance_percentage = 7;
+}
+
+message StudentAttendanceSummary {
+  string student_id = 1;
+  string student_name = 2;
+  AttendanceSummary summary = 3;
+}

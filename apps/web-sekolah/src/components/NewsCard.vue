@@ -1,11 +1,20 @@
 <template>
-  <q-card flat bordered class="news-card" :class="{ 'news-card--featured': isFeatured }" clickable v-ripple role="link"
-    tabindex="0" :aria-label="`Baca berita: ${news.title}`" @click="navigate" @keyup.enter="navigate">
+  <q-card
+    flat
+    bordered
+    class="news-card"
+    :class="{ 'news-card--featured': isFeatured }"
+    clickable
+    v-ripple
+    role="link"
+    tabindex="0"
+    :aria-label="`Baca berita: ${news.title}`"
+    @click="navigate"
+    @keyup.enter="navigate"
+  >
     <q-img :src="news.img" loading="lazy" :ratio="isFeatured ? 16 / 9 : 4 / 3" class="news-img">
       <div v-if="isFeatured" class="absolute-top-left q-ma-sm">
-        <q-badge color="accent" class="text-weight-bold q-px-sm news-badge">
-          🔥 Featured
-        </q-badge>
+        <q-badge color="accent" class="text-weight-bold q-px-sm news-badge"> 🔥 Featured </q-badge>
       </div>
       <div class="absolute-bottom news-overlay" />
     </q-img>
@@ -27,8 +36,16 @@
     </q-card-section>
 
     <q-card-actions class="q-pt-none q-px-md q-pb-md justify-end">
-      <q-btn flat dense no-caps color="primary" label="Baca Selengkapnya" icon-right="arrow_forward"
-        class="text-caption text-weight-bold read-more-btn" :to="news.to" />
+      <q-btn
+        flat
+        dense
+        no-caps
+        color="primary"
+        label="Baca Selengkapnya"
+        icon-right="arrow_forward"
+        class="text-caption text-weight-bold read-more-btn"
+        :to="news.to"
+      />
     </q-card-actions>
   </q-card>
 </template>
@@ -38,7 +55,7 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps({
   news: { type: Object, required: true },
-  isFeatured: { type: Boolean, default: false }
+  isFeatured: { type: Boolean, default: false },
 })
 
 const router = useRouter()
@@ -52,7 +69,8 @@ const navigate = () => router.push(props.news.to)
   height: 100%;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.3s ease;
 }
 
@@ -98,7 +116,9 @@ const navigate = () => router.push(props.news.to)
 
 .read-more-btn {
   opacity: 0.85;
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
 
 .read-more-btn:hover {

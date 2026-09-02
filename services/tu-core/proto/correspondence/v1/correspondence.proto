@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package correspondence.v1;
+
+option go_package = "sekolah-platform/services/tu-core/proto/correspondence/v1;correspondencev1";
+
+import "google/protobuf/timestamp.proto";
+
+service CorrespondenceService {
+  rpc CreateCorrespondence(CreateCorrespondenceRequest) returns (CreateCorrespondenceResponse);
+  rpc UpdateCorrespondence(UpdateCorrespondenceRequest) returns (UpdateCorrespondenceResponse);
+  rpc ArchiveCorrespondence(ArchiveCorrespondenceRequest) returns (ArchiveCorrespondenceResponse);
+  rpc GetCorrespondence(GetCorrespondenceRequest) returns (GetCorrespondenceResponse);
+  rpc ListCorrespondences(ListCorrespondencesRequest) returns (ListCorrespondencesResponse);
+}
+
+message CreateCorrespondenceRequest {
+  string type = 1; // INCOMING, OUTGOING
+  string number = 2;
+  google.protobuf.Timestamp date = 3;
+  string subject = 4;
+  string from = 5;
+  string to = 6;
+  string description = 7;
+  string attachment_url = 8;
+}
+
+message CreateCorrespondenceResponse {
+  Correspondence correspondence = 1;
+}
+
+message UpdateCorrespondenceRequest {
+  string id = 1;
+  string subject = 2;
+  string description = 3;
+  string attachment_url = 4;
+}
+
+message UpdateCorrespondenceResponse {
+  Correspondence correspondence = 1;
+}
+
+message ArchiveCorrespondenceRequest {
+  string id = 1;
+}
+
+message ArchiveCorrespondenceResponse {
+  Correspondence correspondence = 1;
+}
+
+message GetCorrespondenceRequest {
+  string id = 1;
+}
+
+message GetCorrespondenceResponse {
+  Correspondence correspondence = 1;
+}
+
+message ListCorrespondencesRequest {
+  string type = 1;
+  string status = 2;
+  string search = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+
+message ListCorrespondencesResponse {
+  repeated Correspondence correspondences = 1;
+  int32 total = 2;
+}
+
+message Correspondence {
+  string id = 1;
+  string school_id = 2;
+  string academic_period_id = 3;
+  string type = 4;
+  string number = 5;
+  google.protobuf.Timestamp date = 6;
+  string subject = 7;
+  string from = 8;
+  string to = 9;
+  string description = 10;
+  string attachment_url = 11;
+  string status = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}

@@ -1,26 +1,56 @@
 <template>
   <div>
-
     <!-- ===== MODE SELECTOR ===== -->
     <div class="row q-gutter-sm q-mb-md">
-      <q-btn :outline="mode !== 'manual'" :color="mode === 'manual' ? 'primary' : 'grey-5'" icon="keyboard"
-        label="Input Manual" size="sm" class="col" @click="switchMode('manual')" />
-      <q-btn :outline="mode !== 'scan'" :color="mode === 'scan' ? 'primary' : 'grey-5'" icon="qr_code_scanner"
-        label="Scan QR Code" size="sm" class="col" :disable="!hasCamera && !cameraChecked"
-        @click="switchMode('scan')" />
+      <q-btn
+        :outline="mode !== 'manual'"
+        :color="mode === 'manual' ? 'primary' : 'grey-5'"
+        icon="keyboard"
+        label="Input Manual"
+        size="sm"
+        class="col"
+        @click="switchMode('manual')"
+      />
+      <q-btn
+        :outline="mode !== 'scan'"
+        :color="mode === 'scan' ? 'primary' : 'grey-5'"
+        icon="qr_code_scanner"
+        label="Scan QR Code"
+        size="sm"
+        class="col"
+        :disable="!hasCamera && !cameraChecked"
+        @click="switchMode('scan')"
+      />
     </div>
 
     <!-- ===== MODE MANUAL ===== -->
     <div v-if="mode === 'manual'">
-      <q-input v-model="serialInput" label="Serial Kartu Ujian" outlined clearable :placeholder="placeholder"
-        :disable="disable" :error="!!inputError" :error-message="inputError" @update:model-value="onManualInput"
-        @keyup.enter="submitManual">
+      <q-input
+        v-model="serialInput"
+        label="Serial Kartu Ujian"
+        outlined
+        clearable
+        :placeholder="placeholder"
+        :disable="disable"
+        :error="!!inputError"
+        :error-message="inputError"
+        @update:model-value="onManualInput"
+        @keyup.enter="submitManual"
+      >
         <template #prepend>
           <q-icon name="credit_card" color="primary" />
         </template>
         <template #append>
-          <q-btn v-if="serialInput" flat round dense icon="send" color="primary" :loading="loading"
-            @click="submitManual" />
+          <q-btn
+            v-if="serialInput"
+            flat
+            round
+            dense
+            icon="send"
+            color="primary"
+            :loading="loading"
+            @click="submitManual"
+          />
         </template>
       </q-input>
 
@@ -32,7 +62,6 @@
 
     <!-- ===== MODE SCAN ===== -->
     <div v-else-if="mode === 'scan'">
-
       <!-- Error kamera -->
       <q-banner v-if="scanError" class="bg-negative text-white q-mb-md" rounded dense>
         <template #avatar><q-icon name="error" /></template>
@@ -44,9 +73,14 @@
 
       <!-- Area Kamera -->
       <div class="camera-wrapper q-mb-md">
-
         <!-- Video element untuk QrScanner -->
-        <video ref="videoRef" class="camera-video" :class="{ 'camera-active': scanning }" playsinline muted />
+        <video
+          ref="videoRef"
+          class="camera-video"
+          :class="{ 'camera-active': scanning }"
+          playsinline
+          muted
+        />
 
         <!-- Overlay loading sebelum kamera aktif -->
         <div v-if="!scanning && !scanError" class="camera-overlay">
@@ -56,14 +90,25 @@
 
         <!-- Kontrol kamera (tampil saat aktif) -->
         <div v-if="scanning" class="camera-controls">
-
           <!-- Torch -->
-          <q-btn round flat :icon="torchOn ? 'flash_on' : 'flash_off'" :color="torchOn ? 'yellow' : 'white'" size="sm"
-            @click="toggleTorch" />
+          <q-btn
+            round
+            flat
+            :icon="torchOn ? 'flash_on' : 'flash_off'"
+            :color="torchOn ? 'yellow' : 'white'"
+            size="sm"
+            @click="toggleTorch"
+          />
 
           <!-- Switch kamera -->
-          <q-btn round flat icon="flip_camera_android" color="white" size="sm" @click="switchCamera" />
-
+          <q-btn
+            round
+            flat
+            icon="flip_camera_android"
+            color="white"
+            size="sm"
+            @click="switchCamera"
+          />
         </div>
 
         <!-- Panduan scan -->
@@ -73,12 +118,17 @@
             Arahkan QR Code kartu ke dalam kotak
           </div>
         </div>
-
       </div>
 
       <!-- Tombol tutup -->
-      <q-btn outline color="negative" icon="close" label="Tutup Kamera" class="full-width"
-        @click="switchMode('manual')" />
+      <q-btn
+        outline
+        color="negative"
+        icon="close"
+        label="Tutup Kamera"
+        class="full-width"
+        @click="switchMode('manual')"
+      />
     </div>
 
     <!-- ===== HASIL (tampil di kedua mode) ===== -->
@@ -95,7 +145,6 @@
         </q-card-section>
       </q-card>
     </q-slide-transition>
-
   </div>
 </template>
 
@@ -118,7 +167,7 @@ const emit = defineEmits(['update:modelValue', 'submit'])
 // =====================
 // STATE
 // =====================
-const mode = ref('manual')    // 'manual' | 'scan'
+const mode = ref('manual') // 'manual' | 'scan'
 const serialInput = ref(props.modelValue || '')
 const verifiedSerial = ref('')
 const inputError = ref('')
@@ -126,9 +175,15 @@ const cameraChecked = ref(false)
 const videoRef = ref(null)
 
 const {
-  scanning, torchOn, hasCamera, scanError,
-  checkCamera, startScan, stopScan,
-  switchCamera, toggleTorch,
+  scanning,
+  torchOn,
+  hasCamera,
+  scanError,
+  checkCamera,
+  startScan,
+  stopScan,
+  switchCamera,
+  toggleTorch,
 } = useCardScanner()
 
 // =====================

@@ -4,13 +4,17 @@
       <!-- KOTAK UTAMA LOGIN -->
       <q-card flat bordered class="login-card overflow-hidden">
         <div class="login-card__inner">
-
           <!-- PANEL BRANDING -->
           <!-- Mobile: banner horizontal ramping di atas. Desktop (>=1024px): panel vertikal di sisi kiri -->
           <div class="brand-panel bg-primary text-white relative-position">
             <div class="brand-panel__content z-top">
               <!-- <q-avatar size="56px" class="bg-white q-pa-xs shadow-2 brand-panel__logo"> -->
-              <img src="~@/assets/logo-smk.png" alt="Logo Sekolah" onerror="this.style.display='none'" width="90px" />
+              <img
+                src="~@/assets/logo-smk.png"
+                alt="Logo Sekolah"
+                onerror="this.style.display = 'none'"
+                width="90px"
+              />
               <!-- </q-avatar> -->
               <div class="brand-panel__text">
                 <div class="text-weight-bold text-amber brand-panel__title">Portal Admin</div>
@@ -25,36 +29,64 @@
           <!-- PANEL FORMULIR -->
           <div class="form-panel">
             <div class="text-h6 text-weight-bold text-grey-8">Selamat Datang Kembali</div>
-            <div class="text-caption text-grey-6 q-mb-lg">Silakan masuk menggunakan akun resmi Anda.</div>
+            <div class="text-caption text-grey-6 q-mb-lg">
+              Silakan masuk menggunakan akun resmi Anda.
+            </div>
 
             <q-form @submit="handleLogin" class="q-gutter-md">
               <!-- Input Email / NIP -->
-              <q-input outlined v-model="loginForm.identifier" label="Email" placeholder="contoh: budi@sekolah.sch.id"
-                autocomplete="username" lazy-rules :rules="[val => val && val.length > 0 || 'Email wajib diisi']">
+              <q-input
+                outlined
+                v-model="loginForm.identifier"
+                label="Email"
+                placeholder="contoh: budi@sekolah.sch.id"
+                autocomplete="username"
+                lazy-rules
+                :rules="[(val) => (val && val.length > 0) || 'Email wajib diisi']"
+              >
                 <template v-slot:prepend>
                   <q-icon name="email" color="primary" />
                 </template>
               </q-input>
 
               <!-- Input Password dengan Fitur Show/Hide -->
-              <q-input outlined v-model="loginForm.password" :type="isPasswordVisible ? 'text' : 'password'"
-                label="Kata Sandi" autocomplete="current-password" lazy-rules
-                :rules="[val => val && val.length > 0 || 'Kata sandi wajib diisi']">
+              <q-input
+                outlined
+                v-model="loginForm.password"
+                :type="isPasswordVisible ? 'text' : 'password'"
+                label="Kata Sandi"
+                autocomplete="current-password"
+                lazy-rules
+                :rules="[(val) => (val && val.length > 0) || 'Kata sandi wajib diisi']"
+              >
                 <template v-slot:prepend>
                   <q-icon name="lock" color="primary" />
                 </template>
                 <template v-slot:append>
-                  <q-btn flat round dense :icon="isPasswordVisible ? 'visibility_off' : 'visibility'"
-                    :aria-label="isPasswordVisible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
-                    @click="isPasswordVisible = !isPasswordVisible" />
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    :icon="isPasswordVisible ? 'visibility_off' : 'visibility'"
+                    :aria-label="
+                      isPasswordVisible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'
+                    "
+                    @click="isPasswordVisible = !isPasswordVisible"
+                  />
                 </template>
               </q-input>
 
-
               <!-- TOMBOL SUBMIT -->
               <div class="q-pt-sm">
-                <q-btn label="Masuk Ke Dashboard" type="submit" color="primary" no-caps
-                  class="full-width text-weight-bold submit-btn" :loading="isLoading" unelevated />
+                <q-btn
+                  label="Masuk Ke Dashboard"
+                  type="submit"
+                  color="primary"
+                  no-caps
+                  class="full-width text-weight-bold submit-btn"
+                  :loading="isLoading"
+                  unelevated
+                />
               </div>
             </q-form>
 
@@ -64,7 +96,6 @@
               <span class="text-primary text-weight-bold cursor-pointer">Tim IT / Tata Usaha</span>
             </div>
           </div>
-
         </div>
       </q-card>
     </q-page>
@@ -86,9 +117,8 @@ const isPasswordVisible = ref(false)
 const loginForm = ref({
   identifier: '',
   password: '',
-  simulatedRole: 'guru' // Default role uji coba
+  simulatedRole: 'guru', // Default role uji coba
 })
-
 
 // Eksekusi Logika Login
 function handleLogin() {
@@ -108,7 +138,7 @@ function handleLogin() {
       type: 'positive',
       message: `Login Berhasil! Selamat datang kembali, ${localStorage.getItem('user_name')}`,
       position: 'top',
-      timeout: 2000
+      timeout: 2000,
     })
 
     // 3. Alihkan Navigasi ke Ruang Kerja Admin Panel (Fase 2)
@@ -255,7 +285,8 @@ function handleLogin() {
 
 /* Dekorasi Latar Samping Kiri */
 .bg-pattern {
-  background-image: radial-gradient(circle at 20% 30%, #ffffff 1px, transparent 1px),
+  background-image:
+    radial-gradient(circle at 20% 30%, #ffffff 1px, transparent 1px),
     radial-gradient(circle at 75% 70%, #ffffff 1px, transparent 1px);
   background-size: 20px 20px;
   opacity: 0.15;

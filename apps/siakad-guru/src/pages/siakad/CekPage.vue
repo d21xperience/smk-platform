@@ -11,17 +11,30 @@
       </div>
       <div class="text-subtitle2 q-mb-md">Jadwal Hari Ini: {{ today }}</div>
       <q-list bordered separator>
-        <q-item v-for="session in sessions" :key="session.id" clickable @click="openSession(session)">
+        <q-item
+          v-for="session in sessions"
+          :key="session.id"
+          clickable
+          @click="openSession(session)"
+        >
           <q-item-section>
             <q-item-label>{{ session.subject }} - {{ session.className }}</q-item-label>
             <q-item-label caption>{{ session.startTime }} - {{ session.endTime }}</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-badge :color="statusColor(session.status)">{{ statusLabel(session.status) }}</q-badge>
+            <q-badge :color="statusColor(session.status)">{{
+              statusLabel(session.status)
+            }}</q-badge>
           </q-item-section>
         </q-item>
       </q-list>
-      <q-btn v-if="!sessions.length" label="Muat Jadwal" color="primary" @click="loadTodaySessions" class="q-mt-md" />
+      <q-btn
+        v-if="!sessions.length"
+        label="Muat Jadwal"
+        color="primary"
+        @click="loadTodaySessions"
+        class="q-mt-md"
+      />
     </div>
   </q-page>
 </template>
@@ -69,12 +82,18 @@ function openSession(session) {
 
 function statusLabel(status) {
   switch (status) {
-    case 'scheduled': return 'Terjadwal'
-    case 'started': return 'Dimulai'
-    case 'in_progress': return 'Berlangsung'
-    case 'completed': return 'Selesai'
-    case 'locked': return 'Terkunci'
-    default: return status
+    case 'scheduled':
+      return 'Terjadwal'
+    case 'started':
+      return 'Dimulai'
+    case 'in_progress':
+      return 'Berlangsung'
+    case 'completed':
+      return 'Selesai'
+    case 'locked':
+      return 'Terkunci'
+    default:
+      return status
   }
 }
 </script>

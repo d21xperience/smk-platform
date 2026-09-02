@@ -1,0 +1,30 @@
+{
+  "name": "@sdp/context",
+  "version": "0.1.0",
+  "description": "Shared Operational Context capability for School Digital Platform. Provides OperationalContext, School, AcademicYear, Semester models, validation engine, and serialization contract.",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0",
+    "lint": "echo \"No lint config yet\" && exit 0"
+  },
+  "keywords": [
+    "sdp",
+    "school-digital-platform",
+    "operational-context",
+    "academic-year",
+    "semester"
+  ],
+  "license": "UNLICENSED",
+  "private": true
+}

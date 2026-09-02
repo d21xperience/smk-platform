@@ -10,7 +10,8 @@
 
     <div v-else>
       <div class="text-subtitle1 text-grey q-mb-sm">
-        {{ context.operational.value.academicYearName }} | {{ context.operational.value.semesterName }}
+        {{ context.operational.value.academicYearName }} |
+        {{ context.operational.value.semesterName }}
       </div>
 
       <!-- Loading -->
@@ -19,8 +20,16 @@
       </div>
 
       <!-- Tabel Jadwal -->
-      <q-table v-else :rows="groupedSchedule" :columns="columns" row-key="day" flat bordered
-        :rows-per-page-options="[0]" hide-bottom>
+      <q-table
+        v-else
+        :rows="groupedSchedule"
+        :columns="columns"
+        row-key="day"
+        flat
+        bordered
+        :rows-per-page-options="[0]"
+        hide-bottom
+      >
         <template v-slot:header="props">
           <q-tr :props="props">
             <q-th auto-width>Hari</q-th>
@@ -76,15 +85,17 @@ const columns = [
   { name: 'subject', label: 'Mata Pelajaran', align: 'left', field: 'subject' },
   { name: 'class', label: 'Kelas', align: 'left', field: 'class' },
   { name: 'time', label: 'Jam', align: 'left', field: 'time' },
-  { name: 'room', label: 'Ruangan', align: 'left', field: 'room' }
+  { name: 'room', label: 'Ruangan', align: 'left', field: 'room' },
 ]
 
 const groupedSchedule = computed(() => {
   const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-  return days.map(day => ({
-    day,
-    items: teaching.schedule.value.filter(item => item.dayOfWeek === day)
-  })).filter(day => day.items.length > 0)
+  return days
+    .map((day) => ({
+      day,
+      items: teaching.schedule.value.filter((item) => item.dayOfWeek === day),
+    }))
+    .filter((day) => day.items.length > 0)
 })
 
 onMounted(async () => {

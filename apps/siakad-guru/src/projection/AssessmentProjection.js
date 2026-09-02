@@ -1,4 +1,4 @@
-import { DomainEventType } from 'src/events/DomainEventType'
+import { DomainEventType } from '@/events/DomainEventType'
 
 export function assessmentProjection(state, event) {
   switch (event.type) {

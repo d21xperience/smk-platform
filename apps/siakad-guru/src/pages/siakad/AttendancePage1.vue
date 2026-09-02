@@ -4,11 +4,22 @@
     <div class="row items-center justify-between q-mb-md">
       <div class="col">
         <div class="row items-center q-gutter-sm">
-          <q-btn v-if="cameFromSchedule" flat dense round icon="arrow_back" color="grey-7" @click="router.back()" />
+          <q-btn
+            v-if="cameFromSchedule"
+            flat
+            dense
+            round
+            icon="arrow_back"
+            color="grey-7"
+            @click="router.back()"
+          />
           <div>
             <div class="text-h5 text-weight-bold text-grey-9">Absensi Siswa</div>
             <div class="text-caption text-grey-7">
-              Periode: <span class="text-weight-bold text-primary">{{ academicStore.activePeriodCode }}</span>
+              Periode:
+              <span class="text-weight-bold text-primary">{{
+                academicStore.activePeriodCode
+              }}</span>
             </div>
           </div>
         </div>
@@ -18,19 +29,41 @@
     <q-card flat bordered class="q-mb-md">
       <q-card-section class="row q-col-gutter-md">
         <div class="col-12 col-md-6">
-          <q-input v-model="selectedDate" outlined dense label="Tanggal" mask="####-##-##" :disable="loading">
+          <q-input
+            v-model="selectedDate"
+            outlined
+            dense
+            label="Tanggal"
+            mask="####-##-##"
+            :disable="loading"
+          >
             <template v-slot:append>
               <q-icon name="event" class="cursor-pointer">
                 <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-date v-model="selectedDate" mask="YYYY-MM-DD" @update:model-value="onDateChange" />
+                  <q-date
+                    v-model="selectedDate"
+                    mask="YYYY-MM-DD"
+                    @update:model-value="onDateChange"
+                  />
                 </q-popup-proxy>
               </q-icon>
             </template>
           </q-input>
         </div>
         <div class="col-12 col-md-6">
-          <q-select v-model="selectedClass" :options="classOptions" option-label="name" option-value="id" outlined dense
-            label="Pilih Kelas" emit-value map-options :loading="loading" @update:model-value="onClassChange" />
+          <q-select
+            v-model="selectedClass"
+            :options="classOptions"
+            option-label="name"
+            option-value="id"
+            outlined
+            dense
+            label="Pilih Kelas"
+            emit-value
+            map-options
+            :loading="loading"
+            @update:model-value="onClassChange"
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -55,8 +88,15 @@
           <div class="text-subtitle1 text-weight-bold text-grey-9">
             <q-icon name="person_off" class="q-mr-xs" /> Catatan Ketidakhadiran
           </div>
-          <q-btn unelevated no-caps color="primary" icon="add" label="Catat Tidak Hadir" size="md"
-            @click="openAbsenceDialog()" />
+          <q-btn
+            unelevated
+            no-caps
+            color="primary"
+            icon="add"
+            label="Catat Tidak Hadir"
+            size="md"
+            @click="openAbsenceDialog()"
+          />
         </q-card-section>
 
         <q-separator />
@@ -73,9 +113,24 @@
             <q-item-section side>
               <div class="row items-center q-gutter-sm">
                 <q-badge :color="getStatusColor(student.status)" :label="student.status" />
-                <q-btn flat dense round icon="edit" color="grey-7" size="sm" @click="openAbsenceDialog(student)" />
-                <q-btn flat dense round icon="check_circle" color="positive" size="sm"
-                  @click="handleClearAbsence(student.id)">
+                <q-btn
+                  flat
+                  dense
+                  round
+                  icon="edit"
+                  color="grey-7"
+                  size="sm"
+                  @click="openAbsenceDialog(student)"
+                />
+                <q-btn
+                  flat
+                  dense
+                  round
+                  icon="check_circle"
+                  color="positive"
+                  size="sm"
+                  @click="handleClearAbsence(student.id)"
+                >
                   <q-tooltip>Tandai Hadir</q-tooltip>
                 </q-btn>
               </div>
@@ -91,13 +146,20 @@
       </q-card>
 
       <!-- TOMBOL SIMPAN -->
-      <q-btn unelevated color="primary" label="Simpan Absensi" icon="save"
-        class="full-width q-py-sm text-weight-bold shadow-3" :loading="loadingSubmit" @click="handleSubmit" />
+      <q-btn
+        unelevated
+        color="primary"
+        label="Simpan Absensi"
+        icon="save"
+        class="full-width q-py-sm text-weight-bold shadow-3"
+        :loading="loadingSubmit"
+        @click="handleSubmit"
+      />
     </template>
 
     <!-- DIALOG INPUT KETIDAKHADIRAN -->
     <q-dialog v-model="showAbsenceDialog" persistent>
-      <q-card style="min-width: 350px; max-width: 500px;">
+      <q-card style="min-width: 350px; max-width: 500px">
         <q-card-section class="row items-center justify-between">
           <div class="text-h6">{{ isEditing ? 'Edit' : 'Catat' }} Ketidakhadiran</div>
           <q-btn flat dense round icon="close" v-close-popup />
@@ -108,18 +170,39 @@
             emit-value map-options outlined dense label="Pilih atau Ketik Nama Siswa" :disable="isEditing" use-input
             fill-input hide-selected input-debounce="0" @filter="filterFn"
             :rules="[val => !!val || 'Wajib pilih siswa']" /> -->
-          <BaseSelectSearch v-model="formAbsence.studentId" :options="studentList" option-label="name" option-value="id"
-            label="Pilih atau Ketik Nama Siswa" :disable="isEditing" :rules="[val => !!val || 'Wajib pilih siswa']" />
+          <BaseSelectSearch
+            v-model="formAbsence.studentId"
+            :options="studentList"
+            option-label="name"
+            option-value="id"
+            label="Pilih atau Ketik Nama Siswa"
+            :disable="isEditing"
+            :rules="[(val) => !!val || 'Wajib pilih siswa']"
+          />
 
-          <q-btn-toggle v-model="formAbsence.status" no-caps unelevated toggle-color="primary" color="white"
-            text-color="primary" class="" :options="[
+          <q-btn-toggle
+            v-model="formAbsence.status"
+            no-caps
+            unelevated
+            toggle-color="primary"
+            color="white"
+            text-color="primary"
+            class=""
+            :options="[
               { label: 'Sakit (S)', value: 'S' },
               { label: 'Izin (I)', value: 'I' },
-              { label: 'Alpha (A)', value: 'A' }
-            ]" />
+              { label: 'Alpha (A)', value: 'A' },
+            ]"
+          />
 
-          <q-input v-model="formAbsence.keterangan" outlined dense
-            label="Keterangan (Misal: Sakit demam, Izin pernikahan)" type="textarea" rows="2" />
+          <q-input
+            v-model="formAbsence.keterangan"
+            outlined
+            dense
+            label="Keterangan (Misal: Sakit demam, Izin pernikahan)"
+            type="textarea"
+            rows="2"
+          />
         </q-card-section>
 
         <q-card-actions align="right" class="q-pa-md">
@@ -139,15 +222,22 @@ import { useAttendance } from '@/composables/useAttendance'
 import { useAcademicStore } from '@/stores/academicStore'
 import BaseSelectSearch from '@/components/ui/BaseSelectSearch.vue'
 
-
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 const academicStore = useAcademicStore()
 
 const {
-  loading, classOptions, studentList, absentStudents, attendanceSummary,
-  fetchSchedule, fetchStudents, setAbsence, clearAbsence, submitAttendance
+  loading,
+  classOptions,
+  studentList,
+  absentStudents,
+  attendanceSummary,
+  fetchSchedule,
+  fetchStudents,
+  setAbsence,
+  clearAbsence,
+  submitAttendance,
 } = useAttendance()
 
 // --- STATE FILTER ---
@@ -161,7 +251,7 @@ const summaryLabels = {
   hadir: { text: 'Hadir', color: 'positive' },
   sakit: { text: 'Sakit', color: 'warning' },
   izin: { text: 'Izin', color: 'info' },
-  alpha: { text: 'Alpha', color: 'negative' }
+  alpha: { text: 'Alpha', color: 'negative' },
 }
 
 // --- STATE DIALOG ABSENCE ---
@@ -170,7 +260,7 @@ const isEditing = ref(false)
 const formAbsence = ref({
   studentId: null,
   status: 'S',
-  keterangan: ''
+  keterangan: '',
 })
 
 // --- METHODS FILTER ---
@@ -192,7 +282,7 @@ const openAbsenceDialog = (student = null) => {
     formAbsence.value = {
       studentId: student.id,
       status: student.status,
-      keterangan: student.keterangan
+      keterangan: student.keterangan,
     }
   } else {
     // Mode Tambah Baru
@@ -233,11 +323,11 @@ const handleSubmit = async () => {
     class_id: selectedClass.value,
     date: selectedDate.value,
     total_students: studentList.value.length,
-    absences: absentStudents.value.map(s => ({
+    absences: absentStudents.value.map((s) => ({
       student_id: s.id,
       status: s.status,
-      keterangan: s.keterangan
-    }))
+      keterangan: s.keterangan,
+    })),
   }
 
   loadingSubmit.value = true
@@ -258,14 +348,13 @@ onMounted(async () => {
     cameFromSchedule.value = true
     selectedClass.value = route.query.class_id
     if (route.query.class_name) {
-      const exists = classOptions.value.find(c => c.id == route.query.class_id)
-      if (!exists) classOptions.value.push({ id: route.query.class_id, name: route.query.class_name })
+      const exists = classOptions.value.find((c) => c.id == route.query.class_id)
+      if (!exists)
+        classOptions.value.push({ id: route.query.class_id, name: route.query.class_name })
     }
   }
 
   await fetchSchedule(selectedDate.value)
   if (selectedClass.value) await fetchStudents(selectedClass.value, selectedDate.value)
 })
-
-
 </script>

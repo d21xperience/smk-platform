@@ -1,4 +1,4 @@
-// src/reports/StudentAttendanceReport.js
+// @/reports/StudentAttendanceReport.js
 import {
   ReportDefinition,
   ColumnDefinition,
@@ -6,7 +6,7 @@ import {
   SortDefinition,
   AggregateDefinition,
   FooterDefinition,
-} from 'src/models/ReportDefinition'
+} from '@/models/ReportDefinition'
 
 export const studentAttendanceReport = new ReportDefinition({
   id: 'student-attendance',

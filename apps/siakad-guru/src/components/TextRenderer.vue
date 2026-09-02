@@ -12,8 +12,8 @@ const props = defineProps({
   script: {
     type: String,
     default: 'latin',
-    validator: (v) => ['latin', 'arabic', 'sundanese', 'javanese', 'bali', 'batak'].includes(v)
-  }
+    validator: (v) => ['latin', 'arabic', 'sundanese', 'javanese', 'bali', 'batak'].includes(v),
+  },
 })
 
 const fontClass = computed(() => {
@@ -23,17 +23,17 @@ const fontClass = computed(() => {
     sundanese: 'font-sundanese',
     javanese: 'font-javanese',
     bali: 'font-bali',
-    batak: 'font-batak'
+    batak: 'font-batak',
   }
   return map[props.script] || 'font-latin'
 })
 
-const direction = computed(() => props.script === 'arabic' ? 'rtl' : 'ltr')
+const direction = computed(() => (props.script === 'arabic' ? 'rtl' : 'ltr'))
 
 const customStyle = computed(() => ({
   fontFamily: getFontFamily(props.script),
   fontSize: props.script != 'latin' ? '2em' : '1em',
-  lineHeight: props.script === 'arabic' ? '2' : '1.6'
+  lineHeight: props.script === 'arabic' ? '2' : '1.6',
 }))
 
 const getFontFamily = (script) => {
@@ -43,7 +43,7 @@ const getFontFamily = (script) => {
     sundanese: "'Noto Sans Sundanese', sans-serif",
     javanese: "'Noto Sans Javanese', sans-serif",
     bali: "'Noto Sans Balinese', sans-serif",
-    batak: "'Noto Sans Batak', sans-serif"
+    batak: "'Noto Sans Batak', sans-serif",
   }
   return fonts[script] || fonts.latin
 }

@@ -1,52 +1,80 @@
-// src/router/guards.js
-import { useAuthStore } from '@/stores/auth.store'
+// FILE: src/router/guards.js
+// STATUS: MODIFY
+// STATUS IMPLEMENTASI: COMPLETE
 
-async function waitForAuthInit() {
-  const auth = useAuthStore()
-  if (auth.initialized) return
+import { useAuthStore } from '@/stores/authStore.js'
+import { useContextStore } from '@/stores/contextStore.js'
 
-  const MAX_WAIT = 5000 // 5 detik
-  const start = Date.now()
+export function createAuthGuard() {
+  return async (to) => {
+    const authStore = useAuthStore()
+    const contextStore = useContextStore()
 
-  // eslint-disable-next-line no-unused-vars
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      if (auth.initialized) {
-        clearInterval(interval)
-        resolve()
-      } else if (Date.now() - start > MAX_WAIT) {
-        clearInterval(interval)
-        // Force initialized agar tidak menggantung
-        auth.initialized = true
-        resolve()
+    if (!authStore.initialized) {
+      await authStore.initialize()
+    }
+
+    if (authStore.isExpired) {
+      if (to.name !== 'login') {
+        return { name: 'login', query: { expired: 'true' } }
       }
-    }, 100)
-  })
-}
 
-// authInitGuard: tunggu inisialisasi, lalu kembalikan true
-export async function authInitGuard() {
-  await waitForAuthInit()
-  return true
-}
+      return
+    }
 
-// authGuard: cek autentikasi, kembalikan path redirect jika belum login
-export function authGuard() {
-  const auth = useAuthStore()
-  if (!auth.isAuthenticated) {
-    return '/auth/login'
+    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth !== false)
+    const publicPages = ['login', 'ErrorServer']
+    const isPublicPage = publicPages.includes(to.name)
+
+    if (requiresAuth && !authStore.isAuthenticated) {
+      return { name: 'login' }
+    }
+
+    if (to.name === 'login' && authStore.isAuthenticated) {
+      return { name: 'dashboard' }
+    }
+
+    if (to.name === 'context-selection' && authStore.isAuthenticated) {
+      return { name: 'dashboard' }
+    }
+
+    if (authStore.isAuthenticated && to.meta.requiredPermission) {
+      const userPermissions = authStore.currentUser?.permissions || []
+      const userRole = authStore.currentUser?.role
+
+      const isAdmin = userRole === 'admin' || userRole === 'superadmin'
+      const hasPermission = userPermissions.includes(to.meta.requiredPermission)
+
+      if (!isAdmin && !hasPermission) {
+        return { name: 'unauthorized' }
+      }
+    }
+
+    if (authStore.isAuthenticated && !isPublicPage) {
+      if (!contextStore.isContextReady) {
+        try {
+          await contextStore.ensureCurrentContext(authStore.currentUser)
+        } catch (err) {
+          return {
+            name: 'ErrorServer',
+            query: {
+              reason: 'context',
+              message: err.message,
+            },
+          }
+        }
+      }
+
+      if (!contextStore.isContextReady) {
+        return {
+          name: 'ErrorServer',
+          query: {
+            reason: 'context-empty',
+          },
+        }
+      }
+    }
+
+    return
   }
-  return true
-}
-
-export function guestGuard(to) {
-  const auth = useAuthStore()
-  // Jika user sudah login tapi nekat buka halaman tamu (seperti Login)
-  if (auth.isAuthenticated) {
-    // Jika login pada aplikasi siakad
-    if (to.path === '/auth/siakad') return { path: '/siakad/dashboard' } // 🚀 Alihkan ke halaman utama internal
-    // tambahkan yang lainnya di bawah
-  }
-
-  return true // Jika belum login, silakan akses halaman login
 }

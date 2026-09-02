@@ -1,7 +1,6 @@
 <template>
   <section class="q-py-xl bg-grey-2">
     <div class="container q-px-md max-width-center">
-
       <!-- HEADER FITUR -->
       <div class="text-center q-mb-xl">
         <div class="text-h5 text-sm-h4 text-weight-bold text-primary">
@@ -15,7 +14,11 @@
       <div class="row q-col-gutter-lg justify-center">
         <!-- 1. PANEL KONTROL PILIHAN (KIRI: 5/12 DESKTOP) -->
         <div class="col-12 col-md-5">
-          <q-card flat bordered class="bg-white rounded-borders shadow-1 full-height q-pa-md q-pa-sm-lg">
+          <q-card
+            flat
+            bordered
+            class="bg-white rounded-borders shadow-1 full-height q-pa-md q-pa-sm-lg"
+          >
             <div class="text-subtitle1 text-weight-bold text-primary q-mb-md row items-center">
               <q-icon name="tune" class="q-mr-sm" /> Sesuaikan Pilihan Anda
             </div>
@@ -23,20 +26,40 @@
             <q-form class="q-gutter-md">
               <!-- PILIHAN JURUSAN -->
               <div>
-                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs">Pilih Kompetensi Keahlian</q-item-label>
-                <q-select outlined dense v-model="selectedJurusan" :options="jurusanOptions" emit-value map-options />
+                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs"
+                  >Pilih Kompetensi Keahlian</q-item-label
+                >
+                <q-select
+                  outlined
+                  dense
+                  v-model="selectedJurusan"
+                  :options="jurusanOptions"
+                  emit-value
+                  map-options
+                />
               </div>
 
               <!-- PILIHAN GELOMBANG PPDB (TOGGLE / BUTTON TOGGLE) -->
               <div>
-                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs">Gelombang Pendaftaran</q-item-label>
+                <q-item-label class="text-weight-bold text-grey-8 q-mb-xs"
+                  >Gelombang Pendaftaran</q-item-label
+                >
                 <div class="row">
-                  <q-btn-toggle v-model="selectedGelombang" toggle-color="primary" color="white" text-color="primary"
-                    no-caps unelevated bordered class="full-width" :options="[
+                  <q-btn-toggle
+                    v-model="selectedGelombang"
+                    toggle-color="primary"
+                    color="white"
+                    text-color="primary"
+                    no-caps
+                    unelevated
+                    bordered
+                    class="full-width"
+                    :options="[
                       { label: 'Gel. 1 (Diskon 20%)', value: 1 },
                       { label: 'Gel. 2 (Diskon 10%)', value: 2 },
-                      { label: 'Gel. 3 (Normal)', value: 3 }
-                    ]" />
+                      { label: 'Gel. 3 (Normal)', value: 3 },
+                    ]"
+                  />
                 </div>
                 <div class="text-caption text-amber-9 text-weight-medium q-mt-xs row items-center">
                   <q-icon name="info" size="xs" class="q-mr-xs" />
@@ -48,15 +71,25 @@
 
               <!-- LAYANAN TAMBAHAN (QTOGGLE) -->
               <div>
-                <q-item-label class="text-weight-bold text-grey-8 q-mb-sm">Layanan Tambahan Luar Akademik</q-item-label>
+                <q-item-label class="text-weight-bold text-grey-8 q-mb-sm"
+                  >Layanan Tambahan Luar Akademik</q-item-label
+                >
 
                 <!-- Toggle Seragam & Atribut -->
-                <q-toggle v-model="includeSeragam" label="Paket Seragam Lengkap & Atribut Olahraga" color="primary"
-                  class="full-width q-py-xs" />
+                <q-toggle
+                  v-model="includeSeragam"
+                  label="Paket Seragam Lengkap & Atribut Olahraga"
+                  color="primary"
+                  class="full-width q-py-xs"
+                />
 
                 <!-- Toggle Asrama / Boarding -->
-                <q-toggle v-model="includeAsrama" label="Fasilitas Boarding / Asrama Sekolah (Termasuk Makan)"
-                  color="primary" class="full-width q-py-xs" />
+                <q-toggle
+                  v-model="includeAsrama"
+                  label="Fasilitas Boarding / Asrama Sekolah (Termasuk Makan)"
+                  color="primary"
+                  class="full-width q-py-xs"
+                />
               </div>
 
               <q-separator class="q-my-md" />
@@ -67,19 +100,31 @@
                   <span>Simulasi Cicilan Uang Gedung</span>
                   <span class="text-primary">{{ tenorCicilan }} Kali Bayar</span>
                 </div>
-                <q-slider v-model="tenorCicilan" :min="1" :max="4" :step="1" markers snap label color="primary" />
-                <div class="text-caption text-grey-6">Uang gedung dapat dicicil maksimal 4x selama semester 1 berjalan.
+                <q-slider
+                  v-model="tenorCicilan"
+                  :min="1"
+                  :max="4"
+                  :step="1"
+                  markers
+                  snap
+                  label
+                  color="primary"
+                />
+                <div class="text-caption text-grey-6">
+                  Uang gedung dapat dicicil maksimal 4x selama semester 1 berjalan.
                 </div>
               </div>
-
             </q-form>
           </q-card>
         </div>
 
         <!-- 2. PANEL RINCIAN NOTA TOTAL (KANAN: 5/12 DESKTOP) -->
         <div class="col-12 col-md-5">
-          <q-card flat bordered
-            class="bg-dark text-white rounded-borders shadow-3 full-height flex flex-column justify-between">
+          <q-card
+            flat
+            bordered
+            class="bg-dark text-white rounded-borders shadow-3 full-height flex flex-column justify-between"
+          >
             <q-card-section class="q-pa-lg">
               <div class="text-subtitle1 text-weight-bold text-amber row items-center q-mb-md">
                 <q-icon name="receipt_long" class="q-mr-sm" /> Estimasi Rincian Pembayaran
@@ -94,7 +139,9 @@
 
                 <q-item dense class="q-px-none justify-between">
                   <div>Uang Gedung & Matrikulasi (Nett)</div>
-                  <div class="text-weight-bold text-white">Rp {{ formatRupiah(hitungUangGedung) }}</div>
+                  <div class="text-weight-bold text-white">
+                    Rp {{ formatRupiah(hitungUangGedung) }}
+                  </div>
                 </q-item>
 
                 <q-item dense class="q-px-none justify-between" v-if="includeSeragam">
@@ -104,7 +151,9 @@
 
                 <q-item dense class="q-px-none justify-between">
                   <div>SPP Bulanan Akademik</div>
-                  <div class="text-weight-bold text-white">Rp {{ formatRupiah(hitungSppBulanan) }} / bulan</div>
+                  <div class="text-weight-bold text-white">
+                    Rp {{ formatRupiah(hitungSppBulanan) }} / bulan
+                  </div>
                 </q-item>
               </q-list>
 
@@ -117,11 +166,15 @@
                 </div>
                 <div class="row justify-between text-body2">
                   <span>Pembayaran Pertama (Uang Muka + Seragam):</span>
-                  <span class="text-weight-bold text-white">Rp {{ formatRupiah(hitungPembayaranPertama) }}</span>
+                  <span class="text-weight-bold text-white"
+                    >Rp {{ formatRupiah(hitungPembayaranPertama) }}</span
+                  >
                 </div>
                 <div class="row justify-between text-body2 q-mt-xs" v-if="tenorCicilan > 1">
                   <span>Sisa Cicilan Uang Gedung ({{ tenorCicilan - 1 }}x):</span>
-                  <span class="text-weight-bold text-amber">Rp {{ formatRupiah(hitungSisaCicilan) }} / cicilan</span>
+                  <span class="text-weight-bold text-amber"
+                    >Rp {{ formatRupiah(hitungSisaCicilan) }} / cicilan</span
+                  >
                 </div>
               </div>
             </q-card-section>
@@ -135,14 +188,19 @@
                     Rp {{ formatRupiah(hitungTotalSeluruhnya) }}
                   </div>
                 </div>
-                <q-btn unelevated color="amber" text-color="black" label="Daftar Sekarang" icon="assignment"
-                  class="text-weight-bold" />
+                <q-btn
+                  unelevated
+                  color="amber"
+                  text-color="black"
+                  label="Daftar Sekarang"
+                  icon="assignment"
+                  class="text-weight-bold"
+                />
               </div>
             </q-card-section>
           </q-card>
         </div>
       </div>
-
     </div>
   </section>
 </template>
@@ -159,7 +217,7 @@ const tenorCicilan = ref(1)
 // Opsi Pilihan Dropdown Jurusan
 const jurusanOptions = [
   { label: 'Teknik & Bisnis Sepeda Motor (TBSM)', value: 'tbsm' },
-  { label: 'Teknik Komputer & Jaringan (TKJ)', value: 'tkj' }
+  { label: 'Teknik Komputer & Jaringan (TKJ)', value: 'tkj' },
 ]
 
 // LOGIKA MATEMATIS KALKULASI BIAYA
@@ -168,8 +226,8 @@ const hitungUangGedung = computed(() => {
   let baseUangGedung = selectedJurusan.value === 'tbsm' ? 5000000 : 4500000
 
   // Potongan Berdasarkan Gelombang
-  if (selectedGelombang.value === 1) return baseUangGedung * 0.8  // Diskon 20%
-  if (selectedGelombang.value === 2) return baseUangGedung * 0.9  // Diskon 10%
+  if (selectedGelombang.value === 1) return baseUangGedung * 0.8 // Diskon 20%
+  if (selectedGelombang.value === 2) return baseUangGedung * 0.9 // Diskon 10%
   return baseUangGedung
 })
 
@@ -200,7 +258,9 @@ const hitungSisaCicilan = computed(() => {
 
 // Fungsi Helper Format Angka Menjadi Rupiah Tanpa Plugin Luar
 function formatRupiah(angka) {
-  return Math.round(angka).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+  return Math.round(angka)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 </script>
 

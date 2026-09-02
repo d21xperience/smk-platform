@@ -13,7 +13,12 @@
           Portal Mandiri Siswa SMK
         </q-toolbar-title>
 
-        <q-badge color="white" text-color="teal-9" label="Calon Siswa Baru" class="q-pa-sm text-weight-bold" />
+        <q-badge
+          color="white"
+          text-color="teal-9"
+          label="Calon Siswa Baru"
+          class="q-pa-sm text-weight-bold"
+        />
       </q-toolbar>
     </q-header>
 
@@ -25,7 +30,7 @@
           <div>
             <q-avatar size="50px" color="teal-8" text-color="white" icon="person" class="q-mb-xs" />
             <div class="text-weight-bold text-subtitle2">Portal Calon Siswa</div>
-            <div class="text-grey-7" style="font-size: 11px;">TA 2026/2027</div>
+            <div class="text-grey-7" style="font-size: 11px">TA 2026/2027</div>
           </div>
         </div>
 
@@ -33,34 +38,62 @@
 
         <!-- Daftar Navigasi Menu Phase 1 -->
         <q-list padding class="menu-list">
-          <q-item-label header class="text-weight-bold text-uppercase text-grey-6" style="font-size: 10px;">
+          <q-item-label
+            header
+            class="text-weight-bold text-uppercase text-grey-6"
+            style="font-size: 10px"
+          >
             Alur Pendaftaran PPDB
           </q-item-label>
 
           <!-- 1. Dashboard -->
-          <q-item clickable v-ripple :to="{ name: 'siswa-dash-ppdb' }" exact
-            active-class="bg-teal-1 text-teal text-weight-bold" class="text-grey-8">
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'siswa-dash-ppdb' }"
+            exact
+            active-class="bg-teal-1 text-teal text-weight-bold"
+            class="text-grey-8"
+          >
             <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
             <q-item-section>Dashboard PPDB</q-item-section>
           </q-item>
 
           <!-- 2. Isi Biodata -->
-          <q-item clickable v-ripple :to="{ name: 'siswa-biodata' }" exact
-            active-class="bg-teal-1 text-teal text-weight-bold" class="text-grey-8">
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'siswa-biodata' }"
+            exact
+            active-class="bg-teal-1 text-teal text-weight-bold"
+            class="text-grey-8"
+          >
             <q-item-section avatar><q-icon name="assignment" /></q-item-section>
             <q-item-section>Isi Biodata Lengkap</q-item-section>
           </q-item>
 
           <!-- 3. Upload Dokumen -->
-          <q-item clickable v-ripple :to="{ name: 'siswa-dokumen' }" exact
-            active-class="bg-teal-1 text-teal text-weight-bold" class="text-grey-8">
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'siswa-dokumen' }"
+            exact
+            active-class="bg-teal-1 text-teal text-weight-bold"
+            class="text-grey-8"
+          >
             <q-item-section avatar><q-icon name="cloud_upload" /></q-item-section>
             <q-item-section>Upload Berkas Digital</q-item-section>
           </q-item>
 
           <!-- 4. Riwayat Keuangan -->
-          <q-item clickable v-ripple :to="{ name: 'siswa-pembayaran' }" exact
-            active-class="bg-teal-1 text-teal text-weight-bold" class="text-grey-8">
+          <q-item
+            clickable
+            v-ripple
+            :to="{ name: 'siswa-pembayaran' }"
+            exact
+            active-class="bg-teal-1 text-teal text-weight-bold"
+            class="text-grey-8"
+          >
             <q-item-section avatar><q-icon name="payments" /></q-item-section>
             <q-item-section>Biaya Pendaftaran</q-item-section>
           </q-item>
@@ -69,7 +102,9 @@
 
           <!-- Tombol Logout Keluar Sistem -->
           <q-item clickable v-ripple to="/logout-session" class="text-red-9 bg-red-1">
-            <q-item-section avatar><q-icon name="power_settings_new" color="red-9" /></q-item-section>
+            <q-item-section avatar
+              ><q-icon name="power_settings_new" color="red-9"
+            /></q-item-section>
             <q-item-section class="text-weight-medium">Keluar Aplikasi</q-item-section>
           </q-item>
         </q-list>
@@ -84,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 const leftDrawerOpen = ref(true)
 const toggleLeftDrawer = () => {

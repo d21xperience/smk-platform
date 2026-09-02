@@ -1,20 +1,30 @@
-// src/composables/useReporting.js
 import { computed } from 'vue'
-import { useReportingStore } from 'src/stores/reporting.store'
+import { useReportingStore } from '../stores/reportingStore.js'
+import { useContextStore } from '../stores/contextStore.js'
 
 export function useReporting() {
-  const store = useReportingStore()
+  const reportingStore = useReportingStore()
+  const contextStore = useContextStore()
+
+  const currentContext = computed(() => contextStore.currentContext)
+  const dashboard = computed(() => reportingStore.dashboard)
+  const isLoading = computed(() => reportingStore.loading)
+  const error = computed(() => reportingStore.error)
+
+  const loadDashboard = async () => {
+    if (!currentContext.value) return
+    await reportingStore.loadDashboard({
+      schoolId: currentContext.value.schoolId,
+      academicYearId: currentContext.value.academicYearId,
+      semesterId: currentContext.value.semesterId,
+      teacherId: currentContext.value.userId,
+    })
+  }
 
   return {
-    reportData: computed(() => store.reportData),
-    reportColumns: computed(() => store.reportColumns),
-    reportMetadata: computed(() => store.reportMetadata),
-    loading: computed(() => store.loading),
-    error: computed(() => store.error),
-    filterValues: computed(() => store.filterValues),
-
-    loadReport: store.loadReport,
-    applyFilters: store.applyFilters,
-    exportReport: store.exportReport,
+    dashboard,
+    isLoading,
+    error,
+    loadDashboard,
   }
 }

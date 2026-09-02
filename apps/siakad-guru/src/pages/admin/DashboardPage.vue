@@ -69,7 +69,7 @@
             <div class="text-h6">Tren Jumlah Ujian (per bulan)</div>
           </q-card-section>
           <q-card-section>
-            <div ref="chartTren" style="height: 300px; width: 100%;"></div>
+            <div ref="chartTren" style="height: 300px; width: 100%"></div>
           </q-card-section>
         </q-card>
       </div>
@@ -81,7 +81,7 @@
             <div class="text-h6">Distribusi Nilai Ujian</div>
           </q-card-section>
           <q-card-section>
-            <div ref="chartDistribusi" style="height: 300px; width: 100%;"></div>
+            <div ref="chartDistribusi" style="height: 300px; width: 100%"></div>
           </q-card-section>
         </q-card>
       </div>
@@ -95,11 +95,21 @@
             <div class="text-h6">Ujian Terbaru</div>
           </q-card-section>
           <q-card-section>
-            <q-table :rows="ujianTerbaru" :columns="columnsUjian" row-key="id" :pagination="{ rowsPerPage: 5 }" dense
-              flat bordered>
+            <q-table
+              :rows="ujianTerbaru"
+              :columns="columnsUjian"
+              row-key="id"
+              :pagination="{ rowsPerPage: 5 }"
+              dense
+              flat
+              bordered
+            >
               <template v-slot:body-cell-status="props">
                 <q-td :props="props">
-                  <q-badge :color="props.row.status === 'aktif' ? 'positive' : 'grey'" :label="props.row.status" />
+                  <q-badge
+                    :color="props.row.status === 'aktif' ? 'positive' : 'grey'"
+                    :label="props.row.status"
+                  />
                 </q-td>
               </template>
             </q-table>
@@ -121,16 +131,51 @@ const stats = ref({
   admin: 5,
   ujianAktif: 12,
   totalSoal: 3420,
-  rataKelulusan: 78.5
+  rataKelulusan: 78.5,
 })
 
 // Data ujian terbaru (contoh)
 const ujianTerbaru = ref([
-  { id: 1, nama: 'UTS Matematika', kelas: '12 IPA 1', tanggal: '2025-05-10', peserta: 32, status: 'aktif' },
-  { id: 2, nama: 'UAS Bahasa Inggris', kelas: '11 IPS 2', tanggal: '2025-05-09', peserta: 28, status: 'aktif' },
-  { id: 3, nama: 'Remidi Fisika', kelas: '12 IPA 2', tanggal: '2025-05-07', peserta: 15, status: 'selesai' },
-  { id: 4, nama: 'Try Out UN', kelas: '12 IPA/IPS', tanggal: '2025-05-01', peserta: 210, status: 'selesai' },
-  { id: 5, nama: 'PTS Kimia', kelas: '11 IPA 1', tanggal: '2025-04-28', peserta: 30, status: 'selesai' },
+  {
+    id: 1,
+    nama: 'UTS Matematika',
+    kelas: '12 IPA 1',
+    tanggal: '2025-05-10',
+    peserta: 32,
+    status: 'aktif',
+  },
+  {
+    id: 2,
+    nama: 'UAS Bahasa Inggris',
+    kelas: '11 IPS 2',
+    tanggal: '2025-05-09',
+    peserta: 28,
+    status: 'aktif',
+  },
+  {
+    id: 3,
+    nama: 'Remidi Fisika',
+    kelas: '12 IPA 2',
+    tanggal: '2025-05-07',
+    peserta: 15,
+    status: 'selesai',
+  },
+  {
+    id: 4,
+    nama: 'Try Out UN',
+    kelas: '12 IPA/IPS',
+    tanggal: '2025-05-01',
+    peserta: 210,
+    status: 'selesai',
+  },
+  {
+    id: 5,
+    nama: 'PTS Kimia',
+    kelas: '11 IPA 1',
+    tanggal: '2025-04-28',
+    peserta: 30,
+    status: 'selesai',
+  },
 ])
 
 const columnsUjian = [
@@ -150,17 +195,22 @@ onMounted(() => {
   const trenChart = echarts.init(chartTren.value)
   trenChart.setOption({
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] },
+    xAxis: {
+      type: 'category',
+      data: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+    },
     yAxis: { type: 'value', name: 'Jumlah Ujian' },
-    series: [{
-      data: [5, 7, 9, 12, 15, 18, 20, 22, 19, 16, 14, 10],
-      type: 'line',
-      smooth: true,
-      lineStyle: { color: '#1976D2', width: 3 },
-      areaStyle: { opacity: 0.2, color: '#1976D2' },
-      symbol: 'circle',
-      symbolSize: 8
-    }]
+    series: [
+      {
+        data: [5, 7, 9, 12, 15, 18, 20, 22, 19, 16, 14, 10],
+        type: 'line',
+        smooth: true,
+        lineStyle: { color: '#1976D2', width: 3 },
+        areaStyle: { opacity: 0.2, color: '#1976D2' },
+        symbol: 'circle',
+        symbolSize: 8,
+      },
+    ],
   })
 
   // Chart Distribusi Nilai (pie chart)
@@ -168,20 +218,22 @@ onMounted(() => {
   distribusiChart.setOption({
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
-    series: [{
-      name: 'Distribusi Nilai',
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 15, name: 'A (90-100)' },
-        { value: 25, name: 'B (75-89)' },
-        { value: 30, name: 'C (60-74)' },
-        { value: 20, name: 'D (50-59)' },
-        { value: 10, name: 'E (<50)' }
-      ],
-      emphasis: { scale: true },
-      label: { show: true, formatter: '{b}: {d}%' }
-    }]
+    series: [
+      {
+        name: 'Distribusi Nilai',
+        type: 'pie',
+        radius: '50%',
+        data: [
+          { value: 15, name: 'A (90-100)' },
+          { value: 25, name: 'B (75-89)' },
+          { value: 30, name: 'C (60-74)' },
+          { value: 20, name: 'D (50-59)' },
+          { value: 10, name: 'E (<50)' },
+        ],
+        emphasis: { scale: true },
+        label: { show: true, formatter: '{b}: {d}%' },
+      },
+    ],
   })
 
   // Responsif saat window resize
@@ -194,6 +246,6 @@ onMounted(() => {
 
 <style scoped>
 .bg-accent {
-  background: #9C27B0;
+  background: #9c27b0;
 }
 </style>

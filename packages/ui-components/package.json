@@ -1,31 +1,29 @@
 {
-  "name": "@smk-platform/ui-components",
-  "version": "1.0.0",
-  "description": "Shared UI components for SMK Platform (FAS v1.0)",
-  "author": "SMK Platform Team",
-  "license": "MIT",
-  "private": true,
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "sideEffects": [
-    "*.css",
-    "*.scss"
+  "version": "0.1.0",
+  "description": "Shared Operational Context capability for School Digital Platform. Provides OperationalContext, School, AcademicYear, Semester models, validation engine, and serialization contract.",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src"
   ],
   "scripts": {
-    "lint": "eslint --ext .js,.vue ./src",
-    "format": "prettier --write \"src/**/*.{js,vue,scss,html,md,json}\"",
-    "clean": "rm -rf dist node_modules"
+    "test": "echo \"No tests yet\" && exit 0",
+    "lint": "echo \"No lint config yet\" && exit 0"
   },
-  "peerDependencies": {
-    "pinia": "^2.1.0",
-    "quasar": "^2.14.0",
-    "vue": "^3.4.0"
-  },
-  "devDependencies": {
-    "eslint": "^8.56.0",
-    "eslint-plugin-vue": "^9.20.0",
-    "prettier": "^3.2.0",
-    "quasar": "^2.14.0",
-    "vue": "^3.4.0"
-  }
+  "keywords": [
+    "sdp",
+    "school-digital-platform",
+    "operational-context",
+    "academic-year",
+    "semester"
+  ],
+  "license": "UNLICENSED",
+  "private": true
 }
