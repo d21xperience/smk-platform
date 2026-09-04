@@ -3,6 +3,8 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/authStore'
+import { useContextStore } from '@/stores/contextStore' // <-- Import context store
+
 import {
   ApplicationError,
   NotFoundError,
@@ -14,7 +16,7 @@ import {
   TimeoutError,
 } from '../domain/errors/index.js'
 const api = axios.create({
-  baseURL: import.meta.env.QCLI_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.QCLI_API_BASE_URL || '/api/v1',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -27,14 +29,40 @@ export default boot(async ({ app }) => {
   api.interceptors.request.use(
     (config) => {
       const auth = useAuthStore()
+      const contextStore = useContextStore()
+
       if (auth.token) {
         config.headers.Authorization = `Bearer ${auth.token}`
       }
+      // 2. Inject Operational Context Headers (WAJIB untuk TU-Core Backend)
+      const ctx = contextStore.current
+
+      // Fallback untuk debugging jika context belum di-set (misal belum login)
+      const finalCtx = ctx || {
+        schoolId: 'school-debug-001',
+        academicYear: '2024/2025',
+        semester: 1,
+        userId: 'user-debug-001',
+        userRole: 'admin',
+      }
+
+      if (finalCtx) {
+        config.headers['x-school-id'] = finalCtx.schoolId
+        config.headers['x-academic-year'] = finalCtx.academicYear
+        config.headers['x-semester'] = String(finalCtx.semester)
+        config.headers['x-user-id'] = finalCtx.userId || 'system'
+        config.headers['x-user-role'] = finalCtx.userRole || 'admin'
+
+        console.log('[Axios Interceptor] Injected context headers:', {
+          'x-school-id': config.headers['x-school-id'],
+          'x-user-id': config.headers['x-user-id'],
+        })
+      }
+
       return config
     },
     (error) => Promise.reject(error),
   )
-
   // Response interceptor: tangani 401 Unauthorized
   api.interceptors.response.use(
     (response) => response,

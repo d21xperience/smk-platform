@@ -128,17 +128,51 @@ export const studentRealAdapter = {
 
   async getStudents(context, filters = {}) {
     try {
-      console.log('getStudents', context, filters)
-      const params = { schoolId: context.schoolId, periodId: context.periodId, ...filters }
+      console.log('[StudentRealAdapter] getStudents called with:', { context, filters })
+
+      // Pastikan kita mengirim snake_case sesuai ekspektasi backend Go
+      const params = {
+        school_id: context.schoolId,
+        period_id: context.periodId,
+      }
+
+      // Hanya tambahkan filter jika nilainya ada (hindari 'search=' yang kosong)
+      if (filters.status) {
+        params.status = filters.status
+      }
+      if (filters.search && filters.search.trim() !== '') {
+        params.search = filters.search.trim()
+      }
+      if (filters.page) {
+        params.page = filters.page
+      }
+      if (filters.limit) {
+        params.limit = filters.limit
+      }
+
+      console.log('[StudentRealAdapter] Sending params to backend:', params)
+
       const response = await api.get('/students', { params })
 
-      // Map items array jika backend mengembalikan { items: [...], total: ... }
-      const mappedData = response.data.items
-        ? { ...response.data, items: response.data.items.map(mapBackendToStudent) }
-        : response.data
+      const responseData = response.data || response
+      const items = Array.isArray(responseData)
+        ? responseData
+        : responseData.data || responseData.items || []
+      const total = responseData.meta?.total || responseData.total || items.length
+      const page = responseData.meta?.page || filters.page || 1
+      const limit = responseData.meta?.limit || filters.limit || 20
 
-      return handleSuccess(mappedData)
+      console.log('[StudentRealAdapter] getStudents success:', { items: items.length, total })
+
+      return handleSuccess({
+        items: items.map(mapBackendToStudent),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      })
     } catch (error) {
+      console.error('[StudentRealAdapter] getStudents error:', error)
       return handleApiError(error)
     }
   },
