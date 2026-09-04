@@ -1,52 +1,36 @@
-// src/router/guards.js
 import { useAuthStore } from '@/stores/authStore'
-
-async function waitForAuthInit() {
-  const auth = useAuthStore()
-  if (auth.initialized) return
-
-  const MAX_WAIT = 5000 // 5 detik
-  const start = Date.now()
-
-  // eslint-disable-next-line no-unused-vars
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      if (auth.initialized) {
-        clearInterval(interval)
-        resolve()
-      } else if (Date.now() - start > MAX_WAIT) {
-        clearInterval(interval)
-        // Force initialized agar tidak menggantung
-        auth.initialized = true
-        resolve()
-      }
-    }, 100)
-  })
-}
-
-// authInitGuard: tunggu inisialisasi, lalu kembalikan true
-export async function authInitGuard() {
-  await waitForAuthInit()
-  return true
-}
-
-// authGuard: cek autentikasi, kembalikan path redirect jika belum login
-export function authGuard() {
-  const auth = useAuthStore()
-  if (!auth.isAuthenticated) {
-    return '/auth/login'
+import { useContextStore } from '@/stores/contextStore'
+/**
+Guest Guard - Redirect authenticated users away from guest-only pages
+(e.g., login, register pages)
+*/
+export function guestGuard(to, from, next) {
+  const authStore = useAuthStore()
+  if (authStore.isAuthenticated) {
+    // User sudah login, redirect ke dashboard
+    return next({ name: 'landing-home' })
   }
-  return true
+  next()
 }
-
-export function guestGuard(to) {
-  const auth = useAuthStore()
-  // Jika user sudah login tapi nekat buka halaman tamu (seperti Login)
-  if (auth.isAuthenticated) {
-    // Jika login pada aplikasi siakad
-    if (to.path === '/auth/siakad') return { path: '/siakad/dashboard' } // ðŸš€ Alihkan ke halaman utama internal
-    // tambahkan yang lainnya di bawah
+/**
+Auth Guard - Require authentication for protected routes
+*/
+export function authGuard(to, from, next) {
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    // User belum login, redirect ke login page
+    return next({ name: 'auth-login' })
   }
-
-  return true // Jika belum login, silakan akses halaman login
+  next()
+}
+/**
+Context Guard - Require operational context to be loaded
+*/
+export function contextGuard(to, from, next) {
+  const contextStore = useContextStore()
+  if (!contextStore.currentContext) {
+    // Context belum dimuat, redirect ke select context page
+    return next({ name: 'select-context' })
+  }
+  next()
 }

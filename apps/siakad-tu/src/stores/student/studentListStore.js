@@ -1,171 +1,96 @@
 // apps/siakad-tu/src/stores/student/studentListStore.js
 
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { useStudentQueryService } from '@/services/student/serviceFactory'
+import { useContextStore } from '@/stores/contextStore'
 
-/**
- * studentListStore — Mengelola state daftar siswa.
- *
- * STATE ONLY. Tidak ada logika bisnis.
- *
- * Tanggung jawab:
- * - Menyimpan daftar siswa yang sedang ditampilkan
- * - Menyimpan pagination state
- * - Menyimpan filter state
- * - Menyimpan loading & error state
- *
- * TIDAK BOLEH:
- * - Validasi data
- * - Menghitung aturan bisnis
- * - Memanggil Engine langsung
- */
-export const useStudentListStore = defineStore('studentList', {
-  state: () => ({
-    /** @type {Array<Object>} Daftar siswa */
-    items: [],
-    /** @type {number} Total siswa (untuk pagination) */
-    total: 0,
-    /** @type {number} Halaman saat ini */
-    page: 1,
-    /** @type {number} Jumlah item per halaman */
-    limit: 20,
-    /** @type {number} Total halaman */
-    totalPages: 0,
-    /** @type {Object} Filter aktif */
-    filters: {
-      status: '',
-      classId: '',
-      search: '',
-    },
-    /** @type {boolean} Loading state */
-    loading: false,
-    /** @type {Object|null} Error state */
-    error: null,
-    /** @type {boolean} Apakah data sudah pernah di-fetch */
-    initialized: false,
-  }),
+export const useStudentListStore = defineStore('studentList', () => {
+  // === STATE ===
+  const students = ref([])
+  const isLoading = ref(false)
+  const error = ref(null)
+  const pagination = ref({ page: 1, limit: 20, total: 0, totalPages: 0 })
+  const filters = ref({ status: null, search: '' })
 
-  getters: {
-    /**
-     * Apakah masih ada halaman berikutnya
-     */
-    hasMore: (state) => state.page < state.totalPages,
+  // === SERVICES ===
+  const queryService = useStudentQueryService()
+  const contextStore = useContextStore()
 
-    /**
-     * Apakah list kosong
-     */
-    isEmpty: (state) => state.items.length === 0 && !state.loading,
+  // === ACTIONS ===
 
-    /**
-     * Apakah ada filter aktif
-     */
-    hasActiveFilters: (state) => {
-      return !!(state.filters.status || state.filters.classId || state.filters.search)
-    },
+  async function fetchStudents(customFilters = {}) {
+    console.log('fethcStudent->store', customFilters)
+    isLoading.value = true
+    error.value = null
 
-    /**
-     * Ringkasan statistik
-     */
-    stats: (state) => ({
-      total: state.total,
-      active: state.items.filter((i) => i.status === 'ACTIVE').length,
-      currentPage: state.page,
-      totalPages: state.totalPages,
-    }),
-  },
+    try {
+      const context = contextStore.currentContext
+      console.log('contecxt', context)
+      console.log('fethcStudent->context', context)
 
-  actions: {
-    /**
-     * Set items dari hasil fetch
-     * Dipanggil oleh Composable setelah Service return data
-     */
-    setItems({ items, total, page, totalPages }) {
-      this.items = items
-      this.total = total
-      this.page = page
-      this.totalPages = totalPages
-      this.initialized = true
-    },
+      const mergedFilters = { ...filters.value, ...customFilters }
 
-    /**
-     * Set loading state
-     */
-    setLoading(loading) {
-      this.loading = loading
-      if (loading) this.error = null
-    },
+      const result = await queryService.getStudents(context, mergedFilters)
 
-    /**
-     * Set error state
-     */
-    setError(error) {
-      this.error = error
-      this.loading = false
-    },
-
-    /**
-     * Clear error
-     */
-    clearError() {
-      this.error = null
-    },
-
-    /**
-     * Update filter dan reset ke halaman 1
-     */
-    setFilters(filters) {
-      this.filters = { ...this.filters, ...filters }
-      this.page = 1
-      this.initialized = false // force refetch
-    },
-
-    /**
-     * Navigasi ke halaman tertentu
-     */
-    setPage(page) {
-      if (page < 1 || page > this.totalPages) return
-      this.page = page
-      this.initialized = false // force refetch
-    },
-
-    /**
-     * Tambah item ke list (setelah create berhasil)
-     */
-    addItem(item) {
-      // Tambahkan di awal list
-      this.items.unshift(item)
-      this.total += 1
-    },
-
-    /**
-     * Update item di list (setelah update berhasil)
-     */
-    updateItem(item) {
-      const index = this.items.findIndex((i) => i.studentId === item.studentId)
-      if (index !== -1) {
-        this.items[index] = item
+      if (result.success) {
+        students.value = result.data.items || []
+        pagination.value = {
+          page: result.data.page || 1,
+          limit: result.data.limit || 20,
+          total: result.data.total || 0,
+          totalPages: result.data.totalPages || 0,
+        }
+      } else {
+        error.value = result.error
       }
-    },
+    } catch (err) {
+      error.value = { code: 'UNEXPECTED_ERROR', message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
 
-    /**
-     * Hapus item dari list (setelah transfer/graduate)
-     */
-    removeItem(studentId) {
-      this.items = this.items.filter((i) => i.studentId !== studentId)
-      this.total -= 1
-    },
+  async function deleteStudent(studentId) {
+    isLoading.value = true
+    error.value = null
 
-    /**
-     * Reset seluruh state (saat context berubah)
-     */
-    reset() {
-      this.items = []
-      this.total = 0
-      this.page = 1
-      this.totalPages = 0
-      this.filters = { status: '', classId: '', search: '' }
-      this.loading = false
-      this.error = null
-      this.initialized = false
-    },
-  },
+    try {
+      // const context = contextStore.currentContext
+      // TODO: Implement delete di service layer
+      // const result = await commandService.deleteStudent(studentId, context)
+
+      // Simulasi untuk sekarang
+      students.value = students.value.filter((s) => s.studentId !== studentId)
+
+      return true
+    } catch (err) {
+      error.value = { code: 'UNEXPECTED_ERROR', message: err.message }
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function updateFilters(newFilters) {
+    filters.value = { ...filters.value, ...newFilters }
+  }
+
+  function reset() {
+    students.value = []
+    error.value = null
+    pagination.value = { page: 1, limit: 20, total: 0, totalPages: 0 }
+  }
+
+  return {
+    students,
+    isLoading,
+    error,
+    pagination,
+    filters,
+    fetchStudents,
+    deleteStudent,
+    updateFilters,
+    reset,
+  }
 })

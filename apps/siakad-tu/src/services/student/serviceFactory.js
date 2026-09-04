@@ -1,52 +1,71 @@
-// apps/siakad-tu/src/services/student/serviceFactory.js
-
-import { StudentEngine } from '@/engine/student/StudentEngine';
-import { studentApi } from '@/adapters/api/studentApi';
-import { eventDispatcher } from '@/events/eventDispatcher';
-import { StudentService } from './StudentService.js';
-
+import { StudentEngine } from '@/engine/student/StudentEngine.js'
+import { studentApi } from '@/adapters/api/studentApi.js'
+import { eventDispatcher } from '@/events/eventDispatcher.js'
+import { StudentCommandService } from './StudentCommandService.js'
+import { StudentQueryService } from './StudentQueryService.js'
 /**
- * Service Factory — Dependency Injection container.
- *
- * Membuat instance StudentService dengan dependencies yang sudah di-inject.
- *
- * Keuntungan DI:
- * 1. Mudah di-test (bisa inject mock dependencies)
- * 2. Mudah di-swap (mock → real adapter)
- * 3. Singleton per application lifecycle
- * 4. Dependencies eksplisit, tidak tersembunyi
- *
- * Penggunaan:
- *   import { studentService } from './serviceFactory.js';
- *   await studentService.registerStudent(data, context);
- *
- * Untuk testing:
- *   import { createStudentService } from './serviceFactory.js';
- *   const testService = createStudentService({
- *     engine: mockEngine,
- *     adapter: mockAdapter,
- *     eventDispatcher: mockDispatcher
- *   });
- */
-
+Service Factory — Dependency Injection container untuk Student Domain.
+Mendukung CQRS pattern:
+CommandService: untuk write operations (create, update, delete, transfer, graduate)
+QueryService: untuk read operations (get, list, check availability)
+Keuntungan DI:
+Mudah di-test (bisa inject mock dependencies)
+Mudah di-swap (mock → real adapter)
+Singleton per application lifecycle
+Dependencies eksplisit, tidak tersembunyi
+*/
+// === SINGLETON INSTANCES ===
+let commandServiceInstance = null
+let queryServiceInstance = null
 /**
- * Buat instance StudentService dengan dependencies custom
- * (untuk testing atau environment khusus)
- */
-export function createStudentService(dependencies = {}) {
-  const engine = dependencies.engine || new StudentEngine();
-  const adapter = dependencies.adapter || studentApi;
-  const eventDispatcherInstance = dependencies.eventDispatcher || eventDispatcher;
-
-  return new StudentService({
-    engine,
-    adapter,
-    eventDispatcher: eventDispatcherInstance
-  });
+Buat instance StudentCommandService dengan dependencies custom
+(untuk testing atau environment khusus)
+*/
+export function createStudentCommandService(dependencies = {}) {
+const engine = dependencies.engine || new StudentEngine()
+const adapter = dependencies.adapter || studentApi
+const eventDispatcherInstance = dependencies.eventDispatcher || eventDispatcher
+return new StudentCommandService({
+engine,
+adapter,
+eventDispatcher: eventDispatcherInstance,
+})
 }
-
 /**
- * Singleton instance untuk penggunaan normal di aplikasi.
- * Dibuat sekali, dipakai di seluruh aplikasi.
- */
-export const studentService = createStudentService();
+Buat instance StudentQueryService dengan dependencies custom
+*/
+export function createStudentQueryService(dependencies = {}) {
+const adapter = dependencies.adapter || studentApi
+return new StudentQueryService({ adapter })
+}
+/**
+Singleton instance untuk StudentCommandService.
+Dipanggil sekali, dipakai di seluruh aplikasi.
+*/
+export function useStudentCommandService() {
+if (!commandServiceInstance) {
+commandServiceInstance = createStudentCommandService()
+}
+return commandServiceInstance
+}
+/**
+Singleton instance untuk StudentQueryService.
+*/
+export function useStudentQueryService() {
+if (!queryServiceInstance) {
+queryServiceInstance = createStudentQueryService()
+}
+return queryServiceInstance
+}
+/**
+Backward compatibility: studentService (legacy)
+Untuk kode lama yang masih menggunakan studentService langsung
+*/
+export const studentService = createStudentCommandService()
+/**
+Reset instances (untuk testing)
+*/
+export function __resetServiceInstances() {
+commandServiceInstance = null
+queryServiceInstance = null
+}

@@ -1,35 +1,35 @@
 // apps/siakad-tu/src/adapters/api/studentApi.js
 
 import { studentMockAdapter } from '../mock/studentMockAdapter.js'
+import { studentRealAdapter } from './studentRealAdapter.js'
 
 /**
  * Student API Factory.
  *
- * Memilih implementasi adapter berdasarkan environment:
- * - development/test → studentMockAdapter (localStorage)
- * - production → studentRealAdapter (Axios → edge-bff)
- *
- * Kontrak (method signature) HARUS identik antara mock dan real.
- * Service tidak perlu tahu implementasi mana yang dipakai.
- *
- * Catatan: Real adapter akan dibuat di Langkah 10 (Backend Implementation).
+ * Logika Switching:
+ * 1. Jika QCLI_MOCK_MODE=true → Paksa pakai Mock (untuk testing UI)
+ * 2. Jika QCLI_USE_API=true → Pakai Real API (connect ke port 8081)
+ * 3. Default (DEV tanpa env khusus) → Pakai Mock (aman untuk development)
  */
 
-// TODO: Di Langkah 10, ganti dengan:
-// import { studentRealAdapter } from '../real/studentRealAdapter.js';
+const useApi = import.meta.env?.QCLI_USE_API === true
+// console.log('useApi', import.meta.env?.QCLI_USE_API)
+console.log('useApi', useApi)
+const forceMock = import.meta.env?.QCLI_MOCK_MODE === true
+console.log('useforceMock', forceMock)
 
-const isDevelopment = import.meta.env?.DEV ?? true
-
-/**
- * Adapter aktif untuk student API.
- * Saat ini: Mock Adapter.
- * Nanti (production): Real Adapter.
- */
-export const studentApi = isDevelopment ? studentMockAdapter : studentMockAdapter // TODO: ganti ke studentRealAdapter saat siap
+export const studentApi = forceMock || !useApi ? studentMockAdapter : studentRealAdapter
 
 /**
- * Helper: Force mock adapter (untuk testing)
+ * Helper: Force mock adapter (khusus untuk unit testing)
  */
 export function __forceMockAdapter() {
   return studentMockAdapter
+}
+
+/**
+ * Helper: Force real adapter (khusus untuk integration testing)
+ */
+export function __forceRealAdapter() {
+  return studentRealAdapter
 }

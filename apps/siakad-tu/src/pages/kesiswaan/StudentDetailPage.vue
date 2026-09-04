@@ -1,107 +1,134 @@
 <template>
   <q-page padding>
-    <q-inner-loading :showing="loading" />
-
-    <div class="q-mb-md flex items-center justify-between">
-      <div class="flex items-center">
-        <q-btn flat round icon="arrow_back" @click="goBack" class="q-mr-sm" />
-        <h5 class="q-my-none text-primary">Detail Siswa</h5>
-        <q-badge v-if="student?.isLocked" color="warning" class="q-ml-md" label="Dapodik" />
-        <q-badge :color="student?.status === 'AKTIF' ? 'positive' : 'negative'" class="q-ml-sm"
-          :label="student?.status" />
-      </div>
-      <div class="q-gutter-sm">
-        <q-btn color="primary" icon="edit" label="Ubah" @click="goToEdit" />
-        <q-btn color="orange" icon="compare_arrows" label="Mutasi" @click="goToMutate" />
-      </div>
+    <div v-if="isLoading" class="flex flex-center q-pa-xl">
+      <q-spinner color="primary" size="3em" />
     </div>
 
-    <q-card v-if="student">
-      <q-card-section>
-        <div class="text-h6 q-mb-md">Data Pribadi</div>
-        <q-list bordered separator class="rounded-borders">
-          <q-item>
-            <q-item-section side><q-item-label caption>NISN</q-item-label></q-item-section>
-            <q-item-section>{{ student.nisn }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Nama Lengkap</q-item-label></q-item-section>
-            <q-item-section>{{ student.nama }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Tempat, Tanggal Lahir</q-item-label></q-item-section>
-            <q-item-section>{{ student.tempatLahir }}, {{ student.tanggalLahir }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Jenis Kelamin</q-item-label></q-item-section>
-            <q-item-section>{{ student.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Agama</q-item-label></q-item-section>
-            <q-item-section>{{ student.agama }}</q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
+    <div v-else-if="student">
+      <div class="row items-center justify-between q-mb-md">
+        <div>
+          <div class="text-h5 text-weight-bold">
+            {{ student.fullName?.firstName }} {{ student.fullName?.lastName }}
+          </div>
+          <div class="text-grey-7">NISN: {{ student.nisn }} | NIS: {{ student.nis }}</div>
+        </div>
+        <div>
+          <q-btn color="primary" icon="edit" label="Edit" class="q-mr-sm" @click="editStudent" />
+          <q-btn color="grey" icon="arrow_back" label="Kembali" @click="goBack" />
+        </div>
+      </div>
 
-      <q-separator />
+      <!-- Status Badge -->
+      <q-badge :color="getStatusColor(student.status)" class="q-mb-md">
+        {{ student.status }}
+      </q-badge>
 
-      <q-card-section>
-        <div class="text-h6 q-mb-md">Data Akademik & Kontak</div>
-        <q-list bordered separator class="rounded-borders">
-          <q-item>
-            <q-item-section side><q-item-label caption>Asal Sekolah</q-item-label></q-item-section>
-            <q-item-section>{{ student.asalSekolah }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Jurusan / Kelas</q-item-label></q-item-section>
-            <q-item-section>{{ student.jurusan }} - {{ student.kelas }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>No. HP</q-item-label></q-item-section>
-            <q-item-section>{{ student.noHp || '-' }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Email</q-item-label></q-item-section>
-            <q-item-section>{{ student.email || '-' }}</q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section side><q-item-label caption>Alamat</q-item-label></q-item-section>
-            <q-item-section>{{ student.alamat || '-' }}</q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-    </q-card>
+      <!-- Data Pribadi -->
+      <q-card class="q-mb-md">
+        <q-card-section>
+          <div class="text-h6 q-mb-md">Data Pribadi</div>
+          <div class="row q-gutter-md">
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Jenis Kelamin</div>
+              <div>{{ formatGender(student.gender) }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Tanggal Lahir</div>
+              <div>{{ formatDate(student.birthDate) }}</div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
 
-    <q-card v-else-if="!loading" class="q-pa-md text-center text-grey-6">
-      Data siswa tidak ditemukan.
-    </q-card>
+      <!-- Alamat -->
+      <q-card class="q-mb-md">
+        <q-card-section>
+          <div class="text-h6 q-mb-md">Alamat</div>
+          <div v-if="student.address">
+            <div>{{ student.address.street }}</div>
+            <div v-if="student.address.rtRw">RT/RW: {{ student.address.rtRw }}</div>
+            <div>
+              {{ student.address.village }}{{ student.address.district ? ', ' + student.address.district : '' }}
+            </div>
+            <div>
+              {{ student.address.city }}{{ student.address.postalCode ? ' ' + student.address.postalCode : '' }}
+            </div>
+          </div>
+          <div v-else class="text-grey-6">-</div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Kontak -->
+      <q-card class="q-mb-md">
+        <q-card-section>
+          <div class="text-h6 q-mb-md">Kontak</div>
+          <div class="row q-gutter-md">
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">No. Telepon</div>
+              <div>{{ student.contactInfo?.phone || '-' }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Email</div>
+              <div>{{ student.contactInfo?.email || '-' }}</div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Wali -->
+      <q-card>
+        <q-card-section>
+          <div class="text-h6 q-mb-md">Data Wali</div>
+          <div v-if="student.guardianInfo">
+            <div class="row q-gutter-md">
+              <div class="col-12 col-sm-6">
+                <div class="text-caption text-grey-7">Nama Wali</div>
+                <div>{{ student.guardianInfo.name || '-' }}</div>
+              </div>
+              <div class="col-12 col-sm-6">
+                <div class="text-caption text-grey-7">Hubungan</div>
+                <div>{{ student.guardianInfo.relation || '-' }}</div>
+              </div>
+            </div>
+            <div class="row q-gutter-md q-mt-md">
+              <div class="col-12 col-sm-6">
+                <div class="text-caption text-grey-7">No. Telepon</div>
+                <div>{{ student.guardianInfo.phone || '-' }}</div>
+              </div>
+              <div class="col-12 col-sm-6">
+                <div class="text-caption text-grey-7">Pekerjaan</div>
+                <div>{{ student.guardianInfo.occupation || '-' }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-grey-6">-</div>
+        </q-card-section>
+      </q-card>
+    </div>
+
+    <div v-else class="text-center q-pa-xl">
+      <div class="text-h6 text-grey-6">Data siswa tidak ditemukan</div>
+      <q-btn color="primary" label="Kembali ke Daftar" class="q-mt-md" @click="goBack" />
+    </div>
   </q-page>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { useStudentDetail } from '@/composables/student/useStudentDetail';
+import { onMounted } from 'vue'
+import { useStudentDetail } from '@/composables/kesiswaan/useStudentDetail'
 
-const router = useRouter();
-const route = useRoute();
-
-const studentId = route.params.id;
-const { student, loading, loadDetail } = useStudentDetail(studentId);
+const {
+  student,
+  isLoading,
+  formatGender,
+  formatDate,
+  getStatusColor,
+  editStudent,
+  goBack,
+  loadData,
+} = useStudentDetail()
 
 onMounted(() => {
-  loadDetail();
-});
-
-function goBack() {
-  router.push({ name: 'student-list' });
-}
-
-function goToEdit() {
-  router.push({ name: 'student-edit', params: { id: studentId } });
-}
-
-function goToMutate() {
-  router.push({ name: 'manajemen-mutasi-siswa', query: { studentId } });
-}
+  loadData()
+})
 </script>

@@ -1,110 +1,121 @@
 <template>
   <q-page padding>
-    <!-- Header & Quick Stats -->
-    <div class="q-mb-md">
-      <h5 class="q-mb-sm text-primary">Data Siswa</h5>
-      <div class="row q-gutter-md">
-        <q-card class="col">
-          <q-card-section>
-            <div class="text-h6">{{ stats.total }}</div>
-            <div class="text-caption text-grey-7">Total Siswa</div>
-          </q-card-section>
-        </q-card>
-        <q-card class="col">
-          <q-card-section>
-            <div class="text-h6 text-positive">{{ stats.active }}</div>
-            <div class="text-caption text-grey-7">Siswa Aktif</div>
-          </q-card-section>
-        </q-card>
+    <!-- Header -->
+    <div class="row items-center justify-between q-mb-md">
+      <div>
+        <div class="text-h5 text-weight-bold">Data Siswa</div>
+        <div class="text-grey-7">Kelola data siswa aktif, lulus, dan mutasi</div>
       </div>
+      <q-btn color="primary" icon="add" label="Tambah Siswa" @click="$router.push({ name: 'student-create' })" />
     </div>
 
-    <!-- Main Data Card -->
-    <q-card>
-      <!-- Filter Section -->
+    <!-- Filters -->
+    <q-card class="q-mb-md">
       <q-card-section>
-        <StudentFilterBar :current-search="filters.search" :current-status="filters.status"
-          :current-jurusan="filters.jurusan" :current-tingkat="filters.tingkat" @update:search="setSearch"
-          @update:status="setStatusFilter" @update:jurusan="setJurusanFilter" @update:tingkat="setTingkatFilter"
-          @clear="clearFilters" />
+        <div class="row q-gutter-md">
+          <q-select v-model="localFilters.status" :options="statusOptions" label="Status" clearable emit-value
+            map-options class="col-12 col-sm-3" @update:model-value="applyFilters" />
+          <q-input v-model="localFilters.search" label="Cari NISN/NIS/Nama" clearable class="col-12 col-sm-6"
+            @update:model-value="debouncedApplyFilters">
+            <template v-slot:append>
+              <q-icon name="search" />
+            </template>
+          </q-input>
+          <q-btn color="secondary" icon="refresh" label="Reset" class="col-12 col-sm-2" @click="resetFilters" />
+        </div>
       </q-card-section>
-
-      <q-separator />
-
-      <!-- Table Section -->
-      <StudentTable :items="items" :loading="loading" @view="goToDetail" @edit="goToEdit" @mutate="handleMutate" />
-
-      <q-separator />
-
-      <!-- Pagination Section -->
-      <StudentPagination :page="pagination.page" :total-pages="pagination.totalPages" :total="pagination.total"
-        :limit="pagination.limit" :has-more="pagination.hasMore" @next="nextPage" @prev="prevPage"
-        @go-to-page="goToPage" />
     </q-card>
 
-    <!-- Floating Action Button for Create -->
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn fab icon="add" color="primary" @click="goToCreate">
-        <q-tooltip>Tambah Siswa</q-tooltip>
-      </q-btn>
-    </q-page-sticky>
+    <!-- Table -->
+    <q-card>
+      <q-table :rows="students" :columns="columns" :loading="isLoading" :pagination="tablePagination"
+        row-key="studentId" @request="onRequest">
+        <template v-slot:body-cell-status="props">
+          <q-td :props="props">
+            <q-badge :color="getStatusColor(props.row.status)">
+              {{ getStatusLabel(props.row.status) }}
+            </q-badge>
+          </q-td>
+        </template>
 
-    <!-- Global Loading Overlay -->
-    <q-inner-loading :showing="loading" />
+        <template v-slot:body-cell-actions="props">
+          <q-td :props="props">
+            <q-btn flat dense round icon="visibility" color="primary" @click="viewDetail(props.row.studentId)">
+              <q-tooltip>Detail</q-tooltip>
+            </q-btn>
+            <q-btn flat dense round icon="delete" color="negative" @click="openDeleteDialog(props.row)">
+              <q-tooltip>Hapus</q-tooltip>
+            </q-btn>
+          </q-td>
+        </template>
+
+        <template v-slot:loading>
+          <q-inner-loading showing color="primary" />
+        </template>
+      </q-table>
+    </q-card>
+
+    <!-- Delete Confirmation Dialog -->
+    <q-dialog v-model="showDeleteDialog" persistent>
+      <q-card style="width: 400px">
+        <q-card-section>
+          <div class="text-h6">Konfirmasi Hapus</div>
+          <div class="q-mt-md">
+            Apakah Anda yakin ingin menghapus siswa
+            <strong>{{ selectedStudent?.fullName?.firstName }} {{ selectedStudent?.fullName?.lastName }}</strong>?
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Batal" color="grey" @click="showDeleteDialog = false" />
+          <q-btn flat label="Hapus" color="negative" @click="confirmDelete" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Notification Dialog -->
+    <q-dialog v-model="showNotification">
+      <q-card>
+        <q-card-section :class="notificationType === 'success' ? 'bg-positive text-white' : 'bg-negative text-white'">
+          <div class="text-h6">{{ notificationType === 'success' ? 'Berhasil' : 'Gagal' }}</div>
+          <div>{{ notificationMessage }}</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="OK" color="primary" @click="showNotification = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useQuasar } from 'quasar';
-import { useStudentList } from '@/composables/student/useStudentList';
+import { onMounted } from 'vue'
+import { useStudentList } from '@/composables/kesiswaan/useStudentList'
 
-import StudentFilterBar from '@/components/student/StudentFilterBar.vue';
-import StudentTable from '@/components/student/StudentTable.vue';
-import StudentPagination from '@/components/student/StudentPagination.vue';
-
-const router = useRouter();
-const $q = useQuasar();
-
-// Destructure semua kebutuhan dari composable
 const {
-  items, stats, pagination, filters, loading, error,
-  setSearch, setStatusFilter, setJurusanFilter, setTingkatFilter,
-  clearFilters, nextPage, prevPage, goToPage, clearError
-} = useStudentList();
+  students,
+  isLoading,
+  localFilters,
+  showDeleteDialog,
+  showNotification,
+  notificationMessage,
+  notificationType,
+  selectedStudent,
+  statusOptions,
+  columns,
+  tablePagination,
+  getStatusColor,
+  getStatusLabel,
+  applyFilters,
+  debouncedApplyFilters,
+  resetFilters,
+  onRequest,
+  viewDetail,
+  openDeleteDialog,
+  confirmDelete,
+  loadData,
+} = useStudentList()
 
-// Watch error state untuk menampilkan notifikasi global
-watch(error, (newError) => {
-  if (newError) {
-    $q.notify({
-      type: 'negative',
-      message: newError.message || 'Terjadi kesalahan saat memuat data.'
-    });
-    clearError();
-  }
-});
-
-// Navigation Actions
-function goToCreate() {
-  router.push({ name: 'student-create' });
-}
-
-function goToDetail(studentId) {
-  router.push({ name: 'student-detail', params: { id: studentId } });
-}
-
-function goToEdit(studentId) {
-  router.push({ name: 'student-edit', params: { id: studentId } });
-}
-
-function handleMutate(studentId) {
-  // Trigger notifikasi atau navigasi ke halaman mutasi dengan pre-filled data
-  $q.notify({
-    type: 'info',
-    message: `Memulai proses mutasi untuk siswa ID: ${studentId}`
-  });
-  // Contoh navigasi jika ada halaman mutasi khusus:
-  // router.push({ name: 'manajemen-mutasi-siswa', query: { studentId } });
-}
+onMounted(() => {
+  loadData()
+})
 </script>

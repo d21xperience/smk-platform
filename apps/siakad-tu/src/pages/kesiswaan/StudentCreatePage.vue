@@ -1,87 +1,122 @@
 <template>
   <q-page padding>
-    <q-inner-loading :showing="loading" />
-
-    <div class="q-mb-md flex items-center">
-      <q-btn flat round icon="arrow_back" @click="goBack" class="q-mr-sm" />
-      <h5 class="q-my-none text-primary">Tambah Siswa Baru</h5>
+    <div class="q-mb-md">
+      <div class="text-h5 text-weight-bold">
+        {{ isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru' }}
+      </div>
+      <div class="text-grey-7">
+        {{ isEditMode ? 'Perbarui informasi siswa' : 'Daftarkan siswa baru ke sistem' }}
+      </div>
     </div>
 
     <q-card>
       <q-card-section>
-        <q-form @submit="onSubmit" class="">
-          <div class="row q-col-gutter-md">
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.nisn" label="NISN" outlined :rules="[v => !!v || 'NISN Wajib Diisi']" />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.nama" label="Nama Lengkap" outlined :rules="[v => !!v || 'Nama Wajib Diisi']" />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.tempatLahir" label="Tempat Lahir" outlined />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.tanggalLahir" label="Tanggal Lahir" type="date" outlined />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-select v-model="form.jenisKelamin"
-                :options="[{ label: 'Laki-laki', value: 'L' }, { label: 'Perempuan', value: 'P' }]" label="Jenis Kelamin"
-                outlined emit-value map-options />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.agama" label="Agama" outlined />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.noHp" label="No. HP" outlined />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.email" label="Email" type="email" outlined />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.asalSekolah" label="Asal Sekolah" outlined />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-select v-model="form.jurusan" :options="['RPL', 'TKRO', 'AKL', 'ULP', 'DPIB']" label="Jurusan" outlined
-                emit-value map-options />
-            </div>
-            <div class="col-12 col-md-6">
-              <q-input v-model="form.kelas" label="Kelas (Contoh: X RPL 1)" outlined />
-            </div>
-            <div class="col-12 col-12">
-              <q-input v-model="form.alamat" label="Alamat Lengkap" type="textarea" rows="2" outlined />
-            </div>
+        <q-form @submit="onSubmit">
+          <!-- Data Pribadi -->
+          <div class="text-h6 q-mb-md">Data Pribadi</div>
+
+          <div class="row q-gutter-md">
+            <q-input v-model="formData.nisn" label="NISN" :rules="[val => !!val || 'NISN wajib diisi']"
+              class="col-12 col-sm-4" />
+            <q-input v-model="formData.nis" label="NIS" :rules="[val => !!val || 'NIS wajib diisi']"
+              class="col-12 col-sm-4" />
+            <q-select v-model="formData.gender" :options="genderOptions" label="Jenis Kelamin" emit-value map-options
+              :rules="[val => !!val || 'Jenis kelamin wajib dipilih']" class="col-12 col-sm-4" />
           </div>
 
-          <div class="flex justify-end q-gutter-sm q-mt-md">
-            <q-btn flat label="Batal" color="negative" @click="goBack" />
-            <q-btn type="submit" label="Simpan" color="primary" :loading="loading" />
+          <div class="row q-gutter-md q-mt-md">
+            <q-input v-model="formData.fullName.firstName" label="Nama Depan"
+              :rules="[val => !!val || 'Nama depan wajib diisi']" class="col-12 col-sm-4" />
+            <q-input v-model="formData.fullName.middleName" label="Nama Tengah" class="col-12 col-sm-4" />
+            <q-input v-model="formData.fullName.lastName" label="Nama Belakang" class="col-12 col-sm-4" />
+          </div>
+
+          <q-input v-model="formData.birthDate" label="Tanggal Lahir" type="date"
+            :rules="[val => !!val || 'Tanggal lahir wajib diisi']" class="q-mt-md" />
+
+          <!-- Alamat -->
+          <div class="text-h6 q-mt-xl q-mb-md">Alamat</div>
+
+          <q-input v-model="formData.address.street" label="Jalan" class="q-mb-md" />
+
+          <div class="row q-gutter-md">
+            <q-input v-model="formData.address.rtRw" label="RT/RW" class="col-12 col-sm-3" />
+            <q-input v-model="formData.address.village" label="Kelurahan" class="col-12 col-sm-3" />
+            <q-input v-model="formData.address.district" label="Kecamatan" class="col-12 col-sm-3" />
+            <q-input v-model="formData.address.postalCode" label="Kode Pos" class="col-12 col-sm-3" />
+          </div>
+
+          <q-input v-model="formData.address.city" label="Kota/Kabupaten" class="q-mt-md" />
+
+          <!-- Kontak -->
+          <div class="text-h6 q-mt-xl q-mb-md">Kontak</div>
+
+          <div class="row q-gutter-md">
+            <q-input v-model="formData.contactInfo.phone" label="No. Telepon" class="col-12 col-sm-6" />
+            <q-input v-model="formData.contactInfo.email" label="Email" type="email" class="col-12 col-sm-6" />
+          </div>
+
+          <!-- Wali -->
+          <div class="text-h6 q-mt-xl q-mb-md">Data Wali</div>
+
+          <div class="row q-gutter-md">
+            <q-input v-model="formData.guardianInfo.name" label="Nama Wali" class="col-12 col-sm-6" />
+            <q-input v-model="formData.guardianInfo.relation" label="Hubungan" class="col-12 col-sm-6" />
+          </div>
+
+          <div class="row q-gutter-md q-mt-md">
+            <q-input v-model="formData.guardianInfo.phone" label="No. Telepon Wali" class="col-12 col-sm-6" />
+            <q-input v-model="formData.guardianInfo.occupation" label="Pekerjaan Wali" class="col-12 col-sm-6" />
+          </div>
+
+          <!-- Actions -->
+          <div class="row q-gutter-sm justify-end q-mt-xl">
+            <q-btn flat label="Batal" color="grey" @click="onCancel" />
+            <q-btn type="submit" :label="isEditMode ? 'Update' : 'Simpan'" color="primary" :loading="isLoading" />
           </div>
         </q-form>
       </q-card-section>
     </q-card>
+
+    <!-- Notification Dialog -->
+    <q-dialog v-model="showNotification">
+      <q-card>
+        <q-card-section :class="notificationType === 'success' ? 'bg-positive text-white' : 'bg-negative text-white'">
+          <div class="text-h6">{{ notificationType === 'success' ? 'Berhasil' : 'Gagal' }}</div>
+          <div>{{ notificationMessage }}</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="OK" color="primary" @click="showNotification = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
-import { useQuasar } from 'quasar';
-import { useStudentForm } from '@/composables/student/useStudentForm';
+import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useStudentCreate } from '@/composables/kesiswaan/useStudentCreate'
 
-const router = useRouter();
-const $q = useQuasar();
-const { form, loading, saveStudent } = useStudentForm();
+const route = useRoute()
 
-function goBack() {
-  router.push({ name: 'student-list' });
-}
+const {
+  isLoading,
+  showNotification,
+  notificationMessage,
+  notificationType,
+  formData,
+  genderOptions,
+  isEditMode,
+  onSubmit,
+  onCancel,
+  loadData,
+} = useStudentCreate()
 
-async function onSubmit() {
-  const success = await saveStudent();
-  if (success) {
-    $q.notify({ type: 'positive', message: 'Siswa berhasil ditambahkan' });
-    router.push({ name: 'student-list' });
-  } else {
-    $q.notify({ type: 'negative', message: 'Gagal menambahkan siswa' });
+onMounted(() => {
+  const studentId = route.params.id
+  if (studentId) {
+    loadData(studentId)
   }
-}
+})
 </script>
