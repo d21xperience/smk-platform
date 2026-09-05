@@ -270,24 +270,65 @@ export const studentMockAdapter = {
   /**
    * Ambil daftar siswa dengan filter
    */
+
   async getStudents(context, filters = {}) {
     await this._simulateLatency(100)
+    let students = mockStorage.read(context.schoolId, 'students')
 
-    const { schoolId, periodId } = context
-    let students = mockStorage.read(schoolId, 'students')
+    // === AUTO-SEED: Jika data kosong, isi dengan data dummy agar UI bisa dites ===
+    if (!students || students.length === 0) {
+      console.log('[StudentMockAdapter] Data kosong, melakukan auto-seed data dummy...')
+      students = [
+        {
+          studentId: 'student-001',
+          nisn: '0012345678',
+          nis: '12345',
+          fullName: { firstName: 'Budi', middleName: '', lastName: 'Santoso' },
+          gender: 'MALE',
+          birthDate: '2008-05-15',
+          status: 'ACTIVE',
+          schoolId: context.schoolId,
+          address: { street: 'Jl. Merdeka No. 1', city: 'Bandung' },
+          contactInfo: { phone: '08123456789', email: 'budi@example.com' },
+          guardianInfo: {
+            name: 'Ayah Budi',
+            relation: 'Ayah',
+            phone: '08123456789',
+            occupation: 'Wiraswasta',
+          },
+          enrollments: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          studentId: 'student-002',
+          nisn: '0087654321',
+          nis: '12346',
+          fullName: { firstName: 'Siti', middleName: '', lastName: 'Aminah' },
+          gender: 'FEMALE',
+          birthDate: '2008-08-20',
+          status: 'ACTIVE',
+          schoolId: context.schoolId,
+          address: { street: 'Jl. Sudirman No. 10', city: 'Bandung' },
+          contactInfo: { phone: '08198765432', email: 'siti@example.com' },
+          guardianInfo: {
+            name: 'Ibu Siti',
+            relation: 'Ibu',
+            phone: '08198765432',
+            occupation: 'Guru',
+          },
+          enrollments: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ]
+      mockStorage.write(context.schoolId, 'students', students)
+    }
+    // ========================================================================
 
     // Filter by status
     if (filters.status) {
       students = students.filter((s) => s.status === filters.status)
-    }
-
-    // Filter by class (dari enrollment aktif di periodId)
-    if (filters.classId) {
-      students = students.filter((s) =>
-        s.enrollments?.some(
-          (e) => e.periodId === periodId && e.classId === filters.classId && e.status === 'active',
-        ),
-      )
     }
 
     // Search by name/NISN/NIS

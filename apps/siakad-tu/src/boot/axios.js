@@ -39,7 +39,7 @@ export default boot(async ({ app }) => {
 
       // Fallback untuk debugging jika context belum di-set (misal belum login)
       const finalCtx = ctx || {
-        schoolId: 'school-debug-001',
+        schoolId: 'SCHOOL_001',
         academicYear: '2024/2025',
         semester: 1,
         userId: 'user-debug-001',
