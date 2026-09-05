@@ -196,7 +196,7 @@ const kpis = ref([
     icon: 'groups',
     color: 'primary',
     trend: 3.2,
-    routeTo: '/kesiswaan/direktori-siswa' // <-- FITUR BARU: Arahkan ke route direktori
+    routeTo: '/kesiswaan/siswa' // <-- FITUR BARU: Arahkan ke route direktori
   },
   // { label: 'Total Siswa', value: '1.248', icon: 'groups', color: 'primary', trend: 3.2 },
   { label: 'Total Guru & Staf', value: '86', icon: 'badge', color: 'secondary', trend: 1.1, routeTo: '/kepegawaian/data-guru' },

@@ -2,6 +2,7 @@
 
 import kesiswaanRoutes from './routes/kesiswaan-routes.js'
 import persuratan from './routes/persuratan.js'
+import previewDev from './routes/preview-routes.js'
 import psb from './routes/psb.js'
 
 // Import routes baru
@@ -14,8 +15,7 @@ const routes = [
     path: '/',
     component: () => import('@/layouts/LandingLayout.vue'), // <-- Gunakan layout yang sudah ada
     children: [
-      { path: '', name: 'landing-home', component: () => import('@/pages/landing/IndexPage.vue') },
-
+      previewDev,
       // Existing routes
       persuratan,
       kesiswaanRoutes,
@@ -25,6 +25,20 @@ const routes = [
       // keuanganRoutes,
       // absensiRoutes,
       // penilaianRoutes,
+    ],
+  },
+  // === AUTH ROUTES (Tanpa Layout Landing) ===
+  {
+    path: '/auth',
+    children: [
+      {
+        path: 'login',
+        name: 'auth-login',
+        component: () => import('@/pages/auth/LoginPage.vue'),
+        meta: {
+          guestOnly: true, // Hanya untuk user yang belum login
+        },
+      },
     ],
   },
   {

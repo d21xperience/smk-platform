@@ -32,7 +32,7 @@
           <q-tooltip>{{ isAuthenticated ? 'Keluar' : 'Login' }}</q-tooltip>
         </q-btn>
       </q-toolbar>
-      <q-toolbar v-show="isAuthenticated" class="gt-xs row items-center no-wrap text-weight-medium bg-grey-12">
+      <q-toolbar v-show="true" class="gt-xs row items-center no-wrap text-weight-medium bg-grey-12">
         <DropDownMenu label="Ur. Kesiswaan" :items="itemKesiswaan" class="text-black" />
         <DropDownMenu label="Ur. Kepegawaian" :items="itemKepegawaian" class="text-black" />
         <DropDownMenu label="Ur. Sarpras" :items="itemSarpras" class="text-black" />
@@ -161,7 +161,7 @@ const itemPortal = [
 
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
-  { title: 'Direktori Siswa', to: '/kesiswaan/direktori-siswa' },
+  { title: 'Direktori Siswa', to: '/kesiswaan/data-siswa' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
   { title: 'Mutasi Siswa', to: '/kesiswaan/manajemen-mutasi-siswa' },
   { title: 'Ploting Berkas', to: '/kesiswaan/ploting-berkas-siswa' },
