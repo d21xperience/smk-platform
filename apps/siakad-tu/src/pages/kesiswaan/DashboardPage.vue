@@ -4,13 +4,13 @@
 
     <!-- Header Dashboard-->
     <div class="row q-col-gutter-sm items-center q-mb-md">
-      <div class="col-12 col-md-6">
+      <!-- <div class="col-12 col-md-6">
         <h1 class="text-h5 text-weight-bold q-my-none text-primary">Dashboard Kesiswaan</h1>
         <p class="text-caption text-grey-7 q-mb-none">Selamat datang di Panel Administrasi TU Kesiswaan SMK</p>
-      </div>
-      <div class="col-12 col-md-6 text-right text-grey-6 text-caption">
+      </div> -->
+      <!-- <div class="col-12 col-md-6 text-right text-grey-6 text-caption">
         <q-icon name="calendar_today" class="q-mr-xs" />{{ currentDate }}
-      </div>
+      </div> -->
     </div>
 
     <!-- 1. Row Metrik Utama -->
@@ -77,7 +77,7 @@ import { ref } from 'vue';
 import apexchart from 'vue3-apexcharts';
 import { useDashboard } from '@/composables/student/useDashboard';
 
-const currentDate = ref(new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+// const currentDate = ref(new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
 
 const { metrics, chartSeries, reminders, loading } = useDashboard();
 

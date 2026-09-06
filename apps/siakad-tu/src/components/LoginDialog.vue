@@ -3,7 +3,7 @@
   <q-dialog v-model="isVisible" persistent @hide="handleDialogHide">
     <q-card style="min-width: 350px; max-width: 400px;">
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6 text-primary">Login SIAKAD</div>
+        <div class="text-h6 text-primary">Login SDP SMK</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup aria-label="Tutup" />
       </q-card-section>

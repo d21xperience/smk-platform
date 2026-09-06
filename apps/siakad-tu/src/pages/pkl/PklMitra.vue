@@ -42,7 +42,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useMitraStore } from 'stores/pkl/mitra'
+import { useMitraStore } from '@/stores/pkl/mitra'
 
 const $q = useQuasar()
 const mitraStore = useMitraStore()

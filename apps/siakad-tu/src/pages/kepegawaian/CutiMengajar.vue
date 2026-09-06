@@ -82,9 +82,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useCutiStore } from 'stores/kepegawaian/cuti'
-import { useGuruStore } from 'stores/kepegawaian/guru'
-import { useAuthStore } from 'stores/auth-store'
+import { useCutiStore } from '@/stores/kepegawaian/cuti'
+import { useGuruStore } from '@/stores/kepegawaian/guru'
+import { useAuthStore } from '@/stores/authStore'
 
 const $q = useQuasar()
 const cutiStore = useCutiStore()

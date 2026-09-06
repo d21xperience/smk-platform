@@ -1,100 +1,167 @@
 // apps/siakad-tu/src/composables/context/useOperationalContext.js
 
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { useContextStore } from '@/stores/contextStore'
-import { ContextEngine } from '@/engine/context/ContextEngine'
-import { eventDispatcher } from '@/events/eventDispatcher' // Akan dibuat
+import { OperationalContext } from '@/domain/context/OperationalContext'
 
-/**
- * Composable untuk mengakses dan mengelola Operational Context di Vue components.
- * Ini adalah satu-satunya pintu masuk UI ke context.
- */
 export function useOperationalContext() {
-  const store = useContextStore()
-  const engine = new ContextEngine()
-  const router = useRouter()
+  const contextStore = useContextStore()
 
-  /**
-   * Reaktif: context saat ini
-   */
-  const current = computed(() => store.current)
-  const isReady = computed(() => store.isContextReady)
-  const displayLabel = computed(() => store.displayLabel)
+  // === STATE ===
+  const isLoading = ref(false)
+  const error = ref(null)
 
-  /**
-   * Pilih context baru (setelah login atau ganti periode)
-   * @param {Object} contextData - { schoolId, schoolName, academicYear, semester }
-   */
-  async function selectContext(contextData) {
-    try {
-      // 1. Engine validasi dan bangun context (Pure JS)
-      const { context, events } = engine.establishContext(contextData)
+  // === STATE BARU: Untuk Context Selector ===
+  const selectedYear = ref(null)
+  const selectedSemester = ref(null)
 
-      // 2. Store simpan state
-      store.setContext(context)
+  // Daftar tahun ajaran yang tersedia
+  // TODO: Ke depannya load dari API backend
+  const availableYears = ref([
+    { value: '2024/2025', label: '2024/2025', isActive: true },
+    { value: '2023/2024', label: '2023/2024', isActive: false },
+    { value: '2022/2023', label: '2022/2023', isActive: false },
+  ])
 
-      // 3. Persist ke localStorage agar survive refresh
-      localStorage.setItem('operational_context', JSON.stringify(context.toJSON()))
+  const availableSemesters = ref([
+    { value: 1, label: 'Semester 1 (Ganjil)' },
+    { value: 2, label: 'Semester 2 (Genap)' },
+  ])
 
-      // 4. Dispatch events ke seluruh modul
-      events.forEach((event) => eventDispatcher.dispatch(event))
+  // === COMPUTED (EXISTING) ===
+  const current = computed(() => contextStore.current)
+  const isReady = computed(() => contextStore.isContextReady)
+  const schoolId = computed(() => contextStore.schoolId)
+  const schoolName = computed(() => contextStore.schoolName)
+  const academicYear = computed(() => contextStore.academicYear)
+  const semester = computed(() => contextStore.semester)
+  const periodId = computed(() => contextStore.periodId)
+  const displayLabel = computed(() => contextStore.displayLabel)
+  const schoolLabel = computed(() => contextStore.schoolLabel)
 
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
+  // === COMPUTED BARU: Untuk q-select options ===
+  const yearOptions = computed(() =>
+    availableYears.value.map((y) => ({ label: y.label, value: y.value })),
+  )
+
+  const semesterOptions = computed(() =>
+    availableSemesters.value.map((s) => ({ label: s.label, value: s.value })),
+  )
+
+  // === ACTIONS (EXISTING) ===
+  function setContext(contextData) {
+    const ctx = new OperationalContext(contextData)
+    if (ctx.isValid()) {
+      contextStore.setContext(ctx)
+
+      // Simpan ke localStorage
+      localStorage.setItem('operational_context', JSON.stringify(contextData))
+    } else {
+      error.value = 'Context tidak valid'
     }
   }
 
-  /**
-   * Restore context dari localStorage (saat app init / refresh)
-   */
-  function restoreContext() {
-    try {
-      const saved = localStorage.getItem('operational_context')
-      if (!saved) return false
-
-      const data = JSON.parse(saved)
-      const { context } = engine.establishContext(data)
-      store.setContext(context)
-      return true
-    } catch {
-      store.clearContext()
-      localStorage.removeItem('operational_context')
-      return false
-    }
-  }
-
-  /**
-   * Clear context (logout)
-   */
   function clearContext() {
-    const { events } = engine.clearContext()
-    store.clearContext()
+    contextStore.clearContext()
     localStorage.removeItem('operational_context')
-    events.forEach((event) => eventDispatcher.dispatch(event))
+    selectedYear.value = null
+    selectedSemester.value = null
+  }
+
+  // === ACTIONS BARU: Untuk Context Selector ===
+
+  /**
+   * Handle perubahan tahun ajaran dari dropdown
+   */
+  function onYearChange(newYear) {
+    selectedYear.value = newYear
+    applyContext()
   }
 
   /**
-   * Guard: Pastikan context sudah dipilih sebelum akses modul
-   * Gunakan di router guard atau di awal composable modul
+   * Handle perubahan semester dari dropdown
    */
-  function requireContext() {
-    const validation = engine.validateForTransaction(store.current)
-    if (!validation.valid) {
-      router.push({ name: 'context-selection' }) // Halaman pilih context
-      throw new Error(validation.reason)
-    }
-    return store.current
+  function onSemesterChange(newSemester) {
+    selectedSemester.value = newSemester
+    applyContext()
   }
 
+  /**
+   * Terapkan context yang dipilih ke contextStore
+   */
+  function applyContext() {
+    if (!selectedYear.value || !selectedSemester.value) return
+
+    setContext({
+      schoolId: schoolId.value || 'school-001',
+      schoolName: schoolName.value || 'SMK Negeri 1',
+      periodId: `${selectedYear.value}-sem-${selectedSemester.value}`,
+      academicYear: selectedYear.value,
+      semester: selectedSemester.value,
+    })
+  }
+
+  /**
+   * Set default context ke tahun ajaran aktif
+   */
+  function setDefaultContext() {
+    const activeYear = availableYears.value.find((y) => y.isActive)
+    if (activeYear) {
+      selectedYear.value = activeYear.value
+      selectedSemester.value = 1
+      applyContext()
+    }
+  }
+
+  // === LIFECYCLE (UPDATED) ===
+  onMounted(() => {
+    if (!isReady.value) {
+      loadDefaultContext()
+    }
+  })
+
+  function loadDefaultContext() {
+    const saved = localStorage.getItem('operational_context')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        selectedYear.value = parsed.academicYear
+        selectedSemester.value = parsed.semester
+        setContext(parsed)
+      } catch {
+        setDefaultContext()
+      }
+    } else {
+      setDefaultContext()
+    }
+  }
+
+  // === RETURN (UPDATED) ===
   return {
+    // Existing
     current,
     isReady,
+    schoolId,
+    schoolName,
+    academicYear,
+    semester,
+    periodId,
     displayLabel,
-    selectContext,
-    restoreContext,
+    isLoading,
+    error,
+    schoolLabel,
+    setContext,
     clearContext,
-    requireContext,
+
+    // Baru: Context Selector
+    selectedYear,
+    selectedSemester,
+    availableYears,
+    availableSemesters,
+    yearOptions,
+    semesterOptions,
+    onYearChange,
+    onSemesterChange,
+    setDefaultContext,
   }
 }

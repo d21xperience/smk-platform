@@ -1,14 +1,6 @@
 <template>
   <q-page padding>
-    <div class="q-mb-md">
-      <div class="text-h5 text-weight-bold">
-        {{ isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru' }}
-      </div>
-      <div class="text-grey-7">
-        {{ isEditMode ? 'Perbarui informasi siswa' : 'Daftarkan siswa baru ke sistem' }}
-      </div>
-    </div>
-
+    <DynamicHeader :title="isEditMode ? 'Edit Data Siswa' : 'Tambah Siswa Baru'" />
     <q-card>
       <q-card-section>
         <q-form @submit="onSubmit">
@@ -97,6 +89,7 @@
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStudentCreate } from '@/composables/kesiswaan/useStudentCreate'
+import DynamicHeader from '@/components/DynamicHeader.vue'
 
 const route = useRoute()
 

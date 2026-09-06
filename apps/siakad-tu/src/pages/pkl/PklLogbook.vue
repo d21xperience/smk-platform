@@ -83,9 +83,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useLogbookStore } from 'stores/pkl/logbook'
-import { useSiswaStore } from 'stores/kesiswaan/siswa'
-import { useAuthStore } from 'stores/auth-store'
+import { useLogbookStore } from '@/stores/pkl/logbook'
+import { useSiswaStore } from '@/stores/kesiswaan/siswa'
+import { useAuthStore } from '@/stores/authStore'
 
 const $q = useQuasar()
 const logbookStore = useLogbookStore()

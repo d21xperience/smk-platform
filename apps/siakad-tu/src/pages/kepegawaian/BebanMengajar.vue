@@ -66,8 +66,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useJadwalStore } from 'stores/kepegawaian/jadwal'
-import { useGuruStore } from 'stores/kepegawaian/guru'
+import { useJadwalStore } from '@/stores/kepegawaian/jadwal'
+import { useGuruStore } from '@/stores/kepegawaian/guru'
 
 const $q = useQuasar()
 const jadwalStore = useJadwalStore()

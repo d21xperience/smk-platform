@@ -7,10 +7,17 @@
         <q-btn flat dense round icon="menu" aria-label="Menu" class="lt-sm" @click="toggleLeftDrawer" />
 
         <!-- Logo -->
-        <q-toolbar-title class="text-weight-bold text-primary">
-          <q-icon name="school" size="2em" class="q-mr-sm" />
-          SDP SMK
+        <q-toolbar-title class="flex no-wrap items-center">
+          <div>
+            <q-icon name="school" size="2em" class="q-mr-sm" />
+            <div class="column">
+              <div class="text-h6 text-weight-bold">SDP</div>
+              <div class="text-caption gt-xs">{{ schoolLabel }}</div>
+            </div>
+          </div>
         </q-toolbar-title>
+
+        <q-space />
 
         <!-- Desktop Navigation -->
         <div class="gt-xs row items-center no-wrap text-weight-medium">
@@ -23,7 +30,11 @@
             </q-btn>
           </q-tabs>
         </div>
-
+        <q-space />
+        <!-- Context Selector (Desktop) -->
+        <div class="gt-sm q-mr-md">
+          <ContextSelector />
+        </div>
         <!-- User menu (jika sudah login) -->
         <q-space class="lt-sm" />
 
@@ -44,15 +55,17 @@
             </q-menu>
           </q-btn>
         </div>
-        <div v-else class="row items-center q-gutter-sm lt-sm">
-          <q-btn flat label="Login" @click="proceedToLogin" />
+        <div v-else class="row items-center q-gutter-sm">
+          <q-btn flat icon="login" @click="showLoginDialog = true" />
         </div>
       </q-toolbar>
+
+      <TuMenuToolbar :visible="true" @menu-click="onMenuSelected" />
+
     </q-header>
 
     <!-- Mobile Drawer -->
-    <!-- <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-1"> -->
-    <!-- <q-drawer v-model="leftDrawerOpen" bordered class="bg-grey-1">
+    <q-drawer v-model="leftDrawerOpen" bordered class="bg-grey-1">
       <q-list>
         <q-item-label header class="text-weight-bold text-primary">
           Menu Navigasi
@@ -80,7 +93,7 @@
           </q-item-section>
         </q-item>
       </q-list>
-    </q-drawer> -->
+    </q-drawer>
 
     <!-- Main Content -->
     <q-page-container>
@@ -88,9 +101,18 @@
     </q-page-container>
 
     <!-- Footer -->
-    <q-footer class="bg-grey-14 text-white q-py-sm">
-      <div class="text-center text-caption">
-        <div class="q-mt-xs">SDP SMK &copy; 2026. (Made with <span class="text-red-14">❤</span> by. Deden M.J.)</div>
+    <q-footer class="bg-grey-2 text-grey-8 q-py-sm">
+      <div class="row items-center q-px-md text-center">
+        <!-- 1. Kolom Kiri: Dibuat kosong sebagai penyeimbang -->
+        <div class="col-4 gt-xs"></div>
+        <div class="col-xs-12 col-sm-4 text-weight-bold">
+          <div class="q-mt-xs">SDP SMK &copy; 2026. (Made with <span class="text-red-14">❤</span> by. Deden Moh.J.)</div>
+        </div>
+        <q-space />
+        <div class="col-xs-12 col-sm-4 text-right text-weight-medium">
+          <q-icon name="calendar_today" size="xs" class="q-mr-xs" color="primary" />
+          {{ currentDate }}, {{ currentTime }}
+        </div>
       </div>
     </q-footer>
 
@@ -144,27 +166,56 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+
+    <!-- ✅ REUSABLE LOGIN DIALOG COMPONENT -->
+    <LoginDialog v-model="showLoginDialog"
+      message="Halaman ini hanya dapat diakses oleh pegawai Tata Usaha yang sudah login." :is-loading="isLoggingIn"
+      :error-message="loginError" @login="handleLoginSubmit" @cancel="handleLoginCancel" />
+
+
   </q-layout>
 </template>
 
 <script setup>
 import { useLandingLayout } from '@/composables/landing/useLandingLayout'
 import DropDownMenu from '@/components/DropDownMenu.vue'
+import { useOperationalContext } from '@/composables/context/useOperationalContext'
+import ContextSelector from '@/components/ContextSelector.vue'
+import { useCurrentDateTime } from '@/composables/ui/useCurrentDateTime'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import LoginDialog from '@/components/LoginDialog.vue'
+import { useAuthStore } from '@/stores/authStore'
+import TuMenuToolbar from '@/components/dashboard/TuMenuToolbar.vue'
 
+const authStore = useAuthStore()
+// Login State
+const showLoginDialog = ref(false)
+const isLoggingIn = ref(false)
+const loginError = ref('')
+
+const router = useRouter()
+const { currentDate, currentTime } = useCurrentDateTime()
+const {
+  schoolLabel,
+} = useOperationalContext()
 const {
   isSearchOpen,
   showLoginRequiredDialog,
-  isAuthenticated,
   currentUser,
   menuItems,
   itemPortal,
-  toggleLeftDrawer,
   openSearch,
   closeSearch,
-  proceedToLogin,
   cancelLogin,
 } = useLandingLayout()
-
+const leftDrawerOpen = ref(false)
+const pendingNavigation = ref(null)
+const isAuthenticated = ref(false)
+function toggleLeftDrawer() {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
 function handleSearch() {
   // Cek apakah user sudah login
   if (!isAuthenticated.value) {
@@ -176,10 +227,88 @@ function handleSearch() {
   }
 }
 
-function handleLogout() {
-  // Implementasi logout logic
-  console.log('Logout')
+
+
+// function requestAccess(routeName, params = {}) {
+//   if (authStore.isAuthenticated) {
+//     router.push({ name: routeName, params })
+//   } else {
+//     pendingNavigation.value = { name: routeName, params }
+//     showLoginRequiredDialog.value = true
+//   }
+// }
+
+function proceedToLogin() {
+  showLoginRequiredDialog.value = false
+  if (pendingNavigation.value) {
+    router.push({
+      name: 'auth-login',
+      query: {
+        redirectTo: pendingNavigation.value.name,
+        ...pendingNavigation.value.params,
+      },
+    })
+  } else {
+    router.push({ name: 'auth-login' })
+  }
 }
+/**
+ * Handler saat user submit form login di komponen LoginDialog
+ */
+async function handleLoginSubmit(credentials) {
+  isLoggingIn.value = true
+  loginError.value = ''
+
+  try {
+    // Panggil action login di authStore
+    const success = await authStore.login(credentials)
+
+    if (success) {
+      showLoginDialog.value = false
+
+      // Redirect ke halaman yang dituju sebelumnya, atau ke home
+      if (pendingNavigation.value) {
+        router.push(pendingNavigation.value)
+        pendingNavigation.value = null
+      } else {
+        router.push({ name: 'landing-home' })
+      }
+    } else {
+      // Jika gagal, tampilkan error dari store atau default message
+      loginError.value = authStore.error?.message || 'Username atau password salah.'
+    }
+  } catch (err) {
+    console.log(err)
+    loginError.value = 'Terjadi kesalahan jaringan. Silakan coba lagi.'
+  } finally {
+    isLoggingIn.value = false
+  }
+}
+
+/**
+ * Handler saat user membatalkan login
+ */
+function handleLoginCancel() {
+  showLoginDialog.value = false
+  pendingNavigation.value = null
+  loginError.value = ''
+}
+// function handleLogout() {
+//   authStore.logout()
+//   router.push({ name: 'landing-home' })
+// }
+
+
+
+
+// Menangkap event emit ketika menu diklik
+const onMenuSelected = (data) => {
+  console.log(`Menu ${data.menu} diklik dengan item:`, data.item)
+  // Lakukan aksi lanjutan di sini (misal: pindah halaman/routing)
+}
+
+
+
 </script>
 
 <style scoped>

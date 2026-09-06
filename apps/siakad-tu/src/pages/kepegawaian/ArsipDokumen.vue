@@ -96,8 +96,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useArsipStore } from 'stores/kepegawaian/arsip'
-import { useGuruStore } from 'stores/kepegawaian/guru'
+import { useArsipStore } from '@/stores/kepegawaian/arsip'
+import { useGuruStore } from '@/stores/kepegawaian/guru'
 
 const $q = useQuasar()
 const arsipStore = useArsipStore()

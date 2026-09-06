@@ -52,9 +52,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { usePenempatanStore } from 'stores/pkl/penempatan'
-import { useMitraStore } from 'stores/pkl/mitra'
-import { useSiswaStore } from 'stores/kesiswaan/siswa' // asumsi kita punya store siswa
+import { usePenempatanStore } from '@/stores/pkl/penempatan'
+import { useMitraStore } from '@/stores/pkl/mitra'
+import { useSiswaStore } from '@/stores/kesiswaan/siswa' // asumsi kita punya store siswa
 
 const $q = useQuasar()
 const penempatanStore = usePenempatanStore()

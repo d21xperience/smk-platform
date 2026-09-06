@@ -35,9 +35,20 @@ export function useLandingLayout() {
   ])
 
   const itemPortal = ref([
-    { label: 'Portal Guru', icon: 'person', action: () => handlePortalClick('guru') },
-    { label: 'Portal Siswa', icon: 'school', action: () => handlePortalClick('siswa') },
-    { label: 'Portal Orang Tua', icon: 'family_restroom', action: () => handlePortalClick('ortu') },
+    { title: 'Our Website', url: 'https://kemdikbud.go.id', target: '_blank' },
+    { title: 'CBT', url: 'https://kemdikbud.go.id', target: '_blank' },
+    { title: 'e-Rapor', url: 'https:e-rapor.smkpasjat.my.id', target: '_blank' },
+    { title: 'Ruang GTK', url: 'https://guru.kemendikdasmen.go.id/', target: '_blank' },
+    {
+      title: 'Info GTK',
+      url: 'https://info.gtk.kemendikdasmen.go.id/',
+      target: '_blank',
+    },
+    {
+      title: 'SIMPKB',
+      url: 'https://paspor-gtk.simpkb.id/casgpo/login?service=https%3A%2F%2Fppg-backend.simpkb.id%2Fauth%2Flogin',
+      target: '_blank',
+    },
   ])
 
   // === COMPUTED ===

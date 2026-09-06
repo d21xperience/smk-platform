@@ -441,18 +441,15 @@ clean-all: clean
 #=============================================================================
 # Daftar file (path relatif dari root sekolah-platform)
 FILES = \
-services/tu-core/migrations/010_create_correspondences.up.sql \
-services/tu-core/migrations/010_create_correspondences.down.sql \
-services/tu-core/proto/correspondence/v1/correspondence.proto \
-services/tu-core/internal/domain/correspondence/valueobjects/type.go \
-services/tu-core/internal/domain/correspondence/valueobjects/status.go \
-services/tu-core/internal/domain/correspondence/models/correspondence.go \
-services/tu-core/internal/domain/correspondence/events/correspondence_events.go \
-services/tu-core/internal/domain/correspondence/engine/correspondence_engine.go \
-services/tu-core/internal/repository/correspondence_repository.go \
-services/tu-core/internal/service/correspondence_service.go \
-services/tu-core/internal/handler/grpc/correspondence_handler.go \
-scripts/test-correspondence-workflow.sh
+apps/siakad-tu/src/components/dashboard/DashboardHeader.vue \
+apps/siakad-tu/src/components/dashboard/AttentionList.vue \
+apps/siakad-tu/src/components/dashboard/TrendChart.vue \
+apps/siakad-tu/src/components/dashboard/DistributionBar.vue \
+apps/siakad-tu/src/components/dashboard/RecentCases.vue \
+apps/siakad-tu/src/components/dashboard/ExtracurricularList.vue \
+apps/siakad-tu/src/components/dashboard/AchievementList.vue \
+apps/siakad-tu/src/components/dashboard/AgendaList.vue
+
 
 # Target utama untuk membuat folder dan file
 .PHONY: create-files

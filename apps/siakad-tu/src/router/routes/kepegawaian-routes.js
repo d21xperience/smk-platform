@@ -1,26 +1,31 @@
 const kepegawaian = {
   path: '/kepegawaian',
   children: [
-    { path: '', redirect: '/kepegawaian/data-guru' },
+    { path: '', redirect: '/kepegawaian/dashboard' },
     {
-      path: 'data-guru',
+      path: 'dashboard',
+      name: 'dashboard-kepegawaian',
+      component: () => import('@/pages/kepegawaian/DashboardKepegawaian.vue'),
+    },
+    {
+      path: 'direktori-gtk',
+      name: 'direktori-gtk',
       component: () => import('@/pages/kepegawaian/DataGuru.vue'),
-      name: 'main',
     },
     {
       path: 'beban-mengajar',
+      name: 'beban-mengajar',
       component: () => import('@/pages/kepegawaian/BebanMengajar.vue'),
-      name: 'bebanMengajar',
     },
     {
       path: 'cuti-kerja',
+      name: 'cuti-kerja',
       component: () => import('@/pages/kepegawaian/CutiMengajar.vue'),
-      name: 'cuti',
     },
     {
-      path: 'arsip',
+      path: 'arsip-kepegawaian',
+      name: 'arsip-kepegawaian',
       component: () => import('@/pages/kepegawaian/ArsipDokumen.vue'),
-      name: 'cuti',
     },
   ],
   meta: {

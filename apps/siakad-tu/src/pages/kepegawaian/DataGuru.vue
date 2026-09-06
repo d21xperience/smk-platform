@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row justify-between q-mb-md">
-      <div class="text-h5">Data Induk GTK (Guru/Tenaga Kependidikan)</div>
+      <div class="text-h5">Data GTK (Guru/Tenaga Kependidikan)</div>
       <q-btn color="primary" icon="add" label="Tambah Guru" @click="openDialog()" />
     </div>
 
@@ -42,7 +42,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useGuruStore } from 'stores/kepegawaian/guru'
+import { useGuruStore } from '@/stores/kepegawaian/guru'
 
 const $q = useQuasar()
 const guruStore = useGuruStore()

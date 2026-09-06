@@ -56,7 +56,7 @@ export class AcademicPeriod {
   }
 
   get semesterLabel() {
-    return `Semester ${this._semester}`
+    return `${this._semester}`
   }
 
   get displayLabel() {

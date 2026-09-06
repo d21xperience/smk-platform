@@ -1,221 +1,120 @@
 <template>
   <q-page class="dashboard-page bg-grey-1">
-    <!-- HEADER -->
-    <div class="dashboard-header q-px-md q-py-lg">
-      <div class="container max-width-center row items-center justify-between">
-        <div>
-          <div class="text-overline text-secondary text-weight-medium letter-spacing-2">
-            SISTEM INFORMASI AKADEMIK
-          </div>
-          <div class="text-h5 text-weight-bold text-white q-mt-xs">
-            Dashboard Kesiswaan
-          </div>
-          <div class="text-caption text-grey-4 q-mt-xs">
-            {{ todayLabel }}
-          </div>
-        </div>
-        <div class="row items-center q-gutter-sm">
-          <q-btn unelevated color="secondary" text-color="dark" label="Input Pelanggaran" no-caps icon="add" />
-          <q-btn round flat color="white" icon="notifications">
-            <q-badge color="secondary" text-color="dark" floating rounded>{{ notifCount }}</q-badge>
-          </q-btn>
-        </div>
-      </div>
-    </div>
+    <!-- HEADER (Reusable) -->
+    <DashboardHeader
+      :title="'Dashboard Kesiswaan'"
+      :subtitle="'SISTEM INFORMASI AKADEMIK'"
+      :dateLabel="todayLabel"
+      :notificationCount="notifCount"
+      actionLabel="Input Pelanggaran"
+      actionIcon="add"
+      @click:action="handleInputPelanggaran"
+      @click:notification="handleNotification"
+    />
 
     <div class="container max-width-center q-px-md q-py-lg">
-      <!-- KPI CARDS -->
-      <div class="row q-col-gutter-md q-mb-lg">
-        <div class="col-6 col-md-3" v-for="kpi in kpis" :key="kpi.label">
-          <q-card flat bordered class="kpi-card">
-            <q-card-section class="row items-center no-wrap">
-              <q-avatar :color="kpi.color" text-color="white" :icon="kpi.icon" size="46px" class="q-mr-md" />
-              <div>
-                <div class="text-h6 text-weight-bold text-primary">{{ kpi.value }}</div>
-                <div class="text-caption text-grey-7">{{ kpi.label }}</div>
-              </div>
-            </q-card-section>
-          </q-card>
+      <!-- Loading State -->
+      <div v-if="loading" class="row justify-center q-py-xl">
+        <q-spinner color="primary" size="3em" />
+        <div class="text-caption text-grey-6 q-mt-sm">Memuat data dashboard...</div>
+      </div>
+
+      <!-- Content (only show when data is available and not loading) -->
+      <template v-else-if="data">
+        <!-- KPI CARDS (Menggunakan komponen KpiCard yang sudah ada) -->
+        <div class="row q-col-gutter-md q-mb-lg">
+          <div
+            class="col-6 col-md-3"
+            v-for="kpi in kpiList"
+            :key="kpi.key"
+          >
+            <KpiCard
+              :label="kpi.label"
+              :value="kpi.value"
+              :icon="kpi.icon"
+              :color="kpi.color"
+              :route-to="kpi.routeTo"
+              @click="handleKpiClick(kpi.key)"
+            />
+          </div>
+        </div>
+
+        <div class="row q-col-gutter-lg">
+          <!-- LEFT COLUMN -->
+          <div class="col-12 col-md-8">
+            <!-- SISWA PERLU PERHATIAN KHUSUS -->
+            <AttentionList
+              v-if="data.siswaPerhatian?.length"
+              :items="data.siswaPerhatian"
+              title="Siswa Memerlukan Perhatian Khusus"
+              icon="report"
+              color="red"
+              @click:item="handleAttentionItemClick"
+            />
+
+            <!-- TREN PELANGGARAN -->
+            <TrendChart
+              :items="data.trenPelanggaran || []"
+              title="Tren Pelanggaran Siswa (6 Bulan Terakhir)"
+              :badgeLabel="`${data.totalPelanggaranBulanIni || 0} kasus bulan ini`"
+            />
+
+            <!-- DISTRIBUSI POIN -->
+            <DistributionBar
+              :items="data.poinPerTingkat || []"
+              title="Distribusi Poin Pelanggaran per Tingkat Kelas"
+            />
+
+            <!-- KASUS TERBARU -->
+            <RecentCases
+              :items="data.kasusTerbaru || []"
+              title="Catatan Kasus Terbaru"
+              @click:item="handleKasusItemClick"
+            />
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="col-12 col-md-4">
+            <!-- EKSTRAKURIKULER -->
+            <ExtracurricularList
+              :items="data.ekstrakurikuler || []"
+              title="Peserta Ekstrakurikuler"
+              @click:item="handleEkskulItemClick"
+            />
+
+            <!-- PRESTASI -->
+            <AchievementList
+              :items="data.prestasiList || []"
+              title="Prestasi Terbaru"
+              @click:item="handlePrestasiItemClick"
+            />
+
+            <!-- AGENDA -->
+            <AgendaList
+              :items="data.agendaList || []"
+              title="Agenda Kesiswaan"
+              @click:item="handleAgendaItemClick"
+            />
+          </div>
+        </div>
+      </template>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="row justify-center q-py-xl">
+        <div class="text-center">
+          <q-icon name="error" color="negative" size="3em" />
+          <div class="text-h6 text-negative q-mt-sm">Gagal memuat data</div>
+          <div class="text-caption text-grey-7">{{ error }}</div>
+          <q-btn flat color="primary" label="Coba Lagi" @click="load" class="q-mt-md" />
         </div>
       </div>
 
-      <div class="row q-col-gutter-lg">
-        <!-- LEFT COLUMN -->
-        <div class="col-12 col-md-8">
-          <!-- SISWA PERLU PERHATIAN KHUSUS -->
-          <q-card flat bordered class="q-mb-lg content-card border-alert" v-if="siswaPerhatian.length">
-            <q-card-section>
-              <div class="row items-center">
-                <q-icon name="report" color="red" size="22px" class="q-mr-sm" />
-                <div class="text-subtitle1 text-weight-bold text-red-9">
-                  Siswa Memerlukan Perhatian Khusus
-                </div>
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-list separator>
-              <q-item v-for="siswa in siswaPerhatian" :key="siswa.nama">
-                <q-item-section avatar>
-                  <q-avatar color="red-1" text-color="red-9" icon="person" size="38px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ siswa.nama }}</q-item-label>
-                  <q-item-label caption>{{ siswa.kelas }} • {{ siswa.catatan }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-badge color="red" text-color="white" class="q-px-sm">
-                    {{ siswa.poin }} poin
-                  </q-badge>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card>
-
-          <!-- TREN PELANGGARAN -->
-          <q-card flat bordered class="q-mb-lg content-card">
-            <q-card-section>
-              <div class="row items-center justify-between">
-                <div class="text-subtitle1 text-weight-bold text-primary">
-                  Tren Pelanggaran Siswa (6 Bulan Terakhir)
-                </div>
-                <q-badge color="grey-3" text-color="grey-8" class="q-px-sm">
-                  {{ totalPelanggaranBulanIni }} kasus bulan ini
-                </q-badge>
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-card-section>
-              <div class="trend-chart row items-end no-wrap">
-                <div v-for="bulan in trenPelanggaran" :key="bulan.label" class="trend-bar-wrap col text-center">
-                  <div class="text-caption text-grey-7 q-mb-xs">{{ bulan.jumlah }}</div>
-                  <div class="trend-bar" :style="{ height: trendHeight(bulan.jumlah) + 'px' }" />
-                  <div class="text-caption text-grey-6 q-mt-xs">{{ bulan.label }}</div>
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-
-          <!-- KATEGORI PELANGGARAN PER KELAS -->
-          <q-card flat bordered class="q-mb-lg content-card">
-            <q-card-section>
-              <div class="text-subtitle1 text-weight-bold text-primary">
-                Distribusi Poin Pelanggaran per Tingkat Kelas
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-card-section>
-              <div v-for="tingkat in poinPerTingkat" :key="tingkat.label" class="q-mb-md">
-                <div class="row items-center justify-between q-mb-xs">
-                  <div class="text-body2 text-weight-medium">{{ tingkat.label }}</div>
-                  <div class="text-caption text-grey-7">{{ tingkat.total }} poin akumulasi</div>
-                </div>
-                <div class="bar-track">
-                  <div class="bar-fill"
-                    :style="{ width: barWidth(tingkat.total) + '%', backgroundColor: tingkat.warna }" />
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-
-          <!-- LOG KASUS TERBARU -->
-          <q-card flat bordered class="content-card">
-            <q-card-section>
-              <div class="text-subtitle1 text-weight-bold text-primary">
-                Catatan Kasus Terbaru
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-list separator>
-              <q-item v-for="kasus in kasusTerbaru" :key="kasus.id">
-                <q-item-section avatar>
-                  <q-avatar :color="kategoriWarna(kasus.kategori)" text-color="white" size="38px">
-                    {{ kasus.kategori.charAt(0) }}
-                  </q-avatar>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ kasus.judul }}</q-item-label>
-                  <q-item-label caption>{{ kasus.siswa }} • {{ kasus.kelas }} • {{ kasus.waktu }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-chip dense :color="kategoriWarna(kasus.kategori)" text-color="white" class="text-caption">
-                    {{ kasus.kategori }}
-                  </q-chip>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card>
-        </div>
-
-        <!-- RIGHT COLUMN -->
-        <div class="col-12 col-md-4">
-          <!-- EKSTRAKURIKULER -->
-          <q-card flat bordered class="q-mb-lg content-card">
-            <q-card-section>
-              <div class="text-subtitle1 text-weight-bold text-primary">
-                Peserta Ekstrakurikuler
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-list separator>
-              <q-item v-for="ekskul in ekstrakurikuler" :key="ekskul.nama">
-                <q-item-section avatar>
-                  <q-avatar :color="ekskul.warna" text-color="white" :icon="ekskul.icon" size="38px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ ekskul.nama }}</q-item-label>
-                  <q-item-label caption>Pembina: {{ ekskul.pembina }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <div class="text-weight-bold text-primary">{{ ekskul.peserta }}</div>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card>
-
-          <!-- PRESTASI TERBARU -->
-          <q-card flat bordered class="q-mb-lg content-card">
-            <q-card-section>
-              <div class="text-subtitle1 text-weight-bold text-primary">
-                Prestasi Terbaru
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-list separator>
-              <q-item v-for="prestasi in prestasiList" :key="prestasi.judul">
-                <q-item-section avatar>
-                  <q-avatar color="amber-2" text-color="amber-9" icon="emoji_events" size="38px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ prestasi.judul }}</q-item-label>
-                  <q-item-label caption>{{ prestasi.siswa }} • {{ prestasi.tanggal }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card>
-
-          <!-- AGENDA KESISWAAN -->
-          <q-card flat bordered class="content-card">
-            <q-card-section>
-              <div class="text-subtitle1 text-weight-bold text-primary">
-                Agenda Kesiswaan
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-list separator>
-              <q-item v-for="agenda in agendaList" :key="agenda.judul">
-                <q-item-section avatar>
-                  <div class="agenda-date text-center">
-                    <div class="text-weight-bold text-primary">{{ agenda.tanggal }}</div>
-                    <div class="text-caption text-grey-7">{{ agenda.bulan }}</div>
-                  </div>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ agenda.judul }}</q-item-label>
-                  <q-item-label caption>{{ agenda.waktu }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card>
+      <!-- Empty State (jika data kosong) -->
+      <div v-else class="row justify-center q-py-xl">
+        <div class="text-center">
+          <q-icon name="dashboard" color="grey-5" size="3em" />
+          <div class="text-h6 text-grey-7 q-mt-sm">Belum ada data</div>
+          <div class="text-caption text-grey-6">Silakan muat ulang halaman</div>
         </div>
       </div>
     </div>
@@ -223,8 +122,30 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useKesiswaanDashboard } from '@/composables/useKesiswaanDashboard'
+import DashboardHeader from '@/components/dashboard/DashboardHeader.vue'
+import AttentionList from '@/components/dashboard/AttentionList.vue'
+import TrendChart from '@/components/dashboard/TrendChart.vue'
+import DistributionBar from '@/components/dashboard/DistributionBar.vue'
+import RecentCases from '@/components/dashboard/RecentCases.vue'
+import ExtracurricularList from '@/components/dashboard/ExtracurricularList.vue'
+import AchievementList from '@/components/dashboard/AchievementList.vue'
+import AgendaList from '@/components/dashboard/AgendaList.vue'
+import KpiCard from '@/components/KpiCard.vue'
 
+// === COMPOSABLE ===
+const {
+  data,
+  loading,
+  error,
+  load,
+  handleKpiClick,
+  // helpers (trendHeight, barWidth, kategoriWarna) tidak digunakan langsung di template,
+  // karena komponen sudah menangani logika perhitungan sendiri.
+} = useKesiswaanDashboard()
+
+// === UI-SPECIFIC STATE (PAGE-ONLY) ===
 const todayLabel = computed(() => {
   const today = new Date()
   return today.toLocaleDateString('id-ID', {
@@ -237,100 +158,93 @@ const todayLabel = computed(() => {
 
 const notifCount = ref(6)
 
-const kpis = ref([
-  { label: 'Siswa Aktif', value: '1.248', icon: 'groups', color: 'primary' },
-  { label: 'Kasus Pelanggaran Bulan Ini', value: '17', icon: 'gavel', color: 'red-7' },
-  { label: 'Siswa Berprestasi', value: '32', icon: 'emoji_events', color: 'amber-8' },
-  { label: 'Peserta Ekstrakurikuler', value: '486', icon: 'sports', color: 'teal' },
-])
+// === KPI LIST (REACTIVE) ===
+const kpiList = computed(() => {
+  if (!data.value) return []
+  return [
+    {
+      key: 'totalSiswaAktif',
+      label: 'Siswa Aktif',
+      value: data.value.totalSiswaAktif || 0,
+      icon: 'groups',
+      color: 'primary',
+      routeTo: { name: 'student-list' },
+    },
+    {
+      key: 'totalPelanggaranBulanIni',
+      label: 'Kasus Pelanggaran Bulan Ini',
+      value: data.value.totalPelanggaranBulanIni || 0,
+      icon: 'gavel',
+      color: 'red-7',
+      routeTo: { name: 'pelanggaran-list' },
+    },
+    {
+      key: 'totalBerprestasi',
+      label: 'Siswa Berprestasi',
+      value: data.value.totalBerprestasi || 0,
+      icon: 'emoji_events',
+      color: 'amber-8',
+      routeTo: { name: 'prestasi-list' },
+    },
+    {
+      key: 'totalEkskul',
+      label: 'Peserta Ekstrakurikuler',
+      value: data.value.totalEkskul || 0,
+      icon: 'sports',
+      color: 'teal',
+      routeTo: { name: 'ekskul-list' },
+    },
+  ]
+})
 
-const siswaPerhatian = ref([
-  { nama: 'Rian Firmansyah', kelas: 'XI TBSM 2', catatan: 'Alpa berulang & poin pelanggaran tinggi', poin: 85 },
-  { nama: 'Dedi Kurniawan', kelas: 'X TKJ 1', catatan: 'Terlibat perkelahian di lingkungan sekolah', poin: 70 },
-])
-
-const totalPelanggaranBulanIni = 17
-
-const trenPelanggaran = ref([
-  { label: 'Feb', jumlah: 12 },
-  { label: 'Mar', jumlah: 15 },
-  { label: 'Apr', jumlah: 9 },
-  { label: 'Mei', jumlah: 14 },
-  { label: 'Jun', jumlah: 8 },
-  { label: 'Jul', jumlah: 17 },
-])
-
-const maxTren = Math.max(...trenPelanggaran.value.map((b) => b.jumlah))
-const trendHeight = (jumlah) => Math.max(8, Math.round((jumlah / maxTren) * 120))
-
-const poinPerTingkat = ref([
-  { label: 'Kelas X', total: 420, warna: '#0a192f' },
-  { label: 'Kelas XI', total: 610, warna: '#c9a227' },
-  { label: 'Kelas XII', total: 260, warna: '#00796b' },
-])
-
-const maxPoin = Math.max(...poinPerTingkat.value.map((p) => p.total))
-const barWidth = (total) => Math.round((total / maxPoin) * 100)
-
-const kasusTerbaru = ref([
-  {
-    id: 1,
-    judul: 'Terlambat masuk sekolah lebih dari 3 kali dalam sepekan',
-    siswa: 'Ahmad Fauzan',
-    kelas: 'X TKJ 2',
-    waktu: '2 jam lalu',
-    kategori: 'Ringan',
-  },
-  {
-    id: 2,
-    judul: 'Tidak mengenakan atribut seragam lengkap',
-    siswa: 'Siti Nurhaliza',
-    kelas: 'XI Akuntansi',
-    waktu: 'Kemarin, 09:15',
-    kategori: 'Ringan',
-  },
-  {
-    id: 3,
-    judul: 'Membawa rokok elektrik ke lingkungan sekolah',
-    siswa: 'Rian Firmansyah',
-    kelas: 'XI TBSM 2',
-    waktu: '2 hari lalu',
-    kategori: 'Berat',
-  },
-  {
-    id: 4,
-    judul: 'Bolos pada jam pelajaran ke-5 dan ke-6',
-    siswa: 'Dedi Kurniawan',
-    kelas: 'X TKJ 1',
-    waktu: '3 hari lalu',
-    kategori: 'Sedang',
-  },
-])
-
-const kategoriWarna = (kategori) => {
-  if (kategori === 'Berat') return 'red-8'
-  if (kategori === 'Sedang') return 'orange-8'
-  return 'blue-grey-6'
+// === EVENT HANDLERS (meneruskan ke composable atau langsung) ===
+function handleInputPelanggaran() {
+  // Bisa arahkan ke route atau dialog
+  // Misal: router.push({ name: 'input-pelanggaran' })
+  // Untuk saat ini, kita serahkan ke handleKpiClick atau requestAccess
+  handleKpiClick('totalPelanggaranBulanIni')
 }
 
-const ekstrakurikuler = ref([
-  { nama: 'Pramuka', pembina: 'Bpk. Sutrisno', peserta: 142, icon: 'terrain', warna: 'green-8' },
-  { nama: 'Futsal', pembina: 'Bpk. Andi Wijaya', peserta: 68, icon: 'sports_soccer', warna: 'indigo-8' },
-  { nama: 'PMR', pembina: 'Ibu Ratna Sari', peserta: 54, icon: 'medical_services', warna: 'red-6' },
-  { nama: 'Robotika', pembina: 'Bpk. Yusuf Hidayat', peserta: 38, icon: 'precision_manufacturing', warna: 'deep-purple-6' },
-])
+function handleNotification() {
+  // Bisa buka panel notifikasi
+  console.log('Notifikasi diklik')
+}
 
-const prestasiList = ref([
-  { judul: 'Juara 1 Mekanik Edukasi Tingkat Provinsi', siswa: 'Bayu Aji Santoso - XII TBSM 1', tanggal: '30 Mei 2026' },
-  { judul: 'Juara 2 LKS Bidang IT Network Systems Administration', siswa: 'Nadia Putri - XI TKJ 1', tanggal: '18 Mei 2026' },
-  { judul: 'Juara 3 Lomba Debat Bahasa Inggris Kabupaten', siswa: 'Fajar Ramadhan - XI Akuntansi', tanggal: '05 Mei 2026' },
-])
+function handleAttentionItemClick(item) {
+  // Navigasi ke detail siswa
+  console.log('Klik siswa perhatian:', item)
+  // router.push({ name: 'student-detail', params: { id: item.id } })
+}
 
-const agendaList = ref([
-  { tanggal: '13', bulan: 'Jul', judul: 'Pembinaan Karakter & Kedisiplinan Siswa Kelas X', waktu: '08:00 - Aula Sekolah' },
-  { tanggal: '19', bulan: 'Jul', judul: 'Seleksi Ketua OSIS Periode 2026/2027', waktu: '09:00 - Ruang OSIS' },
-  { tanggal: '25', bulan: 'Jul', judul: 'Rapat Evaluasi Tata Tertib Semester Ganjil', waktu: '13:00 - Ruang Guru' },
-])
+function handleKasusItemClick(item) {
+  // Navigasi ke detail kasus
+  console.log('Klik kasus:', item)
+  // router.push({ name: 'kasus-detail', params: { id: item.id } })
+}
+
+function handleEkskulItemClick(item) {
+  // Navigasi ke detail ekstrakurikuler
+  console.log('Klik ekstrakurikuler:', item)
+  // router.push({ name: 'ekskul-detail', params: { id: item.id } })
+}
+
+function handlePrestasiItemClick(item) {
+  // Navigasi ke detail prestasi
+  console.log('Klik prestasi:', item)
+  
+  // router.push({ name: 'prestasi-detail', params: { id: item.id } })
+}
+
+function handleAgendaItemClick(item) {
+  // Navigasi ke detail agenda
+  console.log('Klik agenda:', item)
+  // router.push({ name: 'agenda-detail', params: { id: item.id } })
+}
+
+// === LOAD DATA ON MOUNT ===
+onMounted(() => {
+  load()
+})
 </script>
 
 <style scoped>
@@ -339,62 +253,7 @@ const agendaList = ref([
   margin: 0 auto;
 }
 
-.letter-spacing-2 {
-  letter-spacing: 0.12em;
-}
-
-.dashboard-header {
-  background: linear-gradient(135deg, #0a192f 0%, #123a63 100%);
-}
-
-.kpi-card {
-  border-radius: 8px;
-  height: 100%;
-}
-
-.content-card {
-  border-radius: 8px;
-}
-
-.border-alert {
-  border-left: 4px solid #c62828;
-}
-
-.bar-track {
-  width: 100%;
-  height: 10px;
-  border-radius: 6px;
-  background-color: #eceff1;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.4s ease;
-}
-
-.trend-chart {
-  height: 170px;
-  gap: 12px;
-}
-
-.trend-bar-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.trend-bar {
-  width: 100%;
-  max-width: 32px;
-  background: linear-gradient(180deg, #123a63 0%, #0a192f 100%);
-  border-radius: 4px 4px 0 0;
-  transition: height 0.4s ease;
-}
-
-.agenda-date {
-  min-width: 44px;
+.dashboard-page {
+  min-height: 100vh;
 }
 </style>

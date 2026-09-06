@@ -45,7 +45,10 @@ export class OperationalContext {
    * Contoh: "SMK Pasundan Jatinangor | 2026/2027 - Semester 1"
    */
   get displayLabel() {
-    return `${this._schoolName} | ${this._period.displayLabel}`
+    return `${this._period.displayLabel}`
+  }
+  get schoolLabel() {
+    return `${this._schoolName}`
   }
 
   /**

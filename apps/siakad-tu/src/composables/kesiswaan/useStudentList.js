@@ -36,14 +36,14 @@ export function useStudentList() {
   ]
 
   // === COLUMNS ===
-  const columns = [
-    { name: 'nisn', label: 'NISN', field: 'nisn', align: 'left', sortable: true },
-    { name: 'nis', label: 'NIS', field: 'nis', align: 'left', sortable: true },
-    { name: 'fullName', label: 'Nama Lengkap', field: row => `${row.fullName?.firstName || ''} ${row.fullName?.lastName || ''}`.trim(), align: 'left', sortable: true },
-    { name: 'gender', label: 'L/P', field: row => row.gender === 'MALE' ? 'L' : 'P', align: 'center' },
-    { name: 'status', label: 'Status', field: 'status', align: 'center' },
-    { name: 'actions', label: 'Aksi', field: 'actions', align: 'center' },
-  ]
+  // const columns = [
+  //   { name: 'nisn', label: 'NISN', field: 'nisn', align: 'left', sortable: true },
+  //   { name: 'nis', label: 'NIS', field: 'nis', align: 'left', sortable: true },
+  //   { name: 'fullName', label: 'Nama Lengkap', field: row => `${row.fullName?.firstName || ''} ${row.fullName?.lastName || ''}`.trim(), align: 'left', sortable: true },
+  //   { name: 'gender', label: 'L/P', field: row => row.gender === 'MALE' ? 'L' : 'P', align: 'center' },
+  //   { name: 'status', label: 'Status', field: 'status', align: 'center' },
+  //   { name: 'actions', label: 'Aksi', field: 'actions', align: 'center' },
+  // ]
 
   // === COMPUTED ===
   const tablePagination = computed(() => ({
@@ -140,7 +140,7 @@ export function useStudentList() {
 
     // Options & columns
     statusOptions,
-    columns,
+    // columns,
     tablePagination,
 
     // Helper functions

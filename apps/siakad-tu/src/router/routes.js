@@ -1,9 +1,11 @@
 // apps/siakad-tu/src/router/routes.js
 
+import hubin from './routes/hubin-routes.js'
+import kepegawaian from './routes/kepegawaian-routes.js'
 import kesiswaanRoutes from './routes/kesiswaan-routes.js'
 import persuratan from './routes/persuratan.js'
 import previewDev from './routes/preview-routes.js'
-import psb from './routes/psb.js'
+import psb from './routes/psb-routes.js'
 
 // Import routes baru
 // import keuanganRoutes from './routes/keuangan-routes.js'
@@ -20,8 +22,8 @@ const routes = [
       persuratan,
       kesiswaanRoutes,
       psb,
-
-      // New routes (Frontend Integration)
+      hubin,
+      kepegawaian,
       // keuanganRoutes,
       // absensiRoutes,
       // penilaianRoutes,

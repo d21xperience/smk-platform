@@ -8,8 +8,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { usePenempatanStore } from 'stores/pkl/penempatan'
-import { usePenilaianStore } from 'stores/pkl/penilaian'
+import { usePenempatanStore } from '@/stores/pkl/penempatan'
+import { usePenilaianStore } from '@/stores/pkl/penilaian'
 
 const penempatanStore = usePenempatanStore()
 const penilaianStore = usePenilaianStore()

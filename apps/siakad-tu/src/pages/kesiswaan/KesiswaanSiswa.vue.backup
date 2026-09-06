@@ -225,9 +225,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useSiswaStore } from 'stores/kesiswaan/siswa'
+import { useSiswaStore } from '@/stores/kesiswaan/siswa'
 import { useKelasStore } from '@/stores/kesiswaan/kelasStore'
-import * as XLSX from 'xlsx'
+// import * as XLSX from 'xlsx'
 
 const $q = useQuasar()
 const siswaStore = useSiswaStore()
@@ -399,30 +399,30 @@ function getNestedValue(obj, path) {
 }
 
 function doExportExcel() {
-  const activeColumns = excelColumnOptions.filter(c => selectedExcelColumns.value.includes(c.field))
+  // const activeColumns = excelColumnOptions.filter(c => selectedExcelColumns.value.includes(c.field))
 
   // Buat array of objects sesuai kolom terpilih
-  const exportData = siswaStore.list.map((row, index) => {
-    const entry = { 'No.': index + 1 }
-    activeColumns.forEach(col => {
-      entry[col.label] = getNestedValue(row, col.field)
-    })
-    return entry
-  })
+  // const exportData = siswaStore.list.map((row, index) => {
+  //   const entry = { 'No.': index + 1 }
+  //   activeColumns.forEach(col => {
+  //     entry[col.label] = getNestedValue(row, col.field)
+  //   })
+  //   return entry
+  // })
 
-  const ws = XLSX.utils.json_to_sheet(exportData)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Data Siswa')
+  // const ws = XLSX.utils.json_to_sheet(exportData)
+  // const wb = XLSX.utils.book_new()
+  // XLSX.utils.book_append_sheet(wb, ws, 'Data Siswa')
 
   // Auto-width kolom berdasarkan konten
-  const colWidths = Object.keys(exportData[0] || {}).map(key => ({
-    wch: Math.max(key.length, ...exportData.map(r => String(r[key] ?? '').length)) + 2
-  }))
-  ws['!cols'] = colWidths
+  // const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+  //   wch: Math.max(key.length, ...exportData.map(r => String(r[key] ?? '').length)) + 2
+  // }))
+  // ws['!cols'] = colWidths
 
-  XLSX.writeFile(wb, `${excelFileName.value || 'Data_Siswa'}.xlsx`)
-  exportExcelDialog.value = false
-  $q.notify({ type: 'positive', message: 'File Excel berhasil diunduh', icon: 'check_circle' })
+  // XLSX.writeFile(wb, `${excelFileName.value || 'Data_Siswa'}.xlsx`)
+  // exportExcelDialog.value = false
+  // $q.notify({ type: 'positive', message: 'File Excel berhasil diunduh', icon: 'check_circle' })
 }
 
 // ==================== FUNGSI CETAK PDF ====================

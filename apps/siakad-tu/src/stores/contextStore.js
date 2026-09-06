@@ -27,7 +27,8 @@ export const useContextStore = defineStore('operationalContext', {
     academicYear: (state) => state._context?.academicYear ?? '',
     semester: (state) => state._context?.semester ?? null,
     periodId: (state) => state._context?.periodId ?? null,
-    displayLabel: (state) => state._context?.displayLabel ?? 'Pilih Context',
+    displayLabel: (state) => state._context?.displayLabel ?? 'Pilih Tahun Ajaran',
+    schoolLabel: (state) => state._context?.schoolLabel ?? 'Sekolah ABC',
     hasContext: (state) => state._context !== null && state._context.isValid(),
   },
 

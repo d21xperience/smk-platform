@@ -4,14 +4,19 @@
 
     <div class="row justify-between q-mb-md">
       <div class="text-h5">Mutasi Siswa (Masuk/ Keluar)</div>
-      <q-btn color="primary" icon="add" label="Ajukan Mutasi" @click="openFormDialog" />
+      <div class="q-gutter-sm">
+        <q-btn color="green-7" icon="table_view" label="XLS" title="Export ke Excel" />
+        <q-btn color="deep-orange-7" icon="print" label="PDF" title="Cetak PDF" />
+        <q-btn color="primary" icon="add" label="Ajukan Mutasi" @click="showAddStudents = true" />
+
+      </div>
     </div>
 
     <q-tabs v-model="tabStatus" dense class="q-mb-md" align="left" @update:model-value="loadMutationsByTab">
       <q-tab name="semua" label="Semua" />
-      <q-tab name="pending" label="Menunggu" />
-      <q-tab name="disetujui" label="Disetujui" />
-      <q-tab name="ditolak" label="Ditolak" />
+      <q-tab name="pending" label="Masuk" />
+      <q-tab name="disetujui" label="Keluar" />
+      <!-- <q-tab name="ditolak" label="Ditolak" /> -->
     </q-tabs>
 
     <q-table :rows="mutations" :columns="columns" row-key="id" flat bordered dense :loading="loading">
@@ -51,7 +56,7 @@
     </q-table>
 
     <!-- Dialog Form Pengajuan Mutasi (Disederhanakan untuk fokus pada arsitektur) -->
-    <q-dialog v-model="formDialog" persistent>
+    <!-- <q-dialog v-model="formDialog" persistent>
       <q-card style="min-width: 600px">
         <q-card-section>
           <div class="text-h6">Ajukan Mutasi</div>
@@ -84,10 +89,10 @@
           </q-form>
         </q-card-section>
       </q-card>
-    </q-dialog>
+    </q-dialog> -->
 
     <!-- Dialog Catatan Penolakan -->
-    <q-dialog v-model="catatanDialog" persistent>
+    <!-- <q-dialog v-model="catatanDialog" persistent>
       <q-card>
         <q-card-section>
           <div class="text-h6">Alasan Penolakan</div>
@@ -100,7 +105,55 @@
           <q-btn flat label="Tolak" color="primary" @click="executeReject" :loading="loading" />
         </q-card-actions>
       </q-card>
+    </q-dialog> -->
+
+
+
+    <!-- Add Students -->
+    <q-dialog v-model="showAddStudents">
+      <q-card style="min-width: 400px; max-width: 500px; border-radius: 12px;">
+
+        <!-- Bagian Judul Dialog -->
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6 text-weight-bold text-primary">Mutasi Siswa</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <!-- Bagian Isi / Menu Pilihan -->
+        <q-card-section class="q-pa-md">
+          <q-list bordered separator class="rounded-borders text-grey-9">
+
+            <!-- PILIHAN 1: MANUAL -->
+            <q-item clickable v-close-popup @click="goToPage({ name: 'student-import' })">
+              <q-item-section avatar>
+                <q-icon name="person_add" color="primary" size="md" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold text-subtitle1">Mutasi Masuk</q-item-label>
+                <q-item-label caption>Input siswa pindahan yang masuk</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <!-- PILIHAN 2: IMPORT -->
+            <q-item clickable v-close-popup @click="goToPage({ name: 'student-import' })">
+              <q-item-section avatar>
+                <q-icon name="person_remove" color="primary" size="md" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold text-subtitle1">Mutasi Keluar</q-item-label>
+                <q-item-label caption>Input siswa yang Keluar</q-item-label>
+              </q-item-section>
+            </q-item>
+
+          </q-list>
+        </q-card-section>
+
+      </q-card>
     </q-dialog>
+
+
+
   </q-page>
 </template>
 
@@ -111,19 +164,19 @@ import { useStudentAffairsStore } from '@/stores/kesiswaan/studentAffairsStore';
 
 const $q = useQuasar();
 const store = useStudentAffairsStore();
-
+const showAddStudents = ref(false)
 const tabStatus = ref('semua');
-const formDialog = ref(false);
+// const formDialog = ref(false);
 const detailDialog = ref(false);
-const catatanDialog = ref(false);
-let currentRejectId = null;
-const catatanTolak = ref('');
+// const catatanDialog = ref(false);
+// let currentRejectId = null;
+// const catatanTolak = ref('');
 const detail = ref({});
 
-const form = ref({
-  jenis: null, namaCalon: '', nisnCalon: '', asalSekolah: '',
-  studentId: null, tujuanSekolah: '', alasan: '', dokumen: null
-});
+// const form = ref({
+//   jenis: null, namaCalon: '', nisnCalon: '', asalSekolah: '',
+//   studentId: null, tujuanSekolah: '', alasan: '', dokumen: null
+// });
 
 const columns = [
   { name: 'tanggalPengajuan', label: 'Tanggal', field: 'tanggalPengajuan', align: 'left' },
@@ -139,10 +192,10 @@ const mutations = computed(() => store.mutations.map(m => ({
   nama_siswa: m.jenis === 'MASUK' ? m.namaCalon : 'Siswa ID: ' + m.studentId // Simplifikasi untuk mock
 })));
 
-const siswaOptions = computed(() => {
-  // Dalam implementasi nyata, ini diambil dari store siswa yang sudah di-filter 'AKTIF'
-  return [{ id: '1', nama_dan_kelas: 'Ahmad Fauzi (XII RPL 1)' }];
-});
+// const siswaOptions = computed(() => {
+//   // Dalam implementasi nyata, ini diambil dari store siswa yang sudah di-filter 'AKTIF'
+//   return [{ id: '1', nama_dan_kelas: 'Ahmad Fauzi (XII RPL 1)' }];
+// });
 
 const canApprove = computed(() => {
   // Simulasi role check. Dalam produksi, gunakan useAuthStore
@@ -163,25 +216,25 @@ function getStatusColor(status) {
   return 'negative';
 }
 
-function resetForm() {
-  form.value = { jenis: null, namaCalon: '', nisnCalon: '', asalSekolah: '', studentId: null, tujuanSekolah: '', alasan: '', dokumen: null };
-}
+// function resetForm() {
+//   form.value = { jenis: null, namaCalon: '', nisnCalon: '', asalSekolah: '', studentId: null, tujuanSekolah: '', alasan: '', dokumen: null };
+// }
 
-function openFormDialog() {
-  resetForm();
-  formDialog.value = true;
-}
+// function openFormDialog() {
+//   resetForm();
+//   formDialog.value = true;
+// }
 
-async function submitMutasi() {
-  try {
-    await store.submitMutationAction(form.value); // Asumsi method ini ditambahkan ke store
-    $q.notify({ type: 'positive', message: 'Pengajuan mutasi dikirim' });
-    formDialog.value = false;
-    loadMutationsByTab(tabStatus.value);
-  } catch (err) {
-    $q.notify({ type: 'negative', message: err.message });
-  }
-}
+// async function submitMutasi() {
+//   try {
+//     await store.submitMutationAction(form.value); // Asumsi method ini ditambahkan ke store
+//     $q.notify({ type: 'positive', message: 'Pengajuan mutasi dikirim' });
+//     formDialog.value = false;
+//     loadMutationsByTab(tabStatus.value);
+//   } catch (err) {
+//     $q.notify({ type: 'negative', message: err.message });
+//   }
+// }
 
 function lihatDetail(mutasi) {
   detail.value = mutasi;
@@ -204,26 +257,26 @@ async function handleApprove(id) {
   });
 }
 
-function handleReject(id) {
-  currentRejectId = id;
-  catatanTolak.value = '';
-  catatanDialog.value = true;
-}
+// function handleReject(id) {
+//   currentRejectId = id;
+//   catatanTolak.value = '';
+//   catatanDialog.value = true;
+// }
 
-async function executeReject() {
-  if (!catatanTolak.value.trim()) {
-    $q.notify({ type: 'negative', message: 'Alasan penolakan harus diisi' });
-    return;
-  }
-  try {
-    await store.rejectMutationAction(currentRejectId, catatanTolak.value);
-    $q.notify({ type: 'negative', message: 'Mutasi ditolak' });
-    catatanDialog.value = false;
-    currentRejectId = null;
-  } catch (err) {
-    $q.notify({ type: 'negative', message: err.message });
-  }
-}
+// async function executeReject() {
+//   if (!catatanTolak.value.trim()) {
+//     $q.notify({ type: 'negative', message: 'Alasan penolakan harus diisi' });
+//     return;
+//   }
+//   try {
+//     await store.rejectMutationAction(currentRejectId, catatanTolak.value);
+//     $q.notify({ type: 'negative', message: 'Mutasi ditolak' });
+//     catatanDialog.value = false;
+//     currentRejectId = null;
+//   } catch (err) {
+//     $q.notify({ type: 'negative', message: err.message });
+//   }
+// }
 
 function hapusMutasi() {
   $q.dialog({
