@@ -1,5 +1,5 @@
 <template>
-  <q-toolbar v-show="visible" class="gt-xs row items-center no-wrap text-weight-medium dashboard-header">
+  <q-toolbar v-if="visible" class="gt-xs row items-center no-wrap text-weight-medium dashboard-header">
     <!-- Melakukan looping untuk setiap item menu yang dikirim lewat props -->
     <DropDownMenu v-for="(menu, index) in menus" :key="index" :label="menu.label" :items="menu.items"
       class="text-grey-4" @update:item="handleItemClick(menu.label, $event)" />
@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue'
+import { computed } from 'vue'
 import DropDownMenu from '@/components/DropDownMenu.vue' // Sesuaikan jalur folder Anda
 
 // 1. Definisikan Props

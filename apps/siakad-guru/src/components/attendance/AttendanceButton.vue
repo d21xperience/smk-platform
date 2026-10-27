@@ -1,22 +1,12 @@
 <template>
   <div class="q-gutter-xs">
-    <q-btn
-      v-for="option in options"
-      :key="option.value"
-      :label="option.label"
-      :color="isActive(option.value) ? option.color : 'grey-4'"
-      :text-color="isActive(option.value) ? 'white' : 'dark'"
-      size="sm"
-      dense
-      unelevated
-      @click="selectStatus(option.value)"
-    />
+    <q-btn v-for="option in options" :key="option.value" :label="option.label"
+      :color="isActive(option.value) ? option.color : 'grey-4'" :text-color="isActive(option.value) ? 'white' : 'dark'"
+      size="sm" dense unelevated @click="selectStatus(option.value)" />
   </div>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
-
 const props = defineProps({
   modelValue: {
     type: String,

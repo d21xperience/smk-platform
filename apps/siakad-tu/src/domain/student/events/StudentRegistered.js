@@ -6,5 +6,3 @@ export class StudentRegistered extends DomainEvent {
     super('StudentRegistered', studentId, { schoolId, ...payload })
   }
 }
-
-

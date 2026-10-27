@@ -187,7 +187,7 @@ func (s *Student) Graduate(ctx *context.OperationalContext) error {
 
 	for _, e := range s.enrollments {
 		if e.IsActive() {
-			e.Complete()
+			e.Complete(e.Reason)
 		}
 	}
 
@@ -210,7 +210,7 @@ func (s *Student) Transfer(targetSchool, reason string, ctx *context.Operational
 
 	for _, e := range s.enrollments {
 		if e.IsActive() {
-			e.Complete()
+			e.Complete(e.Reason)
 		}
 	}
 

@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, defineEmits } from 'vue'
 
 // 1. Mendefinisikan PROPS agar komponen flexibel
 defineProps({

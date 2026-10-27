@@ -21,19 +21,6 @@ type AcademicPeriod struct {
 	CreatedAt time.Time
 }
 
-// Class merepresentasikan kelas.
-type Class struct {
-	ID               string
-	SchoolID         string
-	AcademicPeriodID string
-	Name             string // e.g., "7A", "10-IPA-1"
-	Grade            string // e.g., "7", "10"
-	WaliTeacherID    string
-	Capacity         int
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-}
-
 // Subject merepresentasikan mata pelajaran.
 type Subject struct {
 	ID       string

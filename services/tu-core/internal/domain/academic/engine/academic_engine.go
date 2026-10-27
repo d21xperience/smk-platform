@@ -73,31 +73,4 @@ func (e *AcademicEngine) AddSemester(ay *models.AcademicYear, number int, startD
 	}
 }
 
-// CreateClass membuat kelas baru.
-func (e *AcademicEngine) CreateClass(data models.ClassData, ctx *context.OperationalContext) Result {
-	c, err := models.NewClass(data, ctx)
-	if err != nil {
-		return Failure(err)
-	}
-	return SuccessWithClass(c)
-}
 
-// SetClassHomeroom mengatur wali kelas.
-func (e *AcademicEngine) SetClassHomeroom(c *models.Class, teacherID string, ctx *context.OperationalContext) Result {
-	if c == nil {
-		return Failure(errClassNotFound)
-	}
-	if err := c.SetHomeroom(teacherID, ctx); err != nil {
-		return Failure(err)
-	}
-	return SuccessWithClass(c)
-}
-
-var (
-	errAcademicYearNotFound = errString("tahun ajaran tidak ditemukan")
-	errClassNotFound        = errString("kelas tidak ditemukan")
-)
-
-type errString string
-
-func (e errString) Error() string { return string(e) }

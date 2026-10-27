@@ -1,6 +1,6 @@
 // apps/siakad-tu/src/domain/context/OperationalContext.js
 
-import { AcademicPeriod } from './AcademicPeriod.js'
+import { AcademicPeriod } from './value-objects/AcademicPeriod.js'
 
 /**
  * Aggregate Root: OperationalContext

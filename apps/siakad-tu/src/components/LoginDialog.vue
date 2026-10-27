@@ -67,7 +67,7 @@ const isVisible = computed({
   set: (val) => {
     emit('update:modelValue', val)
     if (!val) {
-      authStore.closeLoginDialog()
+      authStore.logout()
     }
   }
 })
@@ -115,7 +115,12 @@ const handleDialogHide = () => {
   // Dipastikan state selalu bersih saat dialog benar-benar hilang
   resetForm()
   if (authStore.showLoginDialog) {
-    authStore.closeLoginDialog()
+    authStore.logout()
   }
 }
+// const closeLoginDialog = () => {
+//   modelValue = false
+//   redirectUrl.value = null // Reset juga saat dibatalkan
+//   loginPromptMessage.value = null // <-- Reset pesan saat dialog ditutup
+// }
 </script>

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	platformctx "sekolah-platform/platform/context"
 	"sekolah-platform/services/tu-core/internal/middleware"
@@ -21,6 +22,8 @@ type Router struct {
 	assessmentService     *service.AssessmentService
 	financeService        *service.FinanceService
 	correspondenceService *service.CorrespondenceService
+	classService          *service.ClassService
+	enrollmentService     *service.EnrollmentService
 }
 
 // NewRouter membuat instance router REST baru
@@ -32,6 +35,8 @@ func NewRouter(
 	assessmentService *service.AssessmentService,
 	financeService *service.FinanceService,
 	correspondenceService *service.CorrespondenceService,
+	classService *service.ClassService,
+	enrollmentService *service.EnrollmentService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -41,6 +46,8 @@ func NewRouter(
 		assessmentService:     assessmentService,
 		financeService:        financeService,
 		correspondenceService: correspondenceService,
+		classService:          classService,
+		enrollmentService:     enrollmentService,
 	}
 
 	mux := http.NewServeMux()
@@ -56,6 +63,12 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
+
+	// class service
+	mux.HandleFunc("/api/v1/classes", r.handleClasses)
+	mux.HandleFunc("/api/v1/classes/{id}", r.handleClassByID)
+	mux.HandleFunc("/api/v1/classes/{id}/members", r.handleClassMembers)
+	mux.HandleFunc("/api/v1/students/{id}/history", r.handleStudentHistory)
 
 	return mux
 }
@@ -193,4 +206,23 @@ func (r *Router) stubHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotImplemented)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Domain endpoint ini dalam tahap pengembangan"})
+}
+
+// Helper: split path tanpa query string
+func splitPath(p string) []string {
+	if p == "" {
+		return []string{}
+	}
+	// remove query string
+	if idx := strings.Index(p, "?"); idx != -1 {
+		p = p[:idx]
+	}
+	parts := strings.Split(p, "/")
+	var result []string
+	for _, part := range parts {
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
 }

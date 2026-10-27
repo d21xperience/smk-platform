@@ -1,167 +1,120 @@
-// apps/siakad-tu/src/composables/context/useOperationalContext.js
-
-import { computed, onMounted, ref } from 'vue'
-import { useContextStore } from '@/stores/contextStore'
-import { OperationalContext } from '@/domain/context/OperationalContext'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useContextStore } from '../../stores/contextStore.js'
+import { useAuthStore } from '../../stores/authStore.js'
+import { ContextEngine } from '../../domain/context/engine/ContextEngine.js'
+import { eventDispatcher } from '../../events/eventDispatcher.js'
+import {
+  mockContextData,
+  mockYearOptions,
+  mockSemesterOptions,
+} from '../../adapters/mock/data/context.mock.js'
 
 export function useOperationalContext() {
-  const contextStore = useContextStore()
+  const store = useContextStore()
+  const authStore = useAuthStore()
+  const engine = new ContextEngine()
+  const router = useRouter()
 
-  // === STATE ===
+  const current = computed(() => store.current)
+  const isReady = computed(() => store.isContextReady)
+  const displayLabel = computed(() => store.displayLabel)
+
+  const selectedYear = computed(() => store.current?.academicYear || mockContextData.academicYear)
+  const selectedSemester = computed(() => store.current?.semester || mockContextData.semester)
+
+  const yearOptions = ref(mockYearOptions)
+  const semesterOptions = ref(mockSemesterOptions)
+
+  // Otorisasi Role
+  const hasYearChangeAuthority = computed(() => authStore.hasPermission('academic_year:write'))
+
   const isLoading = ref(false)
   const error = ref(null)
 
-  // === STATE BARU: Untuk Context Selector ===
-  const selectedYear = ref(null)
-  const selectedSemester = ref(null)
-
-  // Daftar tahun ajaran yang tersedia
-  // TODO: Ke depannya load dari API backend
-  const availableYears = ref([
-    { value: '2024/2025', label: '2024/2025', isActive: true },
-    { value: '2023/2024', label: '2023/2024', isActive: false },
-    { value: '2022/2023', label: '2022/2023', isActive: false },
-  ])
-
-  const availableSemesters = ref([
-    { value: 1, label: 'Semester 1 (Ganjil)' },
-    { value: 2, label: 'Semester 2 (Genap)' },
-  ])
-
-  // === COMPUTED (EXISTING) ===
-  const current = computed(() => contextStore.current)
-  const isReady = computed(() => contextStore.isContextReady)
-  const schoolId = computed(() => contextStore.schoolId)
-  const schoolName = computed(() => contextStore.schoolName)
-  const academicYear = computed(() => contextStore.academicYear)
-  const semester = computed(() => contextStore.semester)
-  const periodId = computed(() => contextStore.periodId)
-  const displayLabel = computed(() => contextStore.displayLabel)
-  const schoolLabel = computed(() => contextStore.schoolLabel)
-
-  // === COMPUTED BARU: Untuk q-select options ===
-  const yearOptions = computed(() =>
-    availableYears.value.map((y) => ({ label: y.label, value: y.value })),
-  )
-
-  const semesterOptions = computed(() =>
-    availableSemesters.value.map((s) => ({ label: s.label, value: s.value })),
-  )
-
-  // === ACTIONS (EXISTING) ===
-  function setContext(contextData) {
-    const ctx = new OperationalContext(contextData)
-    if (ctx.isValid()) {
-      contextStore.setContext(ctx)
-
-      // Simpan ke localStorage
-      localStorage.setItem('operational_context', JSON.stringify(contextData))
-    } else {
-      error.value = 'Context tidak valid'
+  async function selectContext(contextData) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const { context, events } = engine.establishContext(contextData)
+      store.setContext(context)
+      localStorage.setItem('operational_context', JSON.stringify(context.toJSON()))
+      events.forEach((event) => eventDispatcher.dispatch(event))
+      return { success: true }
+    } catch (err) {
+      error.value = err.message
+      return { success: false, error: err.message }
+    } finally {
+      isLoading.value = false
     }
   }
 
-  function clearContext() {
-    contextStore.clearContext()
-    localStorage.removeItem('operational_context')
-    selectedYear.value = null
-    selectedSemester.value = null
-  }
-
-  // === ACTIONS BARU: Untuk Context Selector ===
-
-  /**
-   * Handle perubahan tahun ajaran dari dropdown
-   */
-  function onYearChange(newYear) {
-    selectedYear.value = newYear
-    applyContext()
-  }
-
-  /**
-   * Handle perubahan semester dari dropdown
-   */
-  function onSemesterChange(newSemester) {
-    selectedSemester.value = newSemester
-    applyContext()
-  }
-
-  /**
-   * Terapkan context yang dipilih ke contextStore
-   */
-  function applyContext() {
-    if (!selectedYear.value || !selectedSemester.value) return
-
-    setContext({
-      schoolId: schoolId.value || 'school-001',
-      schoolName: schoolName.value || 'SMK Negeri 1',
-      periodId: `${selectedYear.value}-sem-${selectedSemester.value}`,
-      academicYear: selectedYear.value,
+  async function onYearChange(year) {
+    if (!hasYearChangeAuthority.value) return
+    await selectContext({
+      schoolId: store.current?.schoolId || mockContextData.schoolId,
+      schoolName: store.current?.schoolName || mockContextData.schoolName,
+      academicYear: year,
       semester: selectedSemester.value,
     })
   }
 
-  /**
-   * Set default context ke tahun ajaran aktif
-   */
-  function setDefaultContext() {
-    const activeYear = availableYears.value.find((y) => y.isActive)
-    if (activeYear) {
-      selectedYear.value = activeYear.value
-      selectedSemester.value = 1
-      applyContext()
+  async function onSemesterChange(semester) {
+    await selectContext({
+      schoolId: store.current?.schoolId || mockContextData.schoolId,
+      schoolName: store.current?.schoolName || mockContextData.schoolName,
+      academicYear: selectedYear.value,
+      semester: semester,
+    })
+  }
+
+  function restoreContext() {
+    try {
+      const saved = localStorage.getItem('operational_context')
+      if (!saved) return false
+      const data = JSON.parse(saved)
+      const { context } = engine.establishContext(data)
+      store.setContext(context)
+      return true
+    } catch {
+      store.clearContext()
+      localStorage.removeItem('operational_context')
+      return false
     }
   }
 
-  // === LIFECYCLE (UPDATED) ===
-  onMounted(() => {
-    if (!isReady.value) {
-      loadDefaultContext()
-    }
-  })
-
-  function loadDefaultContext() {
-    const saved = localStorage.getItem('operational_context')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        selectedYear.value = parsed.academicYear
-        selectedSemester.value = parsed.semester
-        setContext(parsed)
-      } catch {
-        setDefaultContext()
-      }
-    } else {
-      setDefaultContext()
-    }
+  function clearContext() {
+    const { events } = engine.clearContext()
+    store.clearContext()
+    localStorage.removeItem('operational_context')
+    events.forEach((event) => eventDispatcher.dispatch(event))
   }
 
-  // === RETURN (UPDATED) ===
+  function requireContext() {
+    const validation = engine.validateForTransaction(store.current)
+    if (!validation.valid) {
+      router.push({ name: 'context-selection' })
+      throw new Error(validation.reason)
+    }
+    return store.current
+  }
+
   return {
-    // Existing
     current,
     isReady,
-    schoolId,
-    schoolName,
-    academicYear,
-    semester,
-    periodId,
     displayLabel,
-    isLoading,
-    error,
-    schoolLabel,
-    setContext,
-    clearContext,
-
-    // Baru: Context Selector
     selectedYear,
     selectedSemester,
-    availableYears,
-    availableSemesters,
     yearOptions,
     semesterOptions,
+    hasYearChangeAuthority,
+    isLoading,
+    error,
+    selectContext,
     onYearChange,
     onSemesterChange,
-    setDefaultContext,
+    restoreContext,
+    clearContext,
+    requireContext,
   }
 }

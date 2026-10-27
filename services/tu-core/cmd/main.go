@@ -33,6 +33,7 @@ import (
 	notifTemplates "sekolah-platform/platform/notification/templates"
 
 	// Domain Engines (GUNAKAN ALIAS AGAR TIDAK BENTROK)
+	classEngine "sekolah-platform/services/tu-core/internal/domain/academic/engine"
 	assessmentEngine "sekolah-platform/services/tu-core/internal/domain/assessment/engine"
 	attendEngine "sekolah-platform/services/tu-core/internal/domain/attendance/engine"
 	correspondenceEngine "sekolah-platform/services/tu-core/internal/domain/correspondence/engine"
@@ -88,6 +89,8 @@ func main() {
 	assessmentRepo := repository.NewAssessmentRepository(db)
 	financeRepo := repository.NewFinanceRepository(db)
 	correspondenceRepo := repository.NewCorrespondenceRepository(db)
+	classRepo := repository.NewClassRepository(db)
+	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	// =========================================================================
 	// 5. DOMAIN ENGINES
 	// =========================================================================
@@ -98,6 +101,7 @@ func main() {
 	assEngine := assessmentEngine.NewAssessmentEngine()
 	finEngine := financeEngine.NewFinanceEngine()
 	corrEngine := correspondenceEngine.NewCorrespondenceEngine()
+	classEngine := classEngine.NewClassEngine()
 	// =========================================================================
 	// 6. EVENT PUBLISHER
 	// =========================================================================
@@ -113,6 +117,8 @@ func main() {
 	assessmentService := service.NewAssessmentService(assessmentRepo, studentRepo, assEngine, eventPublisher)
 	financeService := service.NewFinanceService(financeRepo, studentRepo, finEngine, eventPublisher)
 	correspondenceService := service.NewCorrespondenceService(correspondenceRepo, corrEngine, eventPublisher)
+	classService := service.NewClassService(classRepo, classEngine, eventPublisher)
+	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
 	// =========================================================================
 	// 8. BACKGROUND WORKERS
 	// =========================================================================
@@ -161,6 +167,8 @@ func main() {
 		assessmentService,
 		financeService,
 		correspondenceService,
+		classService,
+		enrollmentService,
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

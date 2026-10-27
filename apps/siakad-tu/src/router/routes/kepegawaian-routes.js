@@ -1,12 +1,12 @@
 const kepegawaian = {
   path: '/kepegawaian',
   children: [
-    { path: '', redirect: '/kepegawaian/dashboard' },
-    {
-      path: 'dashboard',
-      name: 'dashboard-kepegawaian',
-      component: () => import('@/pages/kepegawaian/DashboardKepegawaian.vue'),
-    },
+    { path: '', redirect: '/kepegawaian/direktori-gtk' },
+    // {
+    //   path: 'dashboard',
+    //   name: 'dashboard-kepegawaian',
+    //   component: () => import('@/pages/kepegawaian/DashboardKepegawaian.vue'),
+    // },
     {
       path: 'direktori-gtk',
       name: 'direktori-gtk',

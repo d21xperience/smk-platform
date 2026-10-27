@@ -22,40 +22,40 @@ Buat instance StudentCommandService dengan dependencies custom
 (untuk testing atau environment khusus)
 */
 export function createStudentCommandService(dependencies = {}) {
-const engine = dependencies.engine || new StudentEngine()
-const adapter = dependencies.adapter || studentApi
-const eventDispatcherInstance = dependencies.eventDispatcher || eventDispatcher
-return new StudentCommandService({
-engine,
-adapter,
-eventDispatcher: eventDispatcherInstance,
-})
+  const engine = dependencies.engine || new StudentEngine()
+  const adapter = dependencies.adapter || studentApi
+  const eventDispatcherInstance = dependencies.eventDispatcher || eventDispatcher
+  return new StudentCommandService({
+    engine,
+    adapter,
+    eventDispatcher: eventDispatcherInstance,
+  })
 }
 /**
 Buat instance StudentQueryService dengan dependencies custom
 */
 export function createStudentQueryService(dependencies = {}) {
-const adapter = dependencies.adapter || studentApi
-return new StudentQueryService({ adapter })
+  const adapter = dependencies.adapter || studentApi
+  return new StudentQueryService({ adapter })
 }
 /**
 Singleton instance untuk StudentCommandService.
 Dipanggil sekali, dipakai di seluruh aplikasi.
 */
 export function useStudentCommandService() {
-if (!commandServiceInstance) {
-commandServiceInstance = createStudentCommandService()
-}
-return commandServiceInstance
+  if (!commandServiceInstance) {
+    commandServiceInstance = createStudentCommandService()
+  }
+  return commandServiceInstance
 }
 /**
 Singleton instance untuk StudentQueryService.
 */
 export function useStudentQueryService() {
-if (!queryServiceInstance) {
-queryServiceInstance = createStudentQueryService()
-}
-return queryServiceInstance
+  if (!queryServiceInstance) {
+    queryServiceInstance = createStudentQueryService()
+  }
+  return queryServiceInstance
 }
 /**
 Backward compatibility: studentService (legacy)
@@ -66,6 +66,6 @@ export const studentService = createStudentCommandService()
 Reset instances (untuk testing)
 */
 export function __resetServiceInstances() {
-commandServiceInstance = null
-queryServiceInstance = null
+  commandServiceInstance = null
+  queryServiceInstance = null
 }

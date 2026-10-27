@@ -93,6 +93,7 @@ const entryOptions = computed(() => {
 })
 
 const activeContextLabel = computed(() => {
+  console.log("cek currentContext",currentContext)
   return formatContextLabel(currentContext.value)
 })
 

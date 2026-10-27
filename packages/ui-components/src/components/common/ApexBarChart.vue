@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import { computed, defineProps } from 'vue'
+import { computed } from 'vue'
 import apexchart from 'vue3-apexcharts'
 // Definisikan Props agar data bersifat dinamis
 const props = defineProps({

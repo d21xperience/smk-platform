@@ -1,36 +1,29 @@
 import { useAuthStore } from '@/stores/authStore'
 import { useContextStore } from '@/stores/contextStore'
-/**
-Guest Guard - Redirect authenticated users away from guest-only pages
-(e.g., login, register pages)
-*/
+
 export function guestGuard(to, from, next) {
   const authStore = useAuthStore()
   if (authStore.isAuthenticated) {
-    // User sudah login, redirect ke dashboard
     return next({ name: 'landing-home' })
   }
   next()
 }
-/**
-Auth Guard - Require authentication for protected routes
-*/
+
 export function authGuard(to, from, next) {
   const authStore = useAuthStore()
   if (!authStore.isAuthenticated) {
-    // User belum login, redirect ke login page
-    return next({ name: 'auth-login' })
+    // Redirect ke landing, lalu biarkan layout yang memunculkan pop-up login
+    // (Karena aplikasi Anda menggunakan pop-up, bukan halaman /login terpisah)
+    return next({ name: 'landing-home' })
   }
   next()
 }
-/**
-Context Guard - Require operational context to be loaded
-*/
+
 export function contextGuard(to, from, next) {
   const contextStore = useContextStore()
-  if (!contextStore.currentContext) {
-    // Context belum dimuat, redirect ke select context page
-    return next({ name: 'select-context' })
+  // PERBAIKAN: Gunakan .current bukan .currentContext
+  if (!contextStore.current) {
+    return next({ name: 'landing-home' })
   }
   next()
 }

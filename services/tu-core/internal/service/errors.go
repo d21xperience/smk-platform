@@ -22,7 +22,9 @@ var (
 	ErrBusinessRuleViolation = errors.New("aturan bisnis dilanggar")
 
 	// ErrEventPublishFailed error ketika gagal publish event.
-	ErrEventPublishFailed = errors.New("gagal publish event")
+	ErrEventPublishFailed     = errors.New("gagal publish event")
+	ErrInvalidGradeTransition = errors.New("pindah kelas tidak sah")
+	ErrCapacityFull           = errors.New("kapasitas penuh")
 )
 
 // ServiceError adalah error wrapper dengan konteks tambahan.

@@ -1,8 +1,7 @@
 // apps/siakad-tu/src/stores/contextStore.js
 
 import { defineStore } from 'pinia'
-// eslint-disable-next-line no-unused-vars
-import { OperationalContext } from '../domain/context/OperationalContext.js'
+// import { OperationalContext } from '../domain/context/OperationalContext.js'
 
 /**
  * contextStore — HANYA mengelola state.

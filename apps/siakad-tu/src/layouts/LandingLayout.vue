@@ -56,11 +56,11 @@
           </q-btn>
         </div>
         <div v-else class="row items-center q-gutter-sm">
-          <q-btn flat icon="login" @click="showLoginDialog = true" />
+          <q-btn flat icon="login" @click="handleLoginDialog" />
         </div>
       </q-toolbar>
 
-      <TuMenuToolbar :visible="true" @menu-click="onMenuSelected" />
+      <TuMenuToolbar :visible="isAuthenticated" @menu-click="onMenuSelected" />
 
     </q-header>
 
@@ -106,7 +106,8 @@
         <!-- 1. Kolom Kiri: Dibuat kosong sebagai penyeimbang -->
         <div class="col-4 gt-xs"></div>
         <div class="col-xs-12 col-sm-4 text-weight-bold">
-          <div class="q-mt-xs">SDP SMK &copy; 2026. (Made with <span class="text-red-14">❤</span> by. Deden Moh.J.)</div>
+          <div class="q-mt-xs">SDP SMK &copy; 2026. (Made with <span class="text-red-14">❤</span> by. Deden Moh.J.)
+          </div>
         </div>
         <q-space />
         <div class="col-xs-12 col-sm-4 text-right text-weight-medium">
@@ -144,7 +145,7 @@
     </q-dialog>
 
     <!-- Login Required Dialog -->
-    <q-dialog v-model="showLoginRequiredDialog" persistent>
+    <q-dialog v-model="showLoginDialog" persistent>
       <q-card style="width: 400px; max-width: 90vw">
         <q-card-section class="row items-center q-pb-none">
           <q-avatar icon="lock" color="warning" text-color="white" />
@@ -169,7 +170,7 @@
 
 
     <!-- ✅ REUSABLE LOGIN DIALOG COMPONENT -->
-    <LoginDialog v-model="showLoginDialog"
+    <LoginDialog v-model="showLoginDialog1"
       message="Halaman ini hanya dapat diakses oleh pegawai Tata Usaha yang sudah login." :is-loading="isLoggingIn"
       :error-message="loginError" @login="handleLoginSubmit" @cancel="handleLoginCancel" />
 
@@ -178,28 +179,24 @@
 </template>
 
 <script setup>
-import { useLandingLayout } from '@/composables/landing/useLandingLayout'
-import DropDownMenu from '@/components/DropDownMenu.vue'
-import { useOperationalContext } from '@/composables/context/useOperationalContext'
-import ContextSelector from '@/components/ContextSelector.vue'
-import { useCurrentDateTime } from '@/composables/ui/useCurrentDateTime'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import LoginDialog from '@/components/LoginDialog.vue'
+import { useLandingLayout } from '@/composables/landing/useLandingLayout'
+import { useOperationalContext } from '@/composables/context/useOperationalContext'
+import { useCurrentDateTime } from '@/composables/ui/useCurrentDateTime'
 import { useAuthStore } from '@/stores/authStore'
+
+// Components
+import DropDownMenu from '@/components/DropDownMenu.vue'
+import ContextSelector from '@/components/ContextSelector.vue'
+import LoginDialog from '@/components/LoginDialog.vue'
 import TuMenuToolbar from '@/components/dashboard/TuMenuToolbar.vue'
 
-const authStore = useAuthStore()
-// Login State
-const showLoginDialog = ref(false)
-const isLoggingIn = ref(false)
-const loginError = ref('')
-
 const router = useRouter()
+const authStore = useAuthStore()
 const { currentDate, currentTime } = useCurrentDateTime()
-const {
-  schoolLabel,
-} = useOperationalContext()
+const { schoolLabel } = useOperationalContext()
+
 const {
   isSearchOpen,
   showLoginRequiredDialog,
@@ -210,104 +207,103 @@ const {
   closeSearch,
   cancelLogin,
 } = useLandingLayout()
+
+// === STATE ===
 const leftDrawerOpen = ref(false)
 const pendingNavigation = ref(null)
-const isAuthenticated = ref(false)
+const isLoggingIn = ref(false)
+const loginError = ref('')
+const showLoginDialog = computed({
+  get: () => authStore.showLoginDialog,
+  set: (val) => { if (!val) authStore.closeLoginDialog() }
+})
+
+const showLoginDialog1 = ref(false)
+
+const handleLoginDialog = () => {
+  showLoginDialog1.value = true
+}
+// === COMPUTED AUTH ===
+// Ini akan otomatis berubah (reaktif) jika user login/logout
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+
+// === ACTIONS ===
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
+
+// Fungsi untuk memicu pop-up login dari halaman/komponen lain
+function requestAccess(routeName = null, params = {}) {
+  if (isAuthenticated.value) {
+    if (routeName) router.push({ name: routeName, params })
+  } else {
+    if (routeName) pendingNavigation.value = { name: routeName, params }
+    showLoginDialog.value = true
+  }
+}
+
 function handleSearch() {
-  // Cek apakah user sudah login
   if (!isAuthenticated.value) {
     closeSearch()
-    showLoginRequiredDialog.value = true
+    requestAccess() // Panggil pop-up login
   } else {
-    // Implementasi search logic
     console.log('Search executed')
   }
 }
 
-
-
-// function requestAccess(routeName, params = {}) {
-//   if (authStore.isAuthenticated) {
-//     router.push({ name: routeName, params })
-//   } else {
-//     pendingNavigation.value = { name: routeName, params }
-//     showLoginRequiredDialog.value = true
-//   }
-// }
-
 function proceedToLogin() {
   showLoginRequiredDialog.value = false
-  if (pendingNavigation.value) {
-    router.push({
-      name: 'auth-login',
-      query: {
-        redirectTo: pendingNavigation.value.name,
-        ...pendingNavigation.value.params,
-      },
-    })
-  } else {
-    router.push({ name: 'auth-login' })
-  }
+  showLoginDialog.value = true
 }
-/**
- * Handler saat user submit form login di komponen LoginDialog
- */
+
 async function handleLoginSubmit(credentials) {
   isLoggingIn.value = true
   loginError.value = ''
 
   try {
-    // Panggil action login di authStore
     const success = await authStore.login(credentials)
-
     if (success) {
-      showLoginDialog.value = false
-
-      // Redirect ke halaman yang dituju sebelumnya, atau ke home
-      if (pendingNavigation.value) {
+      authStore.closeLoginDialog() // Tutup popup via store
+      // Redirect ke halaman yang sebelumnya tertunda, atau ke home
+      if (authStore.redirectUrl) {
+        router.push(authStore.redirectUrl)
+        authStore.redirectUrl = null // Reset
+      } else if (pendingNavigation.value) {
         router.push(pendingNavigation.value)
         pendingNavigation.value = null
       } else {
         router.push({ name: 'landing-home' })
       }
     } else {
-      // Jika gagal, tampilkan error dari store atau default message
       loginError.value = authStore.error?.message || 'Username atau password salah.'
     }
   } catch (err) {
-    console.log(err)
-    loginError.value = 'Terjadi kesalahan jaringan. Silakan coba lagi.'
+    loginError.value = `Terjadi kesalahan jaringan. Silakan coba lagi. ${err}`
   } finally {
     isLoggingIn.value = false
   }
 }
 
-/**
- * Handler saat user membatalkan login
- */
 function handleLoginCancel() {
   showLoginDialog.value = false
   pendingNavigation.value = null
   loginError.value = ''
 }
-// function handleLogout() {
-//   authStore.logout()
-//   router.push({ name: 'landing-home' })
-// }
 
-
-
+async function handleLogout() {
+  await authStore.logout()
+  router.push({ name: 'landing-home' })
+}
 
 // Menangkap event emit ketika menu diklik
 const onMenuSelected = (data) => {
-  console.log(`Menu ${data.menu} diklik dengan item:`, data.item)
-  // Lakukan aksi lanjutan di sini (misal: pindah halaman/routing)
+  if (!isAuthenticated.value) {
+    requestAccess() // Jika belum login, munculkan pop-up
+  } else {
+    // Lakukan aksi routing di sini jika diperlukan
+    console.log(`Menu ${data.menu} diklik dengan item:`, data.item)
+  }
 }
-
-
 
 </script>
 

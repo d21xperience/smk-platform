@@ -34,29 +34,16 @@ export default boot(async ({ app }) => {
       if (auth.token) {
         config.headers.Authorization = `Bearer ${auth.token}`
       }
-      // 2. Inject Operational Context Headers (WAJIB untuk TU-Core Backend)
+
       const ctx = contextStore.current
 
-      // Fallback untuk debugging jika context belum di-set (misal belum login)
-      const finalCtx = ctx || {
-        schoolId: 'SCHOOL_001',
-        academicYear: '2024/2025',
-        semester: 1,
-        userId: 'user-debug-001',
-        userRole: 'admin',
-      }
-
-      if (finalCtx) {
-        config.headers['x-school-id'] = finalCtx.schoolId
-        config.headers['x-academic-year'] = finalCtx.academicYear
-        config.headers['x-semester'] = String(finalCtx.semester)
-        config.headers['x-user-id'] = finalCtx.userId || 'system'
-        config.headers['x-user-role'] = finalCtx.userRole || 'admin'
-
-        console.log('[Axios Interceptor] Injected context headers:', {
-          'x-school-id': config.headers['x-school-id'],
-          'x-user-id': config.headers['x-user-id'],
-        })
+      // Hanya suntikkan header jika context benar-benar tersedia
+      if (ctx) {
+        config.headers['x-school-id'] = ctx.schoolId
+        config.headers['x-academic-year'] = ctx.academicYear
+        config.headers['x-semester'] = String(ctx.semester)
+        config.headers['x-user-id'] = auth.user?.id || 'system'
+        config.headers['x-user-role'] = auth.user?.role || 'guest'
       }
 
       return config

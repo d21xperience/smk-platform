@@ -19,7 +19,7 @@ export class StudentService {
    * @param {Object} dependencies
    * @param {import('@/engine/student/StudentEngine').StudentEngine} dependencies.engine
    * @param {Object} dependencies.adapter
-   * @param {import('@/events/eventDispatcher').EventDispatcher} dependencies.eventDispatcher
+   * @param {import('@/events/eventDispatcher.js').EventDispatcher} dependencies.eventDispatcher
    */
   constructor(dependencies) {
     this.command = new StudentCommandService(dependencies)

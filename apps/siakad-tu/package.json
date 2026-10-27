@@ -15,7 +15,8 @@
     "test:engine": "node src/engine/student/__tests__/StudentEngine.test.js",
     "test:formatters": "node src/composables/student/__tests__/studentFormatters.test.js",
     "test:validators": "node src/composables/student/__tests__/studentValidators.test.js",
-    "test:pure": "node scripts/run-pure-tests.js"
+    "test:pure": "node scripts/run-pure-tests.js",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@quasar/extras": "^2.0.0",
@@ -30,15 +31,19 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@quasar/app-vite": "^3.0.0-rc.3",
+    "@vitejs/plugin-vue": "^6.0.10",
     "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/test-utils": "^2.5.1",
     "autoprefixer": "^10.4.27",
     "axios-mock-adapter": "^2.1.0",
     "eslint": "^9.39.4",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.4.0",
+    "jsdom": "^30.1.3",
     "postcss": "^8.5.8",
     "prettier": "^3.8.1",
     "vite-plugin-checker": "^0.12.0",
+    "vitest": "^5.0.5",
     "vue-eslint-parser": "^10.4.0"
   },
   "keywords": [

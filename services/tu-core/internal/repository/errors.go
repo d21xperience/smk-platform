@@ -20,6 +20,9 @@ var (
 
 	// ErrMissingOperationalContext error ketika SchoolID/AcademicPeriodID kosong.
 	ErrMissingOperationalContext = errors.New("schoolId dan academicPeriodId wajib diisi")
+
+	ErrCapacityFull           = errors.New("kapasitas kelas penuh")
+	ErrInvalidGradeTransition = errors.New("invalid grade transition")
 )
 
 // IsNotFound memeriksa apakah error adalah ErrNotFound.

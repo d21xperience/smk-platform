@@ -6,7 +6,7 @@ import kesiswaanRoutes from './routes/kesiswaan-routes.js'
 import persuratan from './routes/persuratan.js'
 import previewDev from './routes/preview-routes.js'
 import psb from './routes/psb-routes.js'
-
+// import { authGuard } from './guards.js'
 // Import routes baru
 // import keuanganRoutes from './routes/keuangan-routes.js'
 // import absensiRoutes from './routes/absensi-routes.js'
@@ -16,6 +16,8 @@ const routes = [
   {
     path: '/',
     component: () => import('@/layouts/LandingLayout.vue'), // <-- Gunakan layout yang sudah ada
+    // beforeEnter: authGuard,
+    redirect: 'preview',
     children: [
       previewDev,
       // Existing routes

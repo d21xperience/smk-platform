@@ -1,13 +1,6 @@
 <template>
   <div>
-    <!-- Compact Button -->
-    <q-btn
-      flat
-      dense
-      no-caps
-      class="context-selector-btn"
-      @click="showPopup = true"
-    >
+    <q-btn flat dense no-caps class="context-selector-btn" @click="showPopup = true">
       <div class="row items-center no-wrap q-gutter-xs">
         <q-icon name="event" size="20px" />
         <div class="text-left">
@@ -19,7 +12,6 @@
       </div>
     </q-btn>
 
-    <!-- Popup Dialog -->
     <q-dialog v-model="showPopup" persistent>
       <q-card style="min-width: 350px">
         <q-card-section class="row items-center q-pb-none">
@@ -30,29 +22,16 @@
 
         <q-card-section class="q-pt-md">
           <div class="q-gutter-md">
-            <!-- Tahun Ajaran -->
-            <q-select
-              v-model="tempSelectedYear"
-              :options="yearOptions"
-              label="Tahun Ajaran"
-              outlined
-              emit-value
-              map-options
-            >
+            <q-select v-model="localYear" :options="yearOptions" label="Tahun Ajaran" outlined emit-value map-options
+              :disable="!hasYearChangeAuthority"
+              :hint="!hasYearChangeAuthority ? 'Anda tidak memiliki akses mengubah tahun ajaran' : ''">
               <template v-slot:prepend>
                 <q-icon name="calendar_today" />
               </template>
             </q-select>
 
-            <!-- Semester -->
-            <q-select
-              v-model="tempSelectedSemester"
-              :options="semesterOptions"
-              label="Semester"
-              outlined
-              emit-value
-              map-options
-            >
+            <q-select v-model="localSemester" :options="semesterOptions" label="Semester" outlined emit-value
+              map-options>
               <template v-slot:prepend>
                 <q-icon name="school" />
               </template>
@@ -62,12 +41,8 @@
 
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <q-btn flat label="Batal" color="grey" v-close-popup />
-          <q-btn
-            label="Simpan"
-            color="primary"
-            @click="applySelection"
-            :disable="!tempSelectedYear || !tempSelectedSemester"
-          />
+          <q-btn label="Simpan" color="primary" @click="applySelection" :loading="isLoading"
+            :disable="!localYear || !localSemester" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -76,43 +51,52 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import { useOperationalContext } from '@/composables/context/useOperationalContext'
 
+const $q = useQuasar()
+
 const {
+  displayLabel,
   selectedYear,
   selectedSemester,
   yearOptions,
   semesterOptions,
+  hasYearChangeAuthority,
+  isLoading,
+  error,
   onYearChange,
   onSemesterChange,
-  displayLabel,
 } = useOperationalContext()
 
-// === STATE ===
 const showPopup = ref(false)
 
-// Temporary state untuk popup (belum di-apply)
-const tempSelectedYear = ref(selectedYear.value)
-const tempSelectedSemester = ref(selectedSemester.value)
+// Temporary state for the form
+const localYear = ref(selectedYear.value)
+const localSemester = ref(selectedSemester.value)
 
-// === WATCHERS ===
-// Sinkronisasi temp state dengan actual state saat popup dibuka
+// Sync temp state when dialog opens
 watch(showPopup, (isOpen) => {
   if (isOpen) {
-    tempSelectedYear.value = selectedYear.value
-    tempSelectedSemester.value = selectedSemester.value
+    localYear.value = selectedYear.value
+    localSemester.value = selectedSemester.value
   }
 })
 
-// === ACTIONS ===
-function applySelection() {
-  if (tempSelectedYear.value !== selectedYear.value) {
-    onYearChange(tempSelectedYear.value)
+async function applySelection() {
+  if (localYear.value !== selectedYear.value && hasYearChangeAuthority.value) {
+    await onYearChange(localYear.value)
   }
-  if (tempSelectedSemester.value !== selectedSemester.value) {
-    onSemesterChange(tempSelectedSemester.value)
+  if (localSemester.value !== selectedSemester.value) {
+    await onSemesterChange(localSemester.value)
   }
-  showPopup.value = false
+
+  if (!error.value) {
+    $q.notify({ type: 'positive', message: 'Tahun Ajaran & Semester berhasil diperbarui.' })
+    showPopup.value = false
+  } else {
+    $q.notify({ type: 'negative', message: error.value })
+  }
 }
 </script>
 
@@ -120,7 +104,6 @@ function applySelection() {
 .context-selector-btn {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  /* padding: 4px 12px; */
   transition: background 0.2s;
 }
 

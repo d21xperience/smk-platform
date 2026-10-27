@@ -7,10 +7,14 @@ import "time"
 type Enrollment struct {
 	enrollmentID   string
 	schoolID       string
+	studentID      string
 	periodID       string
 	classID        string
 	enrollmentDate time.Time
 	status         string // active, completed, transferred
+	Reason         string // Alasan perubahan status
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // NewEnrollment membuat Enrollment baru.
@@ -46,20 +50,39 @@ func (e *Enrollment) ClassID() string           { return e.classID }
 func (e *Enrollment) EnrollmentDate() time.Time { return e.enrollmentDate }
 func (e *Enrollment) Status() string            { return e.status }
 
-// IsActive mengecek apakah enrollment aktif.
+// IsActive returns true jika status active
 func (e *Enrollment) IsActive() bool {
 	return e.status == "active"
 }
+
+// Transfer menandai enrollment pindah
+func (e *Enrollment) Transfer(reason string) {
+	e.status = "transferred"
+	e.Reason = reason
+	e.UpdatedAt = time.Now()
+}
+
+// IsActive mengecek apakah enrollment aktif.
+// func (e *Enrollment) IsActive() bool {
+// 	return e.status == "active"
+// }
 
 // IsForPeriod mengecek apakah enrollment untuk periode tertentu.
 func (e *Enrollment) IsForPeriod(periodID string) bool {
 	return e.periodID == periodID
 }
 
-// Complete menandai enrollment sebagai selesai.
-func (e *Enrollment) Complete() {
-	if e.status != "active" {
-		return
-	}
+// Complete menandai enrollment selesai
+func (e *Enrollment) Complete(reason string) {
 	e.status = "completed"
+	e.Reason = reason
+	e.UpdatedAt = time.Now()
 }
+
+// Complete menandai enrollment sebagai selesai.
+// func (e *Enrollment) Complete() {
+// 	if e.status != "active" {
+// 		return
+// 	}
+// 	e.status = "completed"
+// }

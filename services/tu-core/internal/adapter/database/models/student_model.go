@@ -44,26 +44,6 @@ func (StudentModel) TableName() string {
 	return "students"
 }
 
-// EnrollmentModel adalah GORM model untuk tabel enrollments.
-type EnrollmentModel struct {
-	ID             string    `gorm:"primaryKey;size:36"`
-	StudentID      string    `gorm:"size:36;index;not null"`
-	SchoolID       string    `gorm:"size:36;index;not null"`
-	PeriodID       string    `gorm:"size:10;not null"`
-	ClassID        string    `gorm:"size:36;not null"`
-	EnrollmentDate time.Time `gorm:"not null"`
-	Status         string    `gorm:"size:20;not null;default:active"` // active, completed, transferred
-	CreatedAt      time.Time `gorm:"not null"`
-	UpdatedAt      time.Time `gorm:"not null"`
-
-	// Relationships
-	Student StudentModel `gorm:"foreignKey:StudentID;constraint:OnDelete:CASCADE"`
-}
-
-// TableName mengembalikan nama tabel.
-func (EnrollmentModel) TableName() string {
-	return "enrollments"
-}
 
 // OutboxEventModel adalah GORM model untuk tabel outbox_events.
 type OutboxEventModel struct {

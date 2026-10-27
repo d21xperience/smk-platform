@@ -14,7 +14,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS academic_years (
-    id VARCHAR(36) PRIMARY KEY,
+    id VARCHAR(5) PRIMARY KEY, --20261 untuk tahun ajaran 2026/2027 semester 1
     year VARCHAR(9) NOT NULL UNIQUE,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS curriculums (
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20) NOT NULL UNIQUE,
     description TEXT,
-    academic_year_id VARCHAR(36) REFERENCES academic_years(id),
+    academic_id VARCHAR(5) REFERENCES academic_years(id),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -49,11 +49,11 @@ CREATE TABLE IF NOT EXISTS classes (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     grade INTEGER NOT NULL,
-    academic_year_id VARCHAR(36) REFERENCES academic_years(id),
+    academic_id VARCHAR(4) REFERENCES academic_years(id),
     capacity INTEGER NOT NULL DEFAULT 30,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(name, academic_year_id)
+    UNIQUE(name, academic_id)
 );
 
 -- =============================================================================
@@ -76,7 +76,6 @@ CREATE TABLE IF NOT EXISTS students (
     parent_name VARCHAR(100),
     parent_phone VARCHAR(20),
     parent_email VARCHAR(100),
-    class_name VARCHAR(50),
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
