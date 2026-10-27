@@ -1,52 +1,64 @@
-// apps/siakad-tu/src/stores/contextStore.js
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import { ContextService } from '../../../../../packages/context/src/services/ContextService.js';
 
-import { defineStore } from 'pinia'
-// import { OperationalContext } from '../domain/context/OperationalContext.js'
+export const useContextStore = defineStore('context', () => {
+  const availablePeriods = ref([]);
+  const selectedSemesterId = ref('');
+  const userId = ref('user-123'); 
+  const schoolId = ref('school-abc'); 
+  const isLoading = ref(false);
+  const error = ref(null);
 
-/**
- * contextStore — HANYA mengelola state.
- * TIDAK BOLEH ada logika bisnis, validasi, atau derivasi di sini.
- * Semua logika ada di ContextEngine.
- */
-export const useContextStore = defineStore('operationalContext', {
-  state: () => ({
-    /** @type {OperationalContext | null} */
-    _context: null,
-    /** @type {boolean} */
-    isContextReady: false,
-  }),
+  const currentContext = computed(() => ({
+    userId: userId.value,
+    schoolId: schoolId.value,
+    semesterId: selectedSemesterId.value
+  }));
 
-  getters: {
-    /**
-     * Getter reaktif untuk digunakan di Vue components
-     */
-    current: (state) => state._context,
-    schoolId: (state) => state._context?.schoolId ?? null,
-    schoolName: (state) => state._context?.schoolName ?? '',
-    academicYear: (state) => state._context?.academicYear ?? '',
-    semester: (state) => state._context?.semester ?? null,
-    periodId: (state) => state._context?.periodId ?? null,
-    displayLabel: (state) => state._context?.displayLabel ?? 'Pilih Tahun Ajaran',
-    schoolLabel: (state) => state._context?.schoolLabel ?? 'Sekolah ABC',
-    hasContext: (state) => state._context !== null && state._context.isValid(),
-  },
+  const selectedYearLabel = computed(() => {
+    const selected = availablePeriods.value.find(p => p.semester_id === selectedSemesterId.value);
+    return selected ? `${selected.tahun_ajaran_id}/${parseInt(selected.tahun_ajaran_id) + 1} - ${selected.nama_semester}` : '-';
+  });
 
-  actions: {
-    /**
-     * Set context — dipanggil oleh Service/Composable SETELAH Engine memvalidasi.
-     * Store TIDAK melakukan validasi sendiri.
-     */
-    setContext(operationalContext) {
-      this._context = operationalContext
-      this.isContextReady = true
-    },
+  async function initialize() {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const ctx = currentContext.value;
+      const cacheKey = `ctx:${ctx.userId}:${ctx.schoolId}`;
+      
+      availablePeriods.value = await ContextService.fetchPeriods(ctx);
+      const pref = await ContextService.fetchPreference(ctx);
+      
+      if (pref && pref.semester_id) {
+        selectedSemesterId.value = pref.semester_id;
+        localStorage.setItem(cacheKey, pref.semester_id);
+      } else {
+        const active = availablePeriods.value.find(p => p.periode_aktif === '1');
+        selectedSemesterId.value = active ? active.semester_id : (availablePeriods.value[0]?.semester_id || '');
+      }
+    } catch (err) {
+      error.value = err.message;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
-    /**
-     * Clear context — dipanggil saat logout
-     */
-    clearContext() {
-      this._context = null
-      this.isContextReady = false
-    },
-  },
-})
+  async function setSemester(semesterId) {
+    isLoading.value = true;
+    try {
+      const ctx = currentContext.value;
+      await ContextService.updatePreference(ctx, semesterId);
+      selectedSemesterId.value = semesterId;
+      localStorage.setItem(`ctx:${ctx.userId}:${ctx.schoolId}`, semesterId);
+    } catch (err) {
+      error.value = err.message;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  return { availablePeriods, selectedSemesterId, isLoading, error, currentContext, selectedYearLabel, initialize, setSemester };
+});

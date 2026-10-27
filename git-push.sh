@@ -27,6 +27,6 @@ git commit -m "$COMMIT_MSG"
 
 # 3. Melakukan push ke GitHub
 echo "🚀 Mengunggah ke GitHub (origin main)..."
-git push origin main
+git push origin master
 
 echo "✅ Selesai! Semua perubahan berhasil di-push."
