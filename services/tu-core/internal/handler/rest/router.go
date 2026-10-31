@@ -24,6 +24,7 @@ type Router struct {
 	correspondenceService *service.CorrespondenceService
 	classService          *service.ClassService
 	enrollmentService     *service.EnrollmentService
+	contextHandler        *ContextHandler
 }
 
 // NewRouter membuat instance router REST baru
@@ -37,6 +38,7 @@ func NewRouter(
 	correspondenceService *service.CorrespondenceService,
 	classService *service.ClassService,
 	enrollmentService *service.EnrollmentService,
+	prefService *service.PreferenceService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -48,6 +50,7 @@ func NewRouter(
 		correspondenceService: correspondenceService,
 		classService:          classService,
 		enrollmentService:     enrollmentService,
+		contextHandler:        NewContextHandler(prefService),
 	}
 
 	mux := http.NewServeMux()
@@ -70,6 +73,20 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/classes/{id}/members", r.handleClassMembers)
 	mux.HandleFunc("/api/v1/students/{id}/history", r.handleStudentHistory)
 
+	// === BATCH 6: Context & Preference ROUTES ===
+	// Tidak lewat enrichContext — tidak butuh x-academic-year.
+	mux.HandleFunc("/api/v1/context/periods", r.contextHandler.GetPeriods)
+	mux.HandleFunc("/api/v1/users/me/preferences", func(w http.ResponseWriter, req *http.Request) {
+		switch req.Method {
+		case http.MethodGet:
+			r.contextHandler.GetPreference(w, req)
+		case http.MethodPut:
+			r.contextHandler.UpdatePreference(w, req)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		}
+	})
+
 	return mux
 }
 
@@ -78,7 +95,7 @@ func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 	schoolID := req.Header.Get("x-school-id")
 	academicYear := req.Header.Get("x-academic-year")
 	semesterStr := req.Header.Get("x-semester")
-	academicPeriodID := req.Header.Get("x-academic-period")
+	academicPeriodID := req.Header.Get("x-academic-period-id")
 	userID := req.Header.Get("x-user-id")
 	role := req.Header.Get("x-user-role")
 

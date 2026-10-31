@@ -48,23 +48,23 @@ export function getRequestHeaders() {
 
   if (context) {
     if (context.schoolId) {
-      headers['X-School-Id'] = String(context.schoolId)
+      headers['x-school-id'] = String(context.schoolId)
     }
 
     if (context.academicYearId) {
-      headers['X-Academic-Year-Id'] = String(context.academicYearId)
+      headers['x-academic-year-id'] = String(context.academicYearId)
     }
 
     if (context.semesterId) {
-      headers['X-Semester-Id'] = String(context.semesterId)
+      headers['x-semester-id'] = String(context.semesterId)
     }
 
     if (context.userId) {
-      headers['X-User-Id'] = String(context.userId)
+      headers['x-user-id'] = String(context.userId)
     }
 
     if (context.role) {
-      headers['X-User-Role'] = String(context.role)
+      headers['x-user-role'] = String(context.role)
     }
   }
 

@@ -96,8 +96,8 @@ func main() {
 	api := router.Group("/api/v1")
 	api.Use(middleware.OperationalContextMiddleware())
 	// api.Use(middleware.JWTMiddleware(middleware.JWTConfig{
-	// 	Secret: cfg.JWT.Secret,
-	// 	Issuer: cfg.JWT.Issuer,
+	//  Secret: cfg.JWT.Secret,
+	//  Issuer: cfg.JWT.Issuer,
 	// }))
 
 	// Register handlers

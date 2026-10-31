@@ -5,7 +5,7 @@ info:
   title: Student API Contract (Frontend Driven)
   version: 1.0.0
   description: |
-    Kontrak ini dihasilkan dari kebutuhan Frontend (Mock Adapter). 
+    Kontrak ini dihasilkan dari kebutuhan Frontend (Mock Adapter).
     Backend WAJIB mengikuti struktur request dan response ini.
 
 servers:
@@ -18,11 +18,11 @@ paths:
       operationId: registerStudent
       parameters:
         - in: header
-          name: X-School-Id
+          name: x-school-id
           required: true
           schema: { type: string }
         - in: header
-          name: X-Academic-Period
+          name: x-academic-period-id
           required: true
           schema: { type: string }
       requestBody:

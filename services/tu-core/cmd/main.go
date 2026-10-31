@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/nats-io/nats.go"
 
 	// Domain & Services
@@ -61,6 +62,14 @@ func main() {
 	}
 	defer db.Close()
 	log.Println("✅ Database terhubung dan terverifikasi")
+
+	// =========================================================================
+	// 1b. SQL DB WRAPPER (untuk PreferenceService)
+	// =========================================================================
+	sqlDB := stdlib.OpenDBFromPool(db)
+	defer sqlDB.Close()
+	prefService := service.NewPreferenceService(sqlDB)
+	log.Println("✅ PreferenceService diinisialisasi")
 
 	// =========================================================================
 	// 2. NATS CONNECTION
@@ -169,6 +178,7 @@ func main() {
 		correspondenceService,
 		classService,
 		enrollmentService,
+		prefService, // <-- BATCH 6: tambah parameter terakhir
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

@@ -7,14 +7,14 @@ import (
 
 // Header names untuk HTTP request.
 const (
-	HeaderSchoolID = "X-School-Id"
-	HeaderSchoolName = "X-School-Name"
-	HeaderAcademicYear = "X-Academic-Year"
-	HeaderSemester = "X-Semester"
-	HeaderAcademicPeriod = "X-Academic-Period"
-	HeaderTenantID = "X-Tenant-Id"
-	HeaderUserID = "X-User-Id"
-	HeaderUserRole = "X-User-Role"
+	HeaderSchoolID       = "x-school-id"
+	HeaderSchoolName     = "x-school-name"
+	HeaderAcademicYear   = "x-academic-year"
+	HeaderSemester       = "x-semester"
+	HeaderAcademicPeriod = "x-academic-period-id"
+	HeaderTenantID       = "x-tenant-id"
+	HeaderUserID         = "x-user-id"
+	HeaderUserRole       = "x-user-role"
 )
 
 // HeaderProvider adalah interface untuk penyedia header (HTTP, gRPC, dll).

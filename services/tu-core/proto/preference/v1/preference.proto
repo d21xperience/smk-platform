@@ -1,0 +1,26 @@
+syntax = "proto3";
+package preference.v1;
+option go_package = "sekolah-platform/services/tu-core/proto/preference/v1";
+
+service PreferenceService {
+  rpc GetUserPreference (GetUserPreferenceRequest) returns (GetUserPreferenceResponse);
+  rpc SaveUserPreference (SaveUserPreferenceRequest) returns (SaveUserPreferenceResponse);
+}
+
+message GetUserPreferenceRequest {
+  string user_id = 1;
+  string school_id = 2;
+}
+message GetUserPreferenceResponse {
+  string user_id = 1;
+  string school_id = 2;
+  string semester_id = 3;
+}
+message SaveUserPreferenceRequest {
+  string user_id = 1;
+  string school_id = 2;
+  string semester_id = 3;
+}
+message SaveUserPreferenceResponse {
+  bool success = 1;
+}

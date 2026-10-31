@@ -71,8 +71,8 @@ export class OperationalContext {
    */
   toHeaders() {
     return {
-      'X-School-Id': this._schoolId,
-      'X-Academic-Period': this._period.periodId,
+      'x-school-id': this._schoolId,
+      'x-academic-period-id': this._period.periodId,
     }
   }
 

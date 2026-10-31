@@ -13,7 +13,7 @@ export default defineConfig((/* ctx */) => {
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
     boot: [
       'axios', // Inisialisasi Axios dan interceptor
-      'context'
+      // 'context'
       // 'services', // Inisialisasi adapter, service, store
       // 'events',
       // 'shared-components',
@@ -53,7 +53,9 @@ export default defineConfig((/* ctx */) => {
 
       // publicPath: '/',
       // define: {},
-      // defineEnv: {}
+      defineEnv: {
+        QCLI_API_BASE_URL: JSON.stringify(process.env.QCLI_API_BASE_URL || '/api/v1'),
+      },
       // ignorePublicFolder: true,
       // minify: false,
       // distDir

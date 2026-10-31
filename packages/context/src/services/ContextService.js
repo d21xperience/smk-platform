@@ -1,7 +1,7 @@
 import { ContextEngine } from '../engine/ContextEngine.js';
-import { ContextMockAdapter } from '../adapters/mock/ContextMockAdapter.js';
+import { ContextApiAdapter } from '../adapters/api/ContextApiAdapter.js';
 
-const adapter = ContextMockAdapter;
+const adapter = ContextApiAdapter;
 
 export const ContextService = {
   async fetchPeriods(context) {

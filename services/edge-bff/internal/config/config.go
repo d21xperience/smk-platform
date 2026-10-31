@@ -11,12 +11,12 @@ import (
 
 // Config adalah konfigurasi edge-bff.
 type Config struct {
-	App      AppConfig
-	Server   ServerConfig
-	TuCore   TuCoreConfig
-	NATS     NATSConfig
-	SQLite   SQLiteConfig
-	JWT      JWTConfig
+	App    AppConfig
+	Server ServerConfig
+	TuCore TuCoreConfig
+	NATS   NATSConfig
+	SQLite SQLiteConfig
+	JWT    JWTConfig
 }
 
 type AppConfig struct {
@@ -36,9 +36,9 @@ type TuCoreConfig struct {
 }
 
 type NATSConfig struct {
-	URL           string
-	DurableName   string // Consumer durable name (service-specific)
-	StreamName    string
+	URL         string
+	DurableName string // Consumer durable name (service-specific)
+	StreamName  string
 }
 
 type SQLiteConfig struct {
@@ -62,7 +62,7 @@ func Load() (*Config, error) {
 			ServiceName: getEnv("SERVICE_NAME", "edge-bff"),
 		},
 		Server: ServerConfig{
-			Port:    getEnvInt("SERVER_PORT", 8080),
+			Port:    getEnvInt("SERVER_PORT", 8082),
 			Timeout: time.Duration(getEnvInt("SERVER_TIMEOUT_SECONDS", 30)) * time.Second,
 		},
 		TuCore: TuCoreConfig{

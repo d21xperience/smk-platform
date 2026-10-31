@@ -11,7 +11,7 @@ case "$1" in
       -H "x-school-id: SCHOOL_001" \
       -H "x-academic-year: 2024/2025" \
       -H "x-semester: 1" \
-      -H "x-academic-period: 2024-2025-1" \
+      -H "x-academic-period-id: 2024-2025-1" \
       -H "x-user-id: 1" \
       -H "x-user-role: admin" \
       -H "x-request-id: req-$(date +%s)" \
@@ -35,7 +35,7 @@ case "$1" in
       -H "x-school-id: SCHOOL_001" \
       -H "x-academic-year: 2024/2025" \
       -H "x-semester: 1" \
-      -H "x-academic-period: 2024-2025-1" \
+      -H "x-academic-period-id: 2024-2025-1" \
       -H "x-user-id: 1" \
       -H "x-user-role: admin" \
       -d "{\"student_id\": \"$STUDENT_ID\"}" \
@@ -48,7 +48,7 @@ case "$1" in
       -H "x-school-id: SCHOOL_001" \
       -H "x-academic-year: 2024/2025" \
       -H "x-semester: 1" \
-      -H "x-academic-period: 2024-2025-1" \
+      -H "x-academic-period-id: 2024-2025-1" \
       -H "x-user-id: 1" \
       -H "x-user-role: admin" \
       -d '{"search": "", "status": "", "limit": 10, "offset": 0}' \

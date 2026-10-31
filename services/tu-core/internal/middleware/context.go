@@ -22,7 +22,7 @@ const (
 	MetaSchoolName     = "x-school-name"
 	MetaAcademicYear   = "x-academic-year"
 	MetaSemester       = "x-semester"
-	MetaAcademicPeriod = "x-academic-period"
+	MetaAcademicPeriod = "x-academic-period-id"
 	MetaTenantID       = "x-tenant-id"
 	MetaUserID         = "x-user-id"
 	MetaUserRole       = "x-user-role"

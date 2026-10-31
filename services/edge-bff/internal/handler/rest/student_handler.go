@@ -74,23 +74,48 @@ func (h *StudentHandler) ListStudents(c *gin.Context) {
 
 // GetStudent mengembalikan detail siswa.
 func (h *StudentHandler) GetStudent(c *gin.Context) {
+	// 1. Ambil SchoolID dari Middleware
+	schoolID := c.GetString("school_id")
+	if schoolID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Operational context missing: school_id"})
+		return
+	}
+
 	studentID := c.Param("id")
 
-	student, err := h.repo.FindStudentByID(c.Request.Context(), studentID)
+	// 2. Gunakan method scoped
+	student, err := h.repo.FindStudentByIDAndSchoolID(c.Request.Context(), studentID, schoolID)
 	if err != nil {
-		c.JSON(500, errorResponse("INTERNAL_ERROR", err.Error()))
-		return
-	}
-	if student == nil {
-		c.JSON(404, errorResponse("NOT_FOUND", "Student tidak ditemukan"))
+		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"success": true,
-		"data":    student,
-		"error":   nil,
-	})
+	c.JSON(http.StatusOK, student)
+}
+
+// Lakukan hal yang sama untuk fungsi UpdateStudentStatus di handler
+func (h *StudentHandler) UpdateStudentStatus(c *gin.Context) {
+	schoolID := c.GetString("school_id")
+	if schoolID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Operational context missing"})
+		return
+	}
+
+	id := c.Param("id")
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.repo.UpdateStudentStatus(c.Request.Context(), id, schoolID, req.Status)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Failed to update: cross-tenant or not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Status updated"})
 }
 
 // errorResponse membuat response error yang konsisten.

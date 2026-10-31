@@ -12,8 +12,8 @@ export function setupContextInterceptor(axiosInstance) {
       const store = useContextStore()
       if (store.hasContext) {
         const headers = store.current.toHeaders()
-        config.headers['X-School-Id'] = headers['X-School-Id']
-        config.headers['X-Academic-Period'] = headers['X-Academic-Period']
+        config.headers['x-school-id'] = headers['x-school-id']
+        config.headers['x-academic-period-id'] = headers['x-academic-period-id']
       }
       return config
     },

@@ -14,7 +14,7 @@ import (
 // 	schoolID := req.Header.Get("x-school-id")
 // 	academicYear := req.Header.Get("x-academic-year")
 // 	semesterStr := req.Header.Get("x-semester")
-// 	academicPeriodID := req.Header.Get("x-academic-period")
+// 	academicPeriodID := req.Header.Get("x-academic-period-id")
 // 	userID := req.Header.Get("x-user-id")
 // 	role := req.Header.Get("x-user-role")
 

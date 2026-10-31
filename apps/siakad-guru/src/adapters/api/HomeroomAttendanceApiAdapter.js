@@ -25,10 +25,10 @@ export class HomeroomAttendanceApiAdapter {
 
     const response = await api.get('/v1/homeroom/attendance', {
       headers: {
-        'X-School-Id': schoolId,
-        'X-Academic-Year-Id': academicYearId,
-        'X-Semester-Id': semesterId,
-        'X-User-Id': userId,
+        'x-school-id': schoolId,
+        'x-academic-year-id': academicYearId,
+        'x-semester-id': semesterId,
+        'x-user-id': userId,
       },
     })
 

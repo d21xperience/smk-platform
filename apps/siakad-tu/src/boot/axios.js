@@ -1,22 +1,30 @@
-import axios from 'axios';
-import { useContextStore } from '../stores/contextStore.js';
+import axios from 'axios'
+import { useContextStore } from '../stores/contextStore.js'
+import { API_BASE_URL } from '../config.js'
 
-const api = axios.create({
-  baseURL: process.env.API_URL || 'http://localhost:8080',
-});
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+})
 
 api.interceptors.request.use((config) => {
-  const contextStore = useContextStore();
-  const ctx = contextStore.currentContext;
+  try {
+    const contextStore = useContextStore()
+    const userId = contextStore.userId
+    const schoolId = contextStore.schoolId
+    const semesterId = contextStore.selectedSemesterId
 
-  if (ctx.schoolId) config.headers['X-School-Id'] = ctx.schoolId;
-  if (ctx.userId) config.headers['X-User-Id'] = ctx.userId;
-  
-  if (ctx.semesterId) {
-    config.headers['X-Academic-Period'] = ctx.semesterId; 
+    if (schoolId) config.headers['x-school-id'] = schoolId
+    if (userId) config.headers['x-user-id'] = userId
+    // PERBAIKAN: Sesuaikan dengan header yang dibaca Backend
+    if (semesterId) config.headers['x-academic-period'] = semesterId
+  } catch (e) {
+    // Abaikan jika store belum siap
+    console.log(e)
   }
 
-  return config;
-});
+  return config
+})
 
-export default api;
+export default ({ app }) => {
+  app.config.globalProperties.$axios = api
+}

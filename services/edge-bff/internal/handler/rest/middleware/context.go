@@ -2,19 +2,21 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	platformctx "sekolah-platform/platform/context"
 )
 
 const (
-	HeaderSchoolID       = "X-School-Id"
-	HeaderSchoolName     = "X-School-Name"
-	HeaderAcademicYear   = "X-Academic-Year"
-	HeaderSemester       = "X-Semester"
-	HeaderAcademicPeriod = "X-Academic-Period"
-	HeaderUserID         = "X-User-Id"
-	HeaderUserRole       = "X-User-Role"
+	HeaderSchoolID       = "x-school-id"
+	HeaderSchoolName     = "x-school-name"
+	HeaderAcademicYear   = "x-academic-year"
+	HeaderSemester       = "x-semester"
+	HeaderAcademicPeriod = "x-academic-period-id"
+	HeaderUserID         = "x-user-id"
+	HeaderUserRole       = "x-user-role"
 )
 
 type contextKey string
@@ -28,6 +30,19 @@ func OperationalContextMiddleware() gin.HandlerFunc {
 		schoolName := c.GetHeader(HeaderSchoolName)
 		academicYear := c.GetHeader(HeaderAcademicYear)
 		periodID := c.GetHeader(HeaderAcademicPeriod)
+		if periodID != "" {
+			// Validasi format: 4 digit tahun + 1 digit semester
+			if len(periodID) == 5 {
+				// Simpan ke dalam Context Gin
+				c.Set("academic_period_id", periodID)
+				c.Set("academic_year", periodID[:4])
+				c.Set("semester", periodID[4:])
+			} else {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Format x-academic-period-id tidak valid"})
+				return
+			}
+		}
+
 		userID := c.GetHeader(HeaderUserID)
 		role := c.GetHeader(HeaderUserRole)
 

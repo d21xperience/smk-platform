@@ -72,19 +72,23 @@ func (h *TeacherHandler) ListTeachers(c *gin.Context) {
 
 // GetTeacher mengembalikan detail guru.
 func (h *TeacherHandler) GetTeacher(c *gin.Context) {
+	// 1. Ambil SchoolID dari Middleware
+	schoolID := c.GetString("school_id")
+	if schoolID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Operational context missing: school_id"})
+		return
+	}
+
 	teacherID := c.Param("id")
 
-	teacher, err := h.repo.FindTeacherByID(c.Request.Context(), teacherID)
+	// 2. Gunakan method scoped
+	teacher, err := h.repo.FindTeacherByIDAndSchoolID(c.Request.Context(), teacherID, schoolID)
 	if err != nil {
-		c.JSON(500, errorResponse("INTERNAL_ERROR", err.Error()))
-		return
-	}
-	if teacher == nil {
-		c.JSON(404, errorResponse("NOT_FOUND", "Teacher tidak ditemukan"))
+		c.JSON(http.StatusNotFound, gin.H{"error": "Teacher not found"})
 		return
 	}
 
-	c.JSON(200, successResponse(teacher))
+	c.JSON(http.StatusOK, teacher)
 }
 
 // Placeholder

@@ -112,15 +112,28 @@ func (r *SQLiteRepository) UpsertStudent(ctx context.Context, p *StudentProjecti
 }
 
 // FindStudentByID mencari student by ID.
+// Fungsi lama (JANGAN DIUBAH, dipakai oleh Projection Manager)
 func (r *SQLiteRepository) FindStudentByID(ctx context.Context, studentID string) (*StudentProjection, error) {
-	var p StudentProjection
-	if err := r.db.WithContext(ctx).First(&p, "student_id = ?", studentID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
+	var student StudentProjection
+	err := r.db.WithContext(ctx).Where("id = ?", studentID).First(&student).Error
+	if err != nil {
 		return nil, err
 	}
-	return &p, nil
+	return &student, nil
+}
+
+func (r *SQLiteRepository) FindTeacherByID(ctx context.Context, teacherID string) (*TeacherProjection, error) {
+	var teacher TeacherProjection
+	err := r.db.WithContext(ctx).Where("id = ?", teacherID).First(&teacher).Error
+	if err != nil {
+		return nil, err
+	}
+	return &teacher, nil
+}
+
+func (r *SQLiteRepository) UpdateStudentStatus(ctx context.Context, studentID, status, eventID string) error {
+	// Sesuaikan isi query ini dengan aslinya, yang penting tidak ada schoolID
+	return r.db.WithContext(ctx).Model(&StudentProjection{}).Where("id = ?", studentID).Updates(map[string]interface{}{"status": status, "event_id": eventID}).Error
 }
 
 // ListStudents mengembalikan daftar siswa dengan filter.
@@ -150,35 +163,11 @@ func (r *SQLiteRepository) ListStudents(ctx context.Context, schoolID, periodID,
 	return results, total, nil
 }
 
-// UpdateStudentStatus mengupdate status siswa.
-func (r *SQLiteRepository) UpdateStudentStatus(ctx context.Context, studentID, status, eventID string) error {
-	return r.db.WithContext(ctx).
-		Model(&StudentProjection{}).
-		Where("student_id = ?", studentID).
-		Updates(map[string]interface{}{
-			"status":        status,
-			"last_event_id": eventID,
-			"updated_at":    time.Now().UTC(),
-		}).Error
-}
-
 // === Teacher Operations ===
 
 // UpsertTeacher menginsert atau update teacher projection.
 func (r *SQLiteRepository) UpsertTeacher(ctx context.Context, p *TeacherProjection) error {
 	return r.db.WithContext(ctx).Save(p).Error
-}
-
-// FindTeacherByID mencari teacher by ID.
-func (r *SQLiteRepository) FindTeacherByID(ctx context.Context, teacherID string) (*TeacherProjection, error) {
-	var p TeacherProjection
-	if err := r.db.WithContext(ctx).First(&p, "teacher_id = ?", teacherID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &p, nil
 }
 
 // ListTeachers mengembalikan daftar guru dengan filter.
@@ -248,4 +237,42 @@ func (r *SQLiteRepository) HasProcessedEvent(ctx context.Context, eventID string
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// FindStudentByIDAndSchoolID mencari student berdasarkan ID dan SchoolID (untuk handler HTTP).
+func (r *SQLiteRepository) FindStudentByIDAndSchoolID(ctx context.Context, studentID string, schoolID string) (*StudentProjection, error) {
+	var student StudentProjection
+	err := r.db.WithContext(ctx).Where("id = ? AND school_id = ?", studentID, schoolID).First(&student).Error
+	if err != nil {
+		return nil, err
+	}
+	return &student, nil
+}
+
+// FindTeacherByIDAndSchoolID mencari teacher berdasarkan ID dan SchoolID (untuk handler HTTP).
+func (r *SQLiteRepository) FindTeacherByIDAndSchoolID(ctx context.Context, teacherID string, schoolID string) (*TeacherProjection, error) {
+	var teacher TeacherProjection
+	err := r.db.WithContext(ctx).Where("id = ? AND school_id = ?", teacherID, schoolID).First(&teacher).Error
+	if err != nil {
+		return nil, err
+	}
+	return &teacher, nil
+}
+
+// UpdateStudentStatusBySchoolID mengupdate status siswa berdasarkan ID dan SchoolID (untuk handler HTTP jika ada).
+func (r *SQLiteRepository) UpdateStudentStatusBySchoolID(ctx context.Context, studentID string, schoolID string, status string, eventID string) error {
+	result := r.db.WithContext(ctx).Model(&StudentProjection{}).
+		Where("id = ? AND school_id = ?", studentID, schoolID).
+		Updates(map[string]interface{}{
+			"status":   status,
+			"event_id": eventID,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
