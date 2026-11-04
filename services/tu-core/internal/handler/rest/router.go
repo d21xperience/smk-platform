@@ -3,17 +3,17 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	platformctx "sekolah-platform/platform/context"
 	"sekolah-platform/services/tu-core/internal/middleware"
+	"sekolah-platform/services/tu-core/internal/repository"
 	"sekolah-platform/services/tu-core/internal/service"
 )
 
-// Router mengimplementasikan http.Handler untuk REST API
 type Router struct {
 	studentService        *service.StudentService
 	mutationService       *service.MutationService
@@ -25,9 +25,10 @@ type Router struct {
 	classService          *service.ClassService
 	enrollmentService     *service.EnrollmentService
 	contextHandler        *ContextHandler
+	authHandler           *AuthHandler
+	publicHandler         *PublicHandler
 }
 
-// NewRouter membuat instance router REST baru
 func NewRouter(
 	studentService *service.StudentService,
 	mutationService *service.MutationService,
@@ -39,6 +40,8 @@ func NewRouter(
 	classService *service.ClassService,
 	enrollmentService *service.EnrollmentService,
 	prefService *service.PreferenceService,
+	authService *service.AuthService,
+	publicService *service.PublicService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -51,15 +54,15 @@ func NewRouter(
 		classService:          classService,
 		enrollmentService:     enrollmentService,
 		contextHandler:        NewContextHandler(prefService),
+		authHandler:           NewAuthHandler(authService),
+		publicHandler:         NewPublicHandler(publicService),
 	}
 
 	mux := http.NewServeMux()
 
-	// === STUDENT ROUTES ===
 	mux.HandleFunc("/api/v1/students", r.handleStudents)
 	mux.HandleFunc("/api/v1/students/", r.handleStudentByID)
 
-	// === STUBS FOR OTHER DOMAINS ===
 	mux.HandleFunc("/api/v1/mutations", r.stubHandler)
 	mux.HandleFunc("/api/v1/registrations", r.stubHandler)
 	mux.HandleFunc("/api/v1/attendance", r.stubHandler)
@@ -67,14 +70,11 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
 
-	// class service
 	mux.HandleFunc("/api/v1/classes", r.handleClasses)
 	mux.HandleFunc("/api/v1/classes/{id}", r.handleClassByID)
 	mux.HandleFunc("/api/v1/classes/{id}/members", r.handleClassMembers)
 	mux.HandleFunc("/api/v1/students/{id}/history", r.handleStudentHistory)
 
-	// === BATCH 6: Context & Preference ROUTES ===
-	// Tidak lewat enrichContext — tidak butuh x-academic-year.
 	mux.HandleFunc("/api/v1/context/periods", r.contextHandler.GetPeriods)
 	mux.HandleFunc("/api/v1/users/me/preferences", func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
@@ -86,11 +86,50 @@ func NewRouter(
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		}
 	})
+	mux.HandleFunc("/api/v1/auth/login", r.authHandler.Login)
+	mux.HandleFunc("/api/v1/public/stats", r.publicHandler.GetStats)
+
+	// === ENDPOINT MANAJEMEN PERIODE (ADMIN) ===
+	mux.HandleFunc("/api/v1/academic/periods", r.handleCreateAcademicPeriod)
+	mux.HandleFunc("/api/v1/academic/periods/", r.handleAcademicPeriodsByID)
 
 	return mux
 }
 
-// enrichContext mengekstrak header dan menyuntikkan OperationalContext ke dalam context
+// === WRAPPER UNTUK ENDPOINT YANG BUTUH CONTEXT ===
+func (r *Router) handleCreateAcademicPeriod(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	r.contextHandler.CreatePeriod(w, req.WithContext(ctx))
+}
+
+// Fungsi Routing Terpusat untuk endpoint /api/v1/academic/periods/{id} dan /{id}/activate
+func (r *Router) handleAcademicPeriodsByID(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	req = req.WithContext(ctx)
+
+	switch req.Method {
+	case http.MethodPut:
+		if strings.HasSuffix(req.URL.Path, "/activate") {
+			r.contextHandler.ActivatePeriod(w, req)
+			return
+		}
+	case http.MethodDelete:
+		r.contextHandler.DeletePeriod(w, req)
+		return
+	}
+
+	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+}
+
+// === FUNGSI ASLI ===
 func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 	schoolID := req.Header.Get("x-school-id")
 	academicYear := req.Header.Get("x-academic-year")
@@ -99,7 +138,6 @@ func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 	userID := req.Header.Get("x-user-id")
 	role := req.Header.Get("x-user-role")
 
-	// Validasi minimal sesuai validateOperationalContext di middleware
 	if schoolID == "" || academicYear == "" || userID == "" || role == "" {
 		return nil, http.ErrAbortHandler
 	}
@@ -120,7 +158,6 @@ func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 		Role:             role,
 	}
 
-	// Suntikkan ke context agar GetOperationalContext(ctx) di service layer berhasil
 	ctx := middleware.WithOperationalContext(req.Context(), opCtx)
 	return ctx, nil
 }
@@ -128,7 +165,7 @@ func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 func (r *Router) handleStudents(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
-		http.Error(w, `{"error": "Missing operational context headers (x-school-id, x-academic-year, x-semester, x-user-id, x-user-role)"}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -145,31 +182,26 @@ func (r *Router) handleStudents(w http.ResponseWriter, req *http.Request) {
 func (r *Router) createStudent(w http.ResponseWriter, req *http.Request) {
 	var reqBody service.CreateStudentRequest
 	if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
-		log.Printf("❌ [REST] Invalid request body: %v", err)
-		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid request body: `+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
 
 	opCtx := middleware.GetOperationalContext(req.Context())
-	log.Printf("📝 [REST] Creating student - School: %s, Year: %s, NIS: %s", opCtx.SchoolID, opCtx.AcademicYear, reqBody.NIS)
-
-	// Panggil service dengan signature yang sesuai dengan existing code Anda
 	student, err := r.studentService.CreateStudent(
-		req.Context(),
-		opCtx.SchoolID,
-		opCtx.AcademicPeriodID,
-		opCtx.Semester,
-		opCtx.UserID,
-		opCtx.Role,
-		reqBody,
+		req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID,
+		opCtx.Semester, opCtx.UserID, opCtx.Role, reqBody,
 	)
 	if err != nil {
-		log.Printf("❌ [REST] Error creating student: %v", err)
-		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		if errors.Is(err, service.ErrInvalidInput) {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusBadRequest)
+		} else if errors.Is(err, service.ErrDuplicateEntry) {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusConflict)
+		} else {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+		}
 		return
 	}
-
-	log.Printf("✅ [REST] Student created successfully with ID: %s", student.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -179,32 +211,23 @@ func (r *Router) createStudent(w http.ResponseWriter, req *http.Request) {
 func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 	opCtx := middleware.GetOperationalContext(req.Context())
 
-	limitStr := req.URL.Query().Get("limit")
-	offsetStr := req.URL.Query().Get("offset")
+	limit, _ := strconv.Atoi(req.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(req.URL.Query().Get("offset"))
+	searchStr := req.URL.Query().Get("search")
+	statusStr := req.URL.Query().Get("status")
 
-	limit, _ := strconv.Atoi(limitStr)
-	if limit <= 0 {
-		limit = 20
+	if limit <= 0 { limit = 20 }
+	if offset < 0 { offset = 0 }
+
+	filter := repository.StudentFilter{
+		Limit:   limit,
+		Offset:  offset,
+		Keyword: searchStr,
+		Status:  statusStr,
 	}
 
-	offset, _ := strconv.Atoi(offsetStr)
-	if offset < 0 {
-		offset = 0
-	}
-
-	filter := service.StudentFilterRequest{
-		Limit:  limit,
-		Offset: offset,
-	}
-
-	students, err := r.studentService.ListStudents(
-		req.Context(),
-		opCtx.SchoolID,
-		opCtx.AcademicPeriodID,
-		filter,
-	)
+	students, err := r.studentService.ListStudentsForUI(req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID, filter)
 	if err != nil {
-		log.Printf("❌ [REST] Error listing students: %v", err)
 		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
 	}
@@ -214,32 +237,78 @@ func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Router) handleStudentByID(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotImplemented)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Endpoint ini akan segera diimplementasikan"})
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/students/")
+	parts := splitPath(path)
+	if len(parts) == 0 {
+		http.Error(w, `{"error": "Invalid path"}`, http.StatusBadRequest)
+		return
+	}
+	studentID := parts[0]
+
+	opCtx := middleware.GetOperationalContext(ctx)
+
+	switch req.Method {
+	case http.MethodGet:
+		student, err := r.studentService.GetStudentForUI(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, studentID)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(student)
+
+	case http.MethodPut:
+		var reqBody struct {
+			Name       string `json:"nama"`
+			BirthPlace string `json:"tempatLahir"`
+			Gender     string `json:"jenisKelamin"`
+			Address    string `json:"alamat"`
+			Phone      string `json:"noHp"`
+			ClassName  string `json:"kelas"`
+		}
+		if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
+			http.Error(w, `{"error": "Invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		student, err := r.studentService.UpdateStudentForUI(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, studentID, reqBody)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(student)
+
+	case http.MethodDelete:
+		err := r.studentService.DeleteStudentForUI(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, studentID)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
+
+	default:
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+	}
 }
 
 func (r *Router) stubHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotImplemented)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Domain endpoint ini dalam tahap pengembangan"})
+	http.Error(w, `{"error": "Not implemented"}`, http.StatusNotImplemented)
 }
 
-// Helper: split path tanpa query string
 func splitPath(p string) []string {
-	if p == "" {
-		return []string{}
-	}
-	// remove query string
-	if idx := strings.Index(p, "?"); idx != -1 {
-		p = p[:idx]
-	}
+	if p == "" { return []string{} }
+	if idx := strings.Index(p, "?"); idx != -1 { p = p[:idx] }
 	parts := strings.Split(p, "/")
 	var result []string
 	for _, part := range parts {
-		if part != "" {
-			result = append(result, part)
-		}
+		if part != "" { result = append(result, part) }
 	}
 	return result
 }

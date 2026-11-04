@@ -1,201 +1,128 @@
 // apps/siakad-tu/src/adapters/api/studentRealAdapter.js
 
 import { api } from '@/boot/axios.js'
-// import {
-//   ApplicationError,
-//   NotFoundError,
-//   ConflictError,
-//   ValidationError,
-//   BusinessRuleError,
-//   NetworkError,
-//   TimeoutError,
-// } from '@/domain/errors/index.js'
 
-/**
- * Helper: Map Backend DTO ke Frontend Contract (Anti-Corruption Layer)
- * Pastikan mapping ini sesuai dengan struktur DTO yang dikembalikan TU-Core.
- */
 const mapBackendToStudent = (backendDto) => {
   if (!backendDto) return null
+  let mappedGender = backendDto.gender
+  if (mappedGender === 'MALE') mappedGender = 'L'
+  if (mappedGender === 'FEMALE') mappedGender = 'P'
 
   return {
-    studentId: backendDto.student_id || backendDto.id || backendDto.studentId,
+    id: backendDto.id || backendDto.student_id,
     nisn: backendDto.nisn,
     nis: backendDto.nis,
-    fullName: backendDto.full_name || backendDto.fullName,
-    gender: backendDto.gender,
+    fullName: backendDto.name,
+    gender: mappedGender,
     status: backendDto.status,
+    className: backendDto.className,
+    birthPlace: backendDto.birthPlace,
+    birthDate: backendDto.birthDate,
+    address: backendDto.address,
+    phone: backendDto.phone,
+    parentName: backendDto.parentName,
     enrollments: backendDto.enrollments || [],
-    createdAt: backendDto.created_at || backendDto.createdAt,
-    updatedAt: backendDto.updated_at || backendDto.updatedAt,
   }
 }
 
-/**
- * Helper: Konversi ApplicationError (dari Axios Interceptor)
- * ke format error yang diharapkan oleh Command/Query Service.
- */
-const handleApiError = (error) => {
-  return {
-    success: false,
-    data: null,
-    error: {
-      code: error.code || 'API_ERROR',
-      message: error.message || 'Terjadi kesalahan pada server.',
-      details: error.details || null,
-    },
-  }
-}
-
-const handleSuccess = (data) => ({
-  success: true,
-  data,
-  error: null,
+const handleApiError = (error) => ({
+  success: false,
+  data: null,
+  error: {
+    code: error.response?.status || 'API_ERROR',
+    message: error.response?.data?.error || error.message || 'Terjadi kesalahan.',
+    details: null,
+  },
 })
 
+const handleSuccess = (data) => ({ success: true, data, error: null })
+
 export const studentRealAdapter = {
-  async registerStudent(command, context) {
+  async getStudents(context, filters = {}) {
     try {
-      const payload = { ...command, schoolId: context.schoolId, periodId: context.periodId }
-      const response = await api.post('/students', payload)
-      return handleSuccess(mapBackendToStudent(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
+      const params = {}
+      if (filters.status) params.status = filters.status
+      if (filters.search) params.search = filters.search.trim()
+      
+      const response = await api.get('/students', { params })
+      const responseData = response.data
+      
+      const items = responseData.items || []
+      const total = responseData.total || items.length
 
-  async enrollStudent(command, context) {
-    try {
-      const payload = {
-        enrollmentId: command.enrollmentId,
-        classId: command.classId,
-        enrollmentDate: command.enrollmentDate,
-        periodId: context.periodId,
-      }
-      const response = await api.post(`/students/${command.studentId}/enroll`, payload)
-      return handleSuccess(mapBackendToStudent(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  async updateStudentProfile(command) {
-    try {
-      const payload = {
-        address: command.address,
-        contactInfo: command.contactInfo,
-        guardianInfo: command.guardianInfo,
-      }
-      const response = await api.put(`/students/${command.studentId}`, payload)
-      return handleSuccess(mapBackendToStudent(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  async graduateStudent(command) {
-    try {
-      const payload = { graduationDate: command.graduationDate }
-      const response = await api.post(`/students/${command.studentId}/graduate`, payload)
-      return handleSuccess(mapBackendToStudent(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  async transferStudent(command) {
-    try {
-      const payload = {
-        targetSchool: command.targetSchool,
-        reason: command.reason,
-        transferDate: command.transferDate,
-      }
-      const response = await api.post(`/students/${command.studentId}/transfer`, payload)
-      return handleSuccess(mapBackendToStudent(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
+      return handleSuccess({
+        items: items.map(mapBackendToStudent),
+        total,
+        page: responseData.page || 1,
+        limit: responseData.limit || 20,
+        totalPages: responseData.totalPages || 1,
+      })
+    } catch (error) { return handleApiError(error) }
   },
 
   async getStudentById(studentId) {
     try {
       const response = await api.get(`/students/${studentId}`)
       return handleSuccess(mapBackendToStudent(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
+    } catch (error) { return handleApiError(error) }
   },
 
-  async getStudents(context, filters = {}) {
+  async registerStudent(command) {
     try {
-      console.log('[StudentRealAdapter] getStudents called with:', { context, filters })
-
-      // Pastikan kita mengirim snake_case sesuai ekspektasi backend Go
-      const params = {
-        school_id: context.schoolId,
-        period_id: context.periodId,
+      // Sesuaikan 100% dengan CreateStudentRequest di dto.go (camelCase)
+      const payload = {
+        nis: command.nis || '',
+        nisn: command.nisn || '',
+        name: command.nama || command.fullName || '',
+        gender: command.jenisKelamin === 'L' ? 'MALE' : 'FEMALE',
+        birthPlace: command.tempatLahir || '',
+        address: command.alamat || '',
+        phone: command.noHp || '',
+        email: '',
+        parentName: command.namaAyah || 'Belum Diisi',
+        parentPhone: '',
+        parentEmail: '',
+        classId: command.kelas || '' // Backend mengharapkan classId (string)
       }
 
-      // Hanya tambahkan filter jika nilainya ada (hindari 'search=' yang kosong)
-      if (filters.status) {
-        params.status = filters.status
-      }
-      if (filters.search && filters.search.trim() !== '') {
-        params.search = filters.search.trim()
-      }
-      if (filters.page) {
-        params.page = filters.page
-      }
-      if (filters.limit) {
-        params.limit = filters.limit
+      // Cek ketat: Hanya tambahkan birthDate jika formatnya valid (YYYY-MM-DD)
+      // Ini mencegah error "cannot parse empty string to time.Time"
+      if (command.tanggalLahir && command.tanggalLahir.trim() !== '') {
+        payload.birthDate = command.tanggalLahir;
       }
 
-      console.log('[StudentRealAdapter] Sending params to backend:', params)
-
-      const response = await api.get('/students', { params })
-
-      const responseData = response.data || response
-      const items = Array.isArray(responseData)
-        ? responseData
-        : responseData.data || responseData.items || []
-      const total = responseData.meta?.total || responseData.total || items.length
-      const page = responseData.meta?.page || filters.page || 1
-      const limit = responseData.meta?.limit || filters.limit || 20
-
-      console.log('[StudentRealAdapter] getStudents success:', { items: items.length, total })
-
-      return handleSuccess({
-        items: items.map(mapBackendToStudent),
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      })
-    } catch (error) {
-      console.error('[StudentRealAdapter] getStudents error:', error)
-      return handleApiError(error)
-    }
+      const response = await api.post('/students', payload)
+      return handleSuccess(mapBackendToStudent(response.data))
+    } catch (error) { return handleApiError(error) }
   },
 
-  async checkNisnAvailability(nisn, context) {
+  async updateStudentProfile(command) {
     try {
-      const response = await api.get('/students/check-nisn', {
-        params: { nisn, schoolId: context.schoolId },
-      })
-      return handleSuccess(response.data)
-    } catch (error) {
-      return handleApiError(error)
-    }
+      // Sesuai dengan UpdateStudentRequest di dto.go
+      const payload = {
+        name: command.nama,
+        nis: command.nis,
+        nisn: command.nisn,
+        classId: command.kelas,
+        gender: command.jenisKelamin === 'L' ? 'MALE' : 'FEMALE',
+        birthPlace: command.tempatLahir,
+        address: command.alamat,
+        phone: command.noHp,
+      }
+      
+      if (command.tanggalLahir && command.tanggalLahir.trim() !== '') {
+        payload.birthDate = command.tanggalLahir;
+      }
+
+      const response = await api.put(`/students/${command.studentId}`, payload)
+      return handleSuccess(mapBackendToStudent(response.data))
+    } catch (error) { return handleApiError(error) }
   },
 
-  async checkNisAvailability(nis, context) {
+  async deleteStudent(studentId) {
     try {
-      const response = await api.get('/students/check-nis', {
-        params: { nis, schoolId: context.schoolId },
-      })
-      return handleSuccess(response.data)
-    } catch (error) {
-      return handleApiError(error)
-    }
+      await api.delete(`/students/${studentId}`)
+      return handleSuccess({ id: studentId })
+    } catch (error) { return handleApiError(error) }
   },
 }

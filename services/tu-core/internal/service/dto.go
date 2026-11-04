@@ -1,41 +1,77 @@
 package service
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+// FlexString adalah tipe kustom yang bisa menerima string maupun number dari JSON.
+// Sangat berguna untuk import Excel yang kadang membaca NIS/NISN/Phone sebagai Number.
+type FlexString string
+
+func (s *FlexString) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	if len(data) == 0 || bytes.Equal(data, []byte("null")) {
+		*s = ""
+		return nil
+	}
+	// Jika berupa string (ada tanda kutip)
+	if data[0] == '"' {
+		var str string
+		if err := json.Unmarshal(data, &str); err != nil {
+			return err
+		}
+		*s = FlexString(str)
+		return nil
+	}
+	// Jika berupa angka (Number)
+	if data[0] == '-' || (data[0] >= '0' && data[0] <= '9') {
+		var num json.Number
+		if err := json.Unmarshal(data, &num); err != nil {
+			return err
+		}
+		*s = FlexString(num.String())
+		return nil
+	}
+	return fmt.Errorf("cannot unmarshal %s into FlexString", string(data))
+}
 
 // === STUDENT DTOs ===
 
 // CreateStudentRequest adalah request untuk membuat siswa baru.
 type CreateStudentRequest struct {
-	NIS         string    `json:"nis"`
-	NISN        string    `json:"nisn"`
-	Name        string    `json:"name"`
-	Gender      string    `json:"gender"`
-	BirthDate   time.Time `json:"birthDate"`
-	BirthPlace  string    `json:"birthPlace"`
-	Address     string    `json:"address"`
-	Phone       string    `json:"phone"`
-	Email       string    `json:"email"`
-	ParentName  string    `json:"parentName"`
-	ParentPhone string    `json:"parentPhone"`
-	ParentEmail string    `json:"parentEmail"`
-	ClassID     string    `json:"classId"`
+	NIS         FlexString `json:"nis"`
+	NISN        FlexString `json:"nisn"`
+	Name        string     `json:"name"`
+	Gender      string     `json:"gender"`
+	BirthDate   *time.Time `json:"birthDate"` // Diubah ke pointer agar bisa null/string kosong
+	BirthPlace  string     `json:"birthPlace"`
+	Address     string     `json:"address"`
+	Phone       FlexString `json:"phone"`
+	Email       string     `json:"email"`
+	ParentName  string     `json:"parentName"`
+	ParentPhone FlexString `json:"parentPhone"`
+	ParentEmail string     `json:"parentEmail"`
+	ClassID     string     `json:"classId"`
 }
 
 // UpdateStudentRequest adalah request untuk update siswa.
 type UpdateStudentRequest struct {
-	Name        string    `json:"name"`
-	NIS         string    `json:"nis"`
-	NISN        string    `json:"nisn"`
-	ClassID     string    `json:"classId"`
-	Gender      string    `json:"gender"`
-	BirthDate   time.Time `json:"birthDate"`
-	BirthPlace  string    `json:"birthPlace"`
-	Address     string    `json:"address"`
-	Phone       string    `json:"phone"`
-	Email       string    `json:"email"`
-	ParentName  string    `json:"parentName"`
-	ParentPhone string    `json:"parentPhone"`
-	ParentEmail string    `json:"parentEmail"`
+	Name        string     `json:"name"`
+	NIS         FlexString `json:"nis"`
+	NISN        FlexString `json:"nisn"`
+	ClassID     string     `json:"classId"`
+	Gender      string     `json:"gender"`
+	BirthDate   *time.Time `json:"birthDate"`
+	BirthPlace  string     `json:"birthPlace"`
+	Address     string     `json:"address"`
+	Phone       FlexString `json:"phone"`
+	Email       string     `json:"email"`
+	ParentName  string     `json:"parentName"`
+	ParentPhone FlexString `json:"parentPhone"`
+	ParentEmail string     `json:"parentEmail"`
 }
 
 // StudentResponse adalah response untuk data siswa.

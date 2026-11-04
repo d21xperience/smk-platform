@@ -3,7 +3,6 @@ package models
 import "time"
 
 // Enrollment adalah Entity dalam Student Aggregate.
-// SYMMETRIC dengan Enrollment.js di frontend.
 type Enrollment struct {
 	enrollmentID   string
 	schoolID       string
@@ -18,10 +17,11 @@ type Enrollment struct {
 }
 
 // NewEnrollment membuat Enrollment baru.
-func NewEnrollment(enrollmentID, schoolID, periodID, classID string) *Enrollment {
+func NewEnrollment(enrollmentID, schoolID, studentID, periodID, classID string) *Enrollment {
 	return &Enrollment{
 		enrollmentID:   enrollmentID,
 		schoolID:       schoolID,
+		studentID:      studentID,
 		periodID:       periodID,
 		classID:        classID,
 		enrollmentDate: time.Now().UTC(),
@@ -30,10 +30,11 @@ func NewEnrollment(enrollmentID, schoolID, periodID, classID string) *Enrollment
 }
 
 // RehydrateEnrollment merekonstruksi Enrollment dari data persisten.
-func RehydrateEnrollment(enrollmentID, schoolID, periodID, classID, status string, enrollmentDate time.Time) *Enrollment {
+func RehydrateEnrollment(enrollmentID, schoolID, studentID, periodID, classID, status string, enrollmentDate time.Time) *Enrollment {
 	return &Enrollment{
 		enrollmentID:   enrollmentID,
 		schoolID:       schoolID,
+		studentID:      studentID,
 		periodID:       periodID,
 		classID:        classID,
 		enrollmentDate: enrollmentDate,
@@ -42,9 +43,9 @@ func RehydrateEnrollment(enrollmentID, schoolID, periodID, classID, status strin
 }
 
 // Getters
-
 func (e *Enrollment) EnrollmentID() string      { return e.enrollmentID }
 func (e *Enrollment) SchoolID() string          { return e.schoolID }
+func (e *Enrollment) StudentID() string         { return e.studentID }
 func (e *Enrollment) PeriodID() string          { return e.periodID }
 func (e *Enrollment) ClassID() string           { return e.classID }
 func (e *Enrollment) EnrollmentDate() time.Time { return e.enrollmentDate }
@@ -62,11 +63,6 @@ func (e *Enrollment) Transfer(reason string) {
 	e.UpdatedAt = time.Now()
 }
 
-// IsActive mengecek apakah enrollment aktif.
-// func (e *Enrollment) IsActive() bool {
-// 	return e.status == "active"
-// }
-
 // IsForPeriod mengecek apakah enrollment untuk periode tertentu.
 func (e *Enrollment) IsForPeriod(periodID string) bool {
 	return e.periodID == periodID
@@ -78,11 +74,3 @@ func (e *Enrollment) Complete(reason string) {
 	e.Reason = reason
 	e.UpdatedAt = time.Now()
 }
-
-// Complete menandai enrollment sebagai selesai.
-// func (e *Enrollment) Complete() {
-// 	if e.status != "active" {
-// 		return
-// 	}
-// 	e.status = "completed"
-// }

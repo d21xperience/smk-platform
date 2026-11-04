@@ -100,6 +100,11 @@ func main() {
 	correspondenceRepo := repository.NewCorrespondenceRepository(db)
 	classRepo := repository.NewClassRepository(db)
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	publicRepo := repository.NewPublicRepository(db)
+	// BARU: AcademicRepository diperlukan oleh AuthService untuk me-resolve
+	// academic_period_id aktif saat login.
+	academicRepo := repository.NewAcademicRepository(db)
 	// =========================================================================
 	// 5. DOMAIN ENGINES
 	// =========================================================================
@@ -128,6 +133,9 @@ func main() {
 	correspondenceService := service.NewCorrespondenceService(correspondenceRepo, corrEngine, eventPublisher)
 	classService := service.NewClassService(classRepo, classEngine, eventPublisher)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
+	// BARU: AuthService sekarang butuh academicRepo.
+	authService := service.NewAuthService(userRepo, academicRepo)
+	publicService := service.NewPublicService(publicRepo)
 	// =========================================================================
 	// 8. BACKGROUND WORKERS
 	// =========================================================================
@@ -178,7 +186,9 @@ func main() {
 		correspondenceService,
 		classService,
 		enrollmentService,
-		prefService, // <-- BATCH 6: tambah parameter terakhir
+		prefService,   // <-- BATCH 6: tambah parameter terakhir
+		authService,   // <-- TAMBAHKAN
+		publicService, // <-- TAMBAHKAN
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

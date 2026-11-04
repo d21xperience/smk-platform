@@ -1,29 +1,22 @@
-// apps/siakad-tu/src/composables/auth/useAuthLogin.js
-
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { useContextStore } from '@/stores/contextStore'
 
 /**
  * Composable untuk halaman Login.
  *
- * Tanggung jawab:
- * - Mengelola form login (username, password)
- * - Menangani proses autentikasi via AuthStore
- * - Mengelola redirect setelah login berhasil
- * - Membaca query parameter `redirectTo` dari URL
- *
  * Alur:
- * 1. User datang dari landing page dengan query ?redirectTo=student-list
- * 2. User input kredensial
- * 3. Composable memanggil authStore.login()
- * 4. Jika sukses → redirect ke halaman yang dituju
- * 5. Jika gagal → tampilkan error
+ *   1. Baca query ?redirectTo=... (opsional).
+ *   2. Submit → authStore.login().
+ *   3. Jika sukses → contextStore.initialize() (mengisi periods + semester aktif).
+ *   4. Redirect ke halaman tujuan / landing-home.
  */
 export function useAuthLogin() {
   const router = useRouter()
   const route = useRoute()
   const authStore = useAuthStore()
+  const contextStore = useContextStore()
 
   // === STATE ===
   const formData = ref({
@@ -38,17 +31,11 @@ export function useAuthLogin() {
 
   // === COMPUTED ===
   const isAuthenticated = computed(() => authStore.isAuthenticated)
-  const isFormValid = computed(() => {
-    return formData.value.username.trim() !== '' &&
-           formData.value.password.trim() !== ''
-  })
+  const isFormValid = computed(
+    () => formData.value.username.trim() !== '' && formData.value.password.trim() !== '',
+  )
 
   // === ACTIONS ===
-
-  /**
-   * Baca query parameter `redirectTo` dari URL.
-   * Dipanggil saat component mounted.
-   */
   function readRedirectParam() {
     const query = route.query
     if (query.redirectTo) {
@@ -57,9 +44,8 @@ export function useAuthLogin() {
         params: {},
       }
 
-      // Kumpulkan parameter tambahan dari query (jika ada)
       const reservedKeys = ['redirectTo']
-      Object.keys(query).forEach(key => {
+      Object.keys(query).forEach((key) => {
         if (!reservedKeys.includes(key)) {
           redirectTo.value.params[key] = query[key]
         }
@@ -69,9 +55,6 @@ export function useAuthLogin() {
     }
   }
 
-  /**
-   * Handle submit form login.
-   */
   async function handleLogin() {
     if (!isFormValid.value) return
 
@@ -79,7 +62,6 @@ export function useAuthLogin() {
     error.value = null
 
     try {
-      // Panggil authStore untuk login
       const result = await authStore.login({
         username: formData.value.username,
         password: formData.value.password,
@@ -88,16 +70,20 @@ export function useAuthLogin() {
       if (result) {
         console.log('[useAuthLogin] Login berhasil')
 
-        // Redirect ke halaman yang dituju (jika ada)
+        // Isi operational context SEBELUM redirect. Jika gagal (mis. network),
+        // tetap lanjut redirect; halaman tujuan bisa initialize ulang.
+        try {
+          await contextStore.initialize()
+        } catch (ctxErr) {
+          console.warn('[useAuthLogin] Context init warning:', ctxErr)
+        }
+
         if (redirectTo.value) {
-          console.log('[useAuthLogin] Redirecting to:', redirectTo.value)
           router.push(redirectTo.value)
         } else {
-          // Default: redirect ke dashboard kesiswaan
           router.push({ name: 'landing-home' })
         }
       } else {
-        // Login gagal
         error.value = authStore.error || {
           code: 'LOGIN_FAILED',
           message: 'Username atau password salah.',
@@ -114,33 +100,22 @@ export function useAuthLogin() {
     }
   }
 
-  /**
-   * Toggle visibility password.
-   */
   function togglePassword() {
     showPassword.value = !showPassword.value
   }
 
-  /**
-   * Reset form.
-   */
   function resetForm() {
     formData.value = { username: '', password: '' }
     error.value = null
   }
 
-  /**
-   * Navigasi ke halaman landing.
-   */
   function goToLanding() {
     router.push({ name: 'landing-home' })
   }
 
   // === LIFECYCLE ===
   onMounted(() => {
-    // 1. Cek apakah sudah login
     if (isAuthenticated.value) {
-      // Sudah login, langsung redirect
       if (route.query.redirectTo) {
         router.push({ name: route.query.redirectTo })
       } else {
@@ -148,25 +123,17 @@ export function useAuthLogin() {
       }
       return
     }
-
-    // 2. Baca parameter redirect
     readRedirectParam()
   })
 
-  // === RETURN ===
   return {
-    // State
     formData,
     showPassword,
     isLoading,
     error,
     redirectTo,
-
-    // Computed
     isAuthenticated,
     isFormValid,
-
-    // Actions
     handleLogin,
     togglePassword,
     resetForm,

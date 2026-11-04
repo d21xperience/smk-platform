@@ -72,7 +72,7 @@ func (pm *ProjectionManager) registerStudentHandlers() {
 }
 
 func (pm *ProjectionManager) handleStudentCreated(ctx context.Context, event types.DomainEvent) error {
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 
 	projection := &repository.StudentProjection{
 		StudentID:   getStr(payload, "studentId"),
@@ -101,7 +101,7 @@ func (pm *ProjectionManager) handleStudentCreated(ctx context.Context, event typ
 func (pm *ProjectionManager) handleStudentEnrolled(ctx context.Context, event types.DomainEvent) error {
 	// Update enrollment info (bisa ditambahkan table enrollments)
 	// Untuk simplicity, kita update timestamp
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 	studentID := getStr(payload, "studentId")
 
 	existing, err := pm.repo.FindStudentByID(ctx, studentID)
@@ -119,14 +119,14 @@ func (pm *ProjectionManager) handleStudentEnrolled(ctx context.Context, event ty
 
 func (pm *ProjectionManager) handleStudentStatusChange(status string) ProjectionHandler {
 	return func(ctx context.Context, event types.DomainEvent) error {
-		payload := event.GetPayload().(map[string]interface{})
+		payload := event.GetPayload().(map[string]any)
 		studentID := getStr(payload, "studentId")
 		return pm.repo.UpdateStudentStatus(ctx, studentID, status, event.GetEventID())
 	}
 }
 
 func (pm *ProjectionManager) handleStudentProfileUpdated(ctx context.Context, event types.DomainEvent) error {
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 	studentID := getStr(payload, "studentId")
 
 	existing, err := pm.repo.FindStudentByID(ctx, studentID)
@@ -151,7 +151,7 @@ func (pm *ProjectionManager) registerTeacherHandlers() {
 }
 
 func (pm *ProjectionManager) handleTeacherCreated(ctx context.Context, event types.DomainEvent) error {
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 
 	projection := &repository.TeacherProjection{
 		TeacherID:   getStr(payload, "teacherId"),
@@ -169,7 +169,7 @@ func (pm *ProjectionManager) handleTeacherCreated(ctx context.Context, event typ
 }
 
 func (pm *ProjectionManager) handleTeacherProfileUpdated(ctx context.Context, event types.DomainEvent) error {
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 	teacherID := getStr(payload, "teacherId")
 
 	existing, err := pm.repo.FindTeacherByID(ctx, teacherID)
@@ -187,7 +187,7 @@ func (pm *ProjectionManager) handleTeacherProfileUpdated(ctx context.Context, ev
 
 func (pm *ProjectionManager) handleTeacherStatusChange(status string) ProjectionHandler {
 	return func(ctx context.Context, event types.DomainEvent) error {
-		payload := event.GetPayload().(map[string]interface{})
+		payload := event.GetPayload().(map[string]any)
 		teacherID := getStr(payload, "teacherId")
 
 		existing, err := pm.repo.FindTeacherByID(ctx, teacherID)
@@ -213,7 +213,7 @@ func (pm *ProjectionManager) registerAcademicHandlers() {
 }
 
 func (pm *ProjectionManager) handleClassCreated(ctx context.Context, event types.DomainEvent) error {
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 
 	projection := &repository.ClassProjection{
 		ClassID:     getStr(payload, "classId"),
@@ -233,7 +233,7 @@ func (pm *ProjectionManager) handleClassCreated(ctx context.Context, event types
 }
 
 func (pm *ProjectionManager) handleClassHomeroomChanged(ctx context.Context, event types.DomainEvent) error {
-	payload := event.GetPayload().(map[string]interface{})
+	payload := event.GetPayload().(map[string]any)
 	classID := getStr(payload, "classId")
 	homeroomID := getStr(payload, "homeroomId")
 
@@ -251,7 +251,7 @@ func (pm *ProjectionManager) handleClassHomeroomChanged(ctx context.Context, eve
 
 // === Helpers ===
 
-func getStr(m map[string]interface{}, key string) string {
+func getStr(m map[string]any, key string) string {
 	if v, ok := m[key]; ok {
 		if s, ok := v.(string); ok {
 			return s
@@ -260,7 +260,7 @@ func getStr(m map[string]interface{}, key string) string {
 	return ""
 }
 
-func getInt(m map[string]interface{}, key string) int {
+func getInt(m map[string]any, key string) int {
 	if v, ok := m[key]; ok {
 		switch n := v.(type) {
 		case float64:

@@ -16,7 +16,6 @@ import (
 // VALUE OBJECTS (Local Structs untuk Data Transfer)
 // ============================================================================
 
-// Address adalah struct untuk data alamat.
 type Address struct {
 	Street     string
 	RtRw       string
@@ -26,16 +25,14 @@ type Address struct {
 	PostalCode string
 }
 
-// ContactInfo adalah struct untuk data kontak.
 type ContactInfo struct {
 	Phone string
 	Email string
 }
 
-// GuardianInfo adalah struct untuk data wali/orang tua.
 type GuardianInfo struct {
 	Name       string
-	Relation   string // father, mother, guardian
+	Relation   string
 	Phone      string
 	Occupation string
 }
@@ -44,7 +41,6 @@ type GuardianInfo struct {
 // AGGREGATE ROOT
 // ============================================================================
 
-// Student adalah Aggregate Root untuk domain Student.
 type Student struct {
 	studentID    string
 	schoolID     string
@@ -63,7 +59,6 @@ type Student struct {
 	updatedAt    time.Time
 }
 
-// StudentData adalah data input untuk membuat Student.
 type StudentData struct {
 	StudentID    string
 	SchoolID     string
@@ -79,7 +74,6 @@ type StudentData struct {
 	GuardianInfo GuardianInfo
 }
 
-// NewStudent membuat Student baru.
 func NewStudent(data StudentData, ctx *context.OperationalContext) (*Student, error) {
 	if data.StudentID == "" {
 		data.StudentID = uuid.New().String()
@@ -123,7 +117,6 @@ func NewStudent(data StudentData, ctx *context.OperationalContext) (*Student, er
 		updatedAt:    time.Now().UTC(),
 	}
 
-	// ✅ AMAN: Mengirim Payload Struct, BUKAN pointer ke struct Student
 	student.recordEvent(events.NewStudentCreated(events.StudentCreatedPayload{
 		StudentID: student.studentID,
 		NISN:      student.nisn.Value(),
@@ -165,11 +158,11 @@ func (s *Student) Enroll(enrollmentID, periodID, classID string, ctx *context.Op
 		}
 	}
 
-	enrollment := NewEnrollment(enrollmentID, s.schoolID, periodID, classID)
+	// FIX: Memasukkan s.studentID ke dalam parameter NewEnrollment
+	enrollment := NewEnrollment(enrollmentID, s.schoolID, s.studentID, periodID, classID)
 	s.enrollments = append(s.enrollments, enrollment)
 	s.updatedAt = time.Now().UTC()
 
-	// ✅ AMAN: Mengirim Payload Struct
 	s.recordEvent(events.NewStudentEnrolled(events.StudentEnrolledPayload{
 		StudentID:    s.studentID,
 		EnrollmentID: enrollment.EnrollmentID(),
@@ -194,7 +187,6 @@ func (s *Student) Graduate(ctx *context.OperationalContext) error {
 	s.status = valueobjects.StudentStatusGraduated
 	s.updatedAt = time.Now().UTC()
 
-	// ✅ AMAN: Mengirim Payload Struct
 	s.recordEvent(events.NewStudentGraduated(events.StudentGraduatedPayload{
 		StudentID:      s.studentID,
 		GraduationDate: time.Now().UTC(),
@@ -217,7 +209,6 @@ func (s *Student) Transfer(targetSchool, reason string, ctx *context.Operational
 	s.status = valueobjects.StudentStatusTransferred
 	s.updatedAt = time.Now().UTC()
 
-	// ✅ AMAN: Mengirim Payload Struct
 	s.recordEvent(events.NewStudentTransferred(events.StudentTransferredPayload{
 		StudentID:    s.studentID,
 		TargetSchool: targetSchool,

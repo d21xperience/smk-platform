@@ -9,41 +9,8 @@ import (
 	"strconv"
 )
 
-// enrichContext mengekstrak header dan menyuntikkan OperationalContext ke dalam context
-// func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
-// 	schoolID := req.Header.Get("x-school-id")
-// 	academicYear := req.Header.Get("x-academic-year")
-// 	semesterStr := req.Header.Get("x-semester")
-// 	academicPeriodID := req.Header.Get("x-academic-period-id")
-// 	userID := req.Header.Get("x-user-id")
-// 	role := req.Header.Get("x-user-role")
-
-// 	if schoolID == "" || academicYear == "" || userID == "" || role == "" {
-// 		return nil, http.ErrAbortHandler
-// 	}
-
-// 	semester := 1
-// 	if semesterStr != "" {
-// 		if s, err := strconv.Atoi(semesterStr); err == nil {
-// 			semester = s
-// 		}
-// 	}
-
-// 	opCtx := &platformctx.OperationalContext{
-// 		SchoolID:         schoolID,
-// 		AcademicYear:     academicYear,
-// 		Semester:         semester,
-// 		AcademicPeriodID: academicPeriodID,
-// 		UserID:           userID,
-// 		Role:             role,
-// 	}
-
-// 	ctx := middleware.WithOperationalContext(req.Context(), opCtx)
-// 	return ctx, nil
-// }
-
 // ============================================================
-// CLASS HANDLERS (BARU)
+// CLASS HANDLERS
 // ============================================================
 
 func (r *Router) handleClasses(w http.ResponseWriter, req *http.Request) {
@@ -114,16 +81,12 @@ func (r *Router) listClasses(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"data": classes,
-		// "total": total,
 	})
 }
 
 func (r *Router) handleClassByID(w http.ResponseWriter, req *http.Request) {
-	// Parse ID dari path: /api/v1/classes/{id} atau /api/v1/classes/{id}/...
 	path := req.URL.Path
-	// sederhana: ambil setelah "/api/v1/classes/"
 	id := path[len("/api/v1/classes/"):]
-	// jika masih ada slash, ambil bagian pertama
 	for i, ch := range id {
 		if ch == '/' {
 			id = id[:i]
@@ -146,6 +109,8 @@ func (r *Router) handleClassByID(w http.ResponseWriter, req *http.Request) {
 		r.getClass(w, req.WithContext(ctx), id)
 	case http.MethodPut:
 		r.updateClass(w, req.WithContext(ctx), id)
+	case http.MethodDelete:
+		r.deleteClass(w, req.WithContext(ctx), id)
 	default:
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 	}
@@ -187,4 +152,21 @@ func (r *Router) updateClass(w http.ResponseWriter, req *http.Request, classID s
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(class)
+}
+
+// deleteClass menangani penghapusan kelas.
+func (r *Router) deleteClass(w http.ResponseWriter, req *http.Request, classID string) {
+	err := r.classService.DeleteClass(req.Context(), classID)
+	if err != nil {
+		if err == repository.ErrNotFound {
+			http.Error(w, `{"error": "Class not found"}`, http.StatusNotFound)
+			return
+		}
+		log.Printf("❌ [REST] Error deleting class: %v", err)
+		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Class deleted successfully"})
 }

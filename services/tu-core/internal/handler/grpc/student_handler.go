@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -77,21 +78,27 @@ func (h *StudentGRPCHandler) RegisterStudent(ctx context.Context, req *pb.Regist
 		addr.GetDistrict(), addr.GetCity(), addr.GetPostalCode()))
 
 	// PERBAIKAN: Konversi Gender enum ke string code yang benar
-	// "GENDER_MALE" → "MALE", "GENDER_FEMALE" → "FEMALE"
 	genderCode := protoGenderToCode(req.GetGender())
 
+	// PERBAIKAN BUG POINTER: Tampung ke variabel lokal jika ada nilainya
+	var birthDatePtr *time.Time
+	if req.GetBirthDate() != nil {
+		bd := req.GetBirthDate().AsTime()
+		birthDatePtr = &bd
+	}
+
 	serviceReq := service.CreateStudentRequest{
-		NIS:         req.GetNis(),
-		NISN:        req.GetNisn(),
+		NIS:         service.FlexString(req.GetNis()),
+		NISN:        service.FlexString(req.GetNisn()),
 		Name:        fullName,
-		Gender:      genderCode, // ← PERBAIKAN: gunakan "MALE"/"FEMALE", bukan "GENDER_MALE"
-		BirthDate:   req.GetBirthDate().AsTime(),
-		BirthPlace:  "", // Bisa ditambahkan jika ada di proto
+		Gender:      genderCode,
+		BirthDate:   birthDatePtr, 
+		BirthPlace:  "", 
 		Address:     addressStr,
-		Phone:       req.GetContactInfo().GetPhone(),
+		Phone:       service.FlexString(req.GetContactInfo().GetPhone()),
 		Email:       req.GetContactInfo().GetEmail(),
 		ParentName:  req.GetGuardianInfo().GetName(),
-		ParentPhone: req.GetGuardianInfo().GetPhone(),
+		ParentPhone: service.FlexString(req.GetGuardianInfo().GetPhone()),
 		ParentEmail: req.GetGuardianInfo().GetOccupation(),
 		ClassID:     "",
 	}
@@ -224,7 +231,6 @@ func (h *StudentGRPCHandler) CheckNisAvailability(ctx context.Context, req *pb.C
 // === Helper Functions ===
 
 // protoGenderToCode mengkonversi proto Gender enum ke string code yang diterima domain.
-// "GENDER_MALE" → "MALE", "GENDER_FEMALE" → "FEMALE"
 func protoGenderToCode(g pb.Gender) string {
 	switch g {
 	case pb.Gender_GENDER_MALE:
@@ -314,13 +320,11 @@ func mapToProtoStudent(s *service.StudentResponse) *pb.Student {
 }
 
 // mapServiceError memetakan service error ke gRPC status error.
-// PERBAIKAN: Menggunakan errors.Is() untuk unwrap error yang di-wrap.
 func mapServiceError(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	// PERBAIKAN: Gunakan errors.Is() untuk match wrapped errors
 	switch {
 	case errors.Is(err, service.ErrNotFound):
 		return status.Errorf(codes.NotFound, "data tidak ditemukan")
@@ -331,7 +335,6 @@ func mapServiceError(err error) error {
 	case errors.Is(err, service.ErrMissingOperationalContext):
 		return status.Errorf(codes.InvalidArgument, "missing operational context")
 	default:
-		// PERBAIKAN: Log error detail untuk debugging
 		log.Printf("[mapServiceError] Unhandled error: %T: %v", err, err)
 		return status.Errorf(codes.Internal, "internal server error: %v", err)
 	}
@@ -386,9 +389,12 @@ func (h *StudentGRPCHandler) UpdateStudent(ctx context.Context, req *pb.UpdateSt
 			req.GetFullName().GetMiddleName(),
 			req.GetFullName().GetLastName()))
 	}
+	
 	if req.GetBirthDate() != nil {
-		updateReq.BirthDate = req.GetBirthDate().AsTime()
+		bd := req.GetBirthDate().AsTime()
+		updateReq.BirthDate = &bd
 	}
+	
 	updateReq.BirthPlace = req.GetBirthPlace()
 	if req.GetGender() != pb.Gender_GENDER_UNSPECIFIED {
 		updateReq.Gender = ProtoToGender(req.GetGender())
@@ -400,16 +406,16 @@ func (h *StudentGRPCHandler) UpdateStudent(ctx context.Context, req *pb.UpdateSt
 			addr.GetDistrict(), addr.GetCity(), addr.GetPostalCode())
 	}
 	if req.GetContactInfo() != nil {
-		updateReq.Phone = req.GetContactInfo().GetPhone()
+		updateReq.Phone = service.FlexString(req.GetContactInfo().GetPhone())
 		updateReq.Email = req.GetContactInfo().GetEmail()
 	}
 	if req.GetGuardianInfo() != nil {
 		updateReq.ParentName = req.GetGuardianInfo().GetName()
-		updateReq.ParentPhone = req.GetGuardianInfo().GetPhone()
+		updateReq.ParentPhone = service.FlexString(req.GetGuardianInfo().GetPhone())
 		updateReq.ParentEmail = req.GetGuardianInfo().GetOccupation()
 	}
-	updateReq.NIS = req.GetNis()
-	updateReq.NISN = req.GetNisn()
+	updateReq.NIS = service.FlexString(req.GetNis())
+	updateReq.NISN = service.FlexString(req.GetNisn())
 	updateReq.ClassID = req.GetClassName()
 
 	result, err := h.service.UpdateStudent(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, req.GetStudentId(), updateReq)

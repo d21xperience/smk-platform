@@ -1,402 +1,212 @@
 // apps/siakad-tu/src/adapters/mock/studentMockAdapter.js
-
 import { mockStorage } from './mockStorage.js'
-import { idGenerator } from '../utils/idGenerator.js'
 
-/**
- * StudentMockAdapter — Implementasi mock dari StudentApiContract.
- *
- * Menggunakan localStorage sebagai "database".
- * Mensimulasikan:
- * - Persist data
- * - Validasi keunikan NISN/NIS
- * - Query dengan filter
- * - Error scenarios
- *
- * Catatan: Adapter TIDAK mengandung logika bisnis.
- * Logika bisnis ada di Engine. Adapter hanya menyimpan dan mengambil data.
- */
+const MOCK_STUDENTS_BY_PERIOD = {
+  '20251': [
+    {
+      peserta_didik_id: 'uuid-siswa-1',
+      nis: '20251788779136',
+      nisn: '0088779136',
+      nm_siswa: 'Ahmad Fauzi',
+      jenis_kelamin: 'L',
+      tempat_lahir: 'Jakarta',
+      tanggal_lahir: '2008-05-12',
+      alamat_siswa: 'Jl. Merdeka No. 1, Menteng, Jakarta Pusat',
+      telepon_siswa: '08123456789',
+      nm_ayah: 'Budi Santoso',
+      nm_ibu: 'Siti Aminah',
+      kelas: 'X RPL 1',
+      tingkat: 'X',
+      jurusan: 'RPL',
+      status: 'Aktif',
+      tahun_ajaran_id: '20251',
+      wali_kelas: 'Budi Santoso'
+    },
+    {
+      peserta_didik_id: 'uuid-siswa-2',
+      nis: '20251788779019',
+      nisn: '0088779019',
+      nm_siswa: 'Siti Nurhaliza',
+      jenis_kelamin: 'P',
+      tempat_lahir: 'Bandung',
+      tanggal_lahir: '2008-08-20',
+      alamat_siswa: 'Jl. Asia Afrika No. 2, Sumur Bandung',
+      telepon_siswa: '08987654321',
+      nm_ayah: 'Hendra',
+      nm_ibu: 'Rina',
+      kelas: 'X TKJ 2',
+      tingkat: 'X',
+      jurusan: 'TKJ',
+      status: 'Aktif',
+      tahun_ajaran_id: '20251',
+      wali_kelas: 'Rina Wijaya'
+    }
+  ],
+  '20261': [
+    {
+      peserta_didik_id: 'uuid-siswa-1',
+      nis: '20251788779136',
+      nisn: '0088779136',
+      nm_siswa: 'Ahmad Fauzi',
+      jenis_kelamin: 'L',
+      tempat_lahir: 'Jakarta',
+      tanggal_lahir: '2008-05-12',
+      alamat_siswa: 'Jl. Merdeka No. 1, Menteng, Jakarta Pusat',
+      telepon_siswa: '08123456789',
+      nm_ayah: 'Budi Santoso',
+      nm_ibu: 'Siti Aminah',
+      kelas: 'XI RPL 1', 
+      tingkat: 'XI',
+      jurusan: 'RPL',
+      status: 'Aktif',
+      tahun_ajaran_id: '20261',
+      wali_kelas: 'Dedi Kurniawan'
+    }
+  ]
+}
+
+const ensureDataSeeded = (schoolId) => {
+  if (!schoolId) return
+  const existing = mockStorage.read(schoolId, 'students_20251')
+  if (existing.length === 0) {
+    Object.keys(MOCK_STUDENTS_BY_PERIOD).forEach(periodId => {
+      mockStorage.write(schoolId, `students_${periodId}`, MOCK_STUDENTS_BY_PERIOD[periodId])
+    })
+  }
+}
+
+const mapToFrontend = (s) => ({
+  id: s.peserta_didik_id,
+  nis: s.nis,
+  nisn: s.nisn,
+  fullName: s.nm_siswa,
+  gender: s.jenis_kelamin, 
+  className: s.kelas,
+  tingkat: s.tingkat,
+  jurusan: s.jurusan,
+  status: s.status,
+  waliKelas: s.wali_kelas,
+  birthPlace: s.tempat_lahir,
+  birthDate: s.tanggal_lahir,
+  address: s.alamat_siswa,
+  phone: s.telepon_siswa,
+  parentName: s.nm_ayah,
+  motherName: s.nm_ibu
+})
+
+const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
+
 export const studentMockAdapter = {
-  // === HELPER METHODS ===
-
-  /**
-   * Simulasi latency network (opsional, untuk realisme)
-   * @private
-   */
-  async _simulateLatency(ms = 50) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-  },
-
-  /**
-   * Helper: buat error response
-   * @private
-   */
-  _error(code, message, details = null) {
-    return {
-      success: false,
-      data: null,
-      error: { code, message, details },
-    }
-  },
-
-  /**
-   * Helper: buat success response
-   * @private
-   */
-  _success(data) {
-    return { success: true, data, error: null }
-  },
-
-  /**
-   * Helper: cari siswa by ID di storage
-   * @private
-   */
-  _findStudent(schoolId, studentId) {
-    const students = mockStorage.read(schoolId, 'students')
-    return students.find((s) => s.studentId === studentId) || null
-  },
-
-  /**
-   * Helper: update siswa di storage
-   * @private
-   */
-  _updateStudent(schoolId, updatedStudent) {
-    const students = mockStorage.read(schoolId, 'students')
-    const index = students.findIndex((s) => s.studentId === updatedStudent.studentId)
-    if (index === -1) {
-      students.push(updatedStudent)
-    } else {
-      students[index] = updatedStudent
-    }
-    mockStorage.write(schoolId, 'students', students)
-  },
-
-  // === CONTRACT IMPLEMENTATION ===
-
-  /**
-   * Register siswa baru
-   */
-  async registerStudent(command, context) {
-    await this._simulateLatency()
-
-    const { schoolId } = context
-    const students = mockStorage.read(schoolId, 'students')
-
-    // Validasi keunikan NISN
-    const nisnExists = students.find((s) => s.nisn === command.nisn)
-    if (nisnExists) {
-      return this._error(
-        'NISN_DUPLICATE',
-        `NISN ${command.nisn} sudah terdaftar atas nama ${nisnExists.fullName.firstName} ${nisnExists.fullName.lastName || ''}`.trim(),
-        { existingStudentId: nisnExists.studentId },
-      )
-    }
-
-    // Validasi keunikan NIS
-    const nisExists = students.find((s) => s.nis === command.nis)
-    if (nisExists) {
-      return this._error('NIS_DUPLICATE', `NIS ${command.nis} sudah digunakan.`, {
-        existingStudentId: nisExists.studentId,
-      })
-    }
-
-    // Simpan data (Engine sudah validasi format, Adapter hanya simpan)
-    const studentData = {
-      ...command,
-      schoolId, // dari context
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    this._updateStudent(schoolId, studentData)
-
-    return this._success(studentData)
-  },
-
-  /**
-   * Enroll siswa ke kelas
-   */
-  async enrollStudent(command, context) {
-    await this._simulateLatency()
-
-    const { schoolId, periodId } = context
-    const student = this._findStudent(schoolId, command.studentId)
-
-    if (!student) {
-      return this._error('STUDENT_NOT_FOUND', `Siswa ${command.studentId} tidak ditemukan.`)
-    }
-
-    if (student.schoolId !== schoolId) {
-      return this._error('SCHOOL_MISMATCH', 'Siswa terdaftar di sekolah lain.')
-    }
-
-    // Tambahkan enrollment baru
-    const newEnrollment = {
-      enrollmentId: command.enrollmentId || idGenerator.enrollmentId(),
-      schoolId,
-      periodId,
-      classId: command.classId,
-      enrollmentDate: command.enrollmentDate || new Date().toISOString(),
-      status: 'active',
-    }
-
-    student.enrollments = student.enrollments || []
-    student.enrollments.push(newEnrollment)
-    student.updatedAt = new Date().toISOString()
-
-    this._updateStudent(schoolId, student)
-
-    return this._success(student)
-  },
-
-  /**
-   * Update profil siswa
-   */
-  async updateStudentProfile(command, context) {
-    await this._simulateLatency()
-
-    const { schoolId } = context
-    const student = this._findStudent(schoolId, command.studentId)
-
-    if (!student) {
-      return this._error('STUDENT_NOT_FOUND', `Siswa ${command.studentId} tidak ditemukan.`)
-    }
-
-    if (student.schoolId !== schoolId) {
-      return this._error('SCHOOL_MISMATCH', 'Siswa terdaftar di sekolah lain.')
-    }
-
-    // Partial update
-    if (command.address) student.address = command.address
-    if (command.contactInfo) student.contactInfo = command.contactInfo
-    if (command.guardianInfo) student.guardianInfo = command.guardianInfo
-    student.updatedAt = new Date().toISOString()
-
-    this._updateStudent(schoolId, student)
-
-    return this._success(student)
-  },
-
-  /**
-   * Luluskan siswa
-   */
-  async graduateStudent(command, context) {
-    await this._simulateLatency()
-
-    const { schoolId } = context
-    const student = this._findStudent(schoolId, command.studentId)
-
-    if (!student) {
-      return this._error('STUDENT_NOT_FOUND', `Siswa ${command.studentId} tidak ditemukan.`)
-    }
-
-    if (student.schoolId !== schoolId) {
-      return this._error('SCHOOL_MISMATCH', 'Siswa terdaftar di sekolah lain.')
-    }
-
-    // Complete semua enrollment aktif
-    if (student.enrollments) {
-      student.enrollments.forEach((e) => {
-        if (e.status === 'active') e.status = 'completed'
-      })
-    }
-
-    student.status = 'GRADUATED'
-    student.graduationDate = command.graduationDate || new Date().toISOString()
-    student.updatedAt = new Date().toISOString()
-
-    this._updateStudent(schoolId, student)
-
-    return this._success(student)
-  },
-
-  /**
-   * Pindahkan siswa
-   */
-  async transferStudent(command, context) {
-    await this._simulateLatency()
-
-    const { schoolId } = context
-    const student = this._findStudent(schoolId, command.studentId)
-
-    if (!student) {
-      return this._error('STUDENT_NOT_FOUND', `Siswa ${command.studentId} tidak ditemukan.`)
-    }
-
-    if (student.schoolId !== schoolId) {
-      return this._error('SCHOOL_MISMATCH', 'Siswa terdaftar di sekolah lain.')
-    }
-
-    // Complete semua enrollment aktif
-    if (student.enrollments) {
-      student.enrollments.forEach((e) => {
-        if (e.status === 'active') e.status = 'completed'
-      })
-    }
-
-    student.status = 'TRANSFERRED'
-    student.transferInfo = {
-      targetSchool: command.targetSchool,
-      reason: command.reason || '',
-      transferDate: command.transferDate || new Date().toISOString(),
-    }
-    student.updatedAt = new Date().toISOString()
-
-    this._updateStudent(schoolId, student)
-
-    return this._success(student)
-  },
-
-  /**
-   * Ambil siswa by ID
-   */
-  async getStudentById(studentId, context) {
-    await this._simulateLatency(30)
-
-    const { schoolId } = context
-    const student = this._findStudent(schoolId, studentId)
-
-    if (!student) {
-      return this._error('STUDENT_NOT_FOUND', `Siswa ${studentId} tidak ditemukan.`)
-    }
-
-    if (student.schoolId !== schoolId) {
-      return this._error('SCHOOL_MISMATCH', 'Siswa terdaftar di sekolah lain.')
-    }
-
-    return this._success(student)
-  },
-
-  /**
-   * Ambil daftar siswa dengan filter
-   */
-
   async getStudents(context, filters = {}) {
-    await this._simulateLatency(100)
-    let students = mockStorage.read(context.schoolId, 'students')
+    const schoolId = context?.schoolId || 'default-school'
+    const periodId = context?.semesterId || '20251' 
 
-    // === AUTO-SEED: Jika data kosong, isi dengan data dummy agar UI bisa dites ===
-    if (!students || students.length === 0) {
-      console.log('[StudentMockAdapter] Data kosong, melakukan auto-seed data dummy...')
-      students = [
-        {
-          studentId: 'student-001',
-          nisn: '0012345678',
-          nis: '12345',
-          fullName: { firstName: 'Budi', middleName: '', lastName: 'Santoso' },
-          gender: 'MALE',
-          birthDate: '2008-05-15',
-          status: 'ACTIVE',
-          schoolId: context.schoolId,
-          address: { street: 'Jl. Merdeka No. 1', city: 'Bandung' },
-          contactInfo: { phone: '08123456789', email: 'budi@example.com' },
-          guardianInfo: {
-            name: 'Ayah Budi',
-            relation: 'Ayah',
-            phone: '08123456789',
-            occupation: 'Wiraswasta',
-          },
-          enrollments: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          studentId: 'student-002',
-          nisn: '0087654321',
-          nis: '12346',
-          fullName: { firstName: 'Siti', middleName: '', lastName: 'Aminah' },
-          gender: 'FEMALE',
-          birthDate: '2008-08-20',
-          status: 'ACTIVE',
-          schoolId: context.schoolId,
-          address: { street: 'Jl. Sudirman No. 10', city: 'Bandung' },
-          contactInfo: { phone: '08198765432', email: 'siti@example.com' },
-          guardianInfo: {
-            name: 'Ibu Siti',
-            relation: 'Ibu',
-            phone: '08198765432',
-            occupation: 'Guru',
-          },
-          enrollments: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ]
-      mockStorage.write(context.schoolId, 'students', students)
-    }
-    // ========================================================================
+    ensureDataSeeded(schoolId)
+    await delay()
+    
+    let students = mockStorage.read(schoolId, `students_${periodId}`)
+    if (!students) students = []
 
-    // Filter by status
-    if (filters.status) {
-      students = students.filter((s) => s.status === filters.status)
-    }
-
-    // Search by name/NISN/NIS
     if (filters.search) {
-      const term = filters.search.toLowerCase()
-      students = students.filter(
-        (s) =>
-          `${s.fullName.firstName} ${s.fullName.middleName || ''} ${s.fullName.lastName || ''}`
-            .toLowerCase()
-            .includes(term) ||
-          s.nisn.toLowerCase().includes(term) ||
-          s.nis.toLowerCase().includes(term),
+      const keyword = filters.search.toLowerCase()
+      students = students.filter(s => 
+        s.nm_siswa.toLowerCase().includes(keyword) || 
+        s.nis.includes(keyword) || 
+        s.nisn.includes(keyword)
       )
     }
+    if (filters.status) students = students.filter(s => s.status === filters.status)
+    if (filters.tingkat) students = students.filter(s => s.tingkat === filters.tingkat)
+    if (filters.jurusan) students = students.filter(s => s.jurusan === filters.jurusan)
+    if (filters.kelas) students = students.filter(s => s.kelas === filters.kelas)
 
-    // Pagination
-    const page = filters.page || 1
-    const limit = filters.limit || 20
-    const total = students.length
-    const startIndex = (page - 1) * limit
-    const items = students.slice(startIndex, startIndex + limit)
-
-    return this._success({
-      items,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    })
+    return {
+      success: true,
+      data: {
+        items: students.map(mapToFrontend),
+        total: students.length,
+        page: filters.page || 1,
+        limit: filters.limit || 10,
+        totalPages: Math.ceil(students.length / (filters.limit || 10))
+      }
+    }
   },
 
-  /**
-   * Cek ketersediaan NISN
-   */
-  async checkNisnAvailability(nisn, context) {
-    await this._simulateLatency(30)
-
-    const { schoolId } = context
-    const students = mockStorage.read(schoolId, 'students')
-    const existing = students.find((s) => s.nisn === nisn)
-
-    return this._success({
-      available: !existing,
-      existingStudentId: existing?.studentId || null,
-    })
+  async getStudentById(id, context) {
+    const schoolId = context?.schoolId || 'default-school'
+    const periodId = context?.semesterId || '20251'
+    
+    ensureDataSeeded(schoolId)
+    await delay()
+    
+    const students = mockStorage.read(schoolId, `students_${periodId}`) || []
+    const student = students.find(s => s.peserta_didik_id === id)
+    if (!student) return { success: false, error: { code: 'STUDENT_NOT_FOUND', message: 'Siswa tidak ditemukan di periode ini' } }
+    return { success: true, data: mapToFrontend(student) }
   },
 
-  /**
-   * Cek ketersediaan NIS
-   */
-  async checkNisAvailability(nis, context) {
-    await this._simulateLatency(30)
+  // FUNGSI BARU: Untuk menyimpan perubahan dari Form Edit
+  async updateStudentProfile(command, context) {
+    const schoolId = context?.schoolId || 'default-school'
+    const periodId = context?.semesterId || '20251'
+    await delay()
+    ensureDataSeeded(schoolId)
+    
+    const students = mockStorage.read(schoolId, `students_${periodId}`) || []
+    const index = students.findIndex(s => s.peserta_didik_id === command.studentId)
+    
+    if (index === -1) return { success: false, error: { message: 'Siswa tidak ditemukan' } }
 
-    const { schoolId } = context
-    const students = mockStorage.read(schoolId, 'students')
-    const existing = students.find((s) => s.nis === nis)
-
-    return this._success({
-      available: !existing,
-      existingStudentId: existing?.studentId || null,
-    })
+    // Map dari Form (Flat) ke Database Mock (Bahasa Indonesia)
+    students[index] = {
+      ...students[index],
+      nm_siswa: command.nama,
+      tempat_lahir: command.tempatLahir,
+      tanggal_lahir: command.tanggalLahir,
+      jenis_kelamin: command.jenisKelamin,
+      agama: command.agama,
+      telepon_siswa: command.noHp,
+      alamat_siswa: command.alamat,
+      kelas: command.kelas,
+      jurusan: command.jurusan
+    }
+    
+    mockStorage.write(schoolId, `students_${periodId}`, students)
+    return { success: true, data: mapToFrontend(students[index]) }
   },
 
-  /**
-   * Reset data mock (khusus development/testing)
-   */
-  async __resetMockData(schoolId = null) {
+  async registerStudent(command, context) {
+    const schoolId = context?.schoolId || 'default-school'
+    const periodId = context?.semesterId || '20251'
+    await delay()
+    ensureDataSeeded(schoolId)
+    
+    const students = mockStorage.read(schoolId, `students_${periodId}`) || []
+    
+    const newStudent = {
+      peserta_didik_id: command.studentId || `uuid-${Date.now()}`,
+      nis: command.nis,
+      nisn: command.nisn,
+      nm_siswa: command.fullName?.firstName || command.nm_siswa,
+      jenis_kelamin: command.gender === 'MALE' ? 'L' : 'P',
+      tahun_ajaran_id: periodId,
+      status: 'Aktif',
+      kelas: command.className || '-',
+      tingkat: command.tingkat || 'X',
+      jurusan: command.jurusan || 'UMUM'
+    }
+    
+    students.push(newStudent)
+    mockStorage.write(schoolId, `students_${periodId}`, students)
+    return { success: true, data: mapToFrontend(newStudent) }
+  },
+  
+  async enrollStudent() { return { success: true, data: null } },
+  async graduateStudent() { return { success: true, data: null } },
+  async checkNisnAvailability() { return { success: true, data: { available: true } } },
+  
+  async __resetMockData(schoolId) { 
     mockStorage.clearSchool(schoolId)
-    return this._success({ reset: true })
-  },
+    return true 
+  }
 }

@@ -10,6 +10,13 @@ const kesiswaanRoutes = {
       name: 'kesiswaan-dashboard',
       component: () => import('@/pages/kesiswaan/DashboardPage.vue'),
     },
+    // === RUTE BARU UNTUK MODUL KELAS ===
+    {
+      path: 'kelas',
+      name: 'kesiswaan-kelas',
+      component: () => import('@/pages/kesiswaan/DataKelas.vue'),
+    },
+    // ===================================
     {
       path: 'siswa',
       children: [
@@ -17,7 +24,6 @@ const kesiswaanRoutes = {
           path: '',
           name: 'student-list',
           component: () => import('@/pages/kesiswaan/StudentListPage.vue'),
-          // component: () => import('@/pages/kesiswaan/DirektoriSiswa.vue'),
         },
         {
           path: 'create',
@@ -51,11 +57,6 @@ const kesiswaanRoutes = {
         },
       ],
     },
-    // {
-    //   path: 'psb-siswa-baru',
-    //   name: 'psb-siswa-baru',
-    //   component: () => import('@/pages/kesiswaan/SiswaBaruPage.vue'),
-    // },
     {
       path: 'direktori-siswa',
       name: 'direktori-siswa',
@@ -66,59 +67,15 @@ const kesiswaanRoutes = {
       name: 'buku-induk-siswa',
       component: () => import('@/pages/kesiswaan/BukuIndukKlaper.vue'),
     },
-
-    // {
-    //   path: 'surat-aktif-siswa',
-    //   name: 'surat-aktif-siswa',
-    //   component: () => import('@/pages/kesiswaan/SuratAktif.vue'),
-    // },
     {
       path: 'beasiswa-pip-siswa',
       name: 'beasiswa-pip-siswa',
       component: () => import('@/pages/kesiswaan/BeasiswaPip.vue'),
     },
-    // {
-    //   path: 'legalisir-alumni',
-    //   name: 'legalisir-alumni',
-    //   component: () => import('@/pages/kesiswaan/LegalisirAlumni.vue'),
-    // },
-
-    // {
-    //   path: 'rekap-pelaporan',
-    //   name: 'rekap-pelaporan',
-    //   component: () => import('@/pages/kesiswaan/RekapPelaporan.vue'),
-    // },
-    // // -------------------------
-    // {
-    //   path: 'data-siswa',
-    //   name: 'data-siswa',
-    //   component: () => import('@/pages/kesiswaan/KesiswaanSiswa.vue'),
-    // },
-    // {
-    //   path: 'monitoring-absensi',
-    //   name: 'monitoring-absensi',
-    //   component: () => import('@/pages/kesiswaan/MonitoringAbsensi.vue'),
-    // },
-    // {
-    //   path: 'pendaftaran',
-    //   // component: () => import('@/pages/kesiswaan/MonitoringAbsensi.vue'),
-    //   children: [
-    //     {
-    //       path: 'siswa-baru',
-    //       name: 'pendaftaran-siswa-baru',
-    //       component: () => import('@/pages/kesiswaan/PendaftaranSiswaBaru.vue'),
-    //     },
-    // {
-    //   path: 'manajemen-mutasi-siswa',
-    //   name: 'manajemen-mutasi-siswa',
-    //   component: () => import('@/pages/kesiswaan/MutasiPage.vue'),
-    // },
-    //   ],
-    // },
   ],
   meta: {
     requiresAuth: true,
-    allowedRoles: ['admin', 'kesiswaan'], // <-- Definisikan role yang diizinkan di sini
+    allowedRoles: ['admin', 'kesiswaan'],
   },
 }
 

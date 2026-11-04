@@ -1,37 +1,29 @@
-// apps/siakad-tu/src/router/routes.js
-
 import hubin from './routes/hubin-routes.js'
 import kepegawaian from './routes/kepegawaian-routes.js'
 import kesiswaanRoutes from './routes/kesiswaan-routes.js'
 import persuratan from './routes/persuratan.js'
 import previewDev from './routes/preview-routes.js'
 import psb from './routes/psb-routes.js'
-// import { authGuard } from './guards.js'
-// Import routes baru
-// import keuanganRoutes from './routes/keuangan-routes.js'
-// import absensiRoutes from './routes/absensi-routes.js'
-// import penilaianRoutes from './routes/penilaian-routes.js'
 
 const routes = [
   {
     path: '/',
-    component: () => import('@/layouts/LandingLayout.vue'), // <-- Gunakan layout yang sudah ada
-    // beforeEnter: authGuard,
-    redirect: 'preview',
+    component: () => import('@/layouts/LandingLayout.vue'),
     children: [
       previewDev,
-      // Existing routes
-      persuratan,
       kesiswaanRoutes,
+      persuratan,
       psb,
       hubin,
       kepegawaian,
-      // keuanganRoutes,
-      // absensiRoutes,
-      // penilaianRoutes,
+      {
+        path: 'pengaturan/tahun-ajaran',
+        name: 'pengaturan-tahun-ajaran',
+        component: () => import('@/pages/pengaturan/AcademicPeriodPage.vue'),
+        meta: { requiresAuth: true } // Bisa ditambahkan guard admin di sini nanti
+      }
     ],
   },
-  // === AUTH ROUTES (Tanpa Layout Landing) ===
   {
     path: '/auth',
     children: [
@@ -39,9 +31,7 @@ const routes = [
         path: 'login',
         name: 'auth-login',
         component: () => import('@/pages/auth/LoginPage.vue'),
-        meta: {
-          guestOnly: true, // Hanya untuk user yang belum login
-        },
+        meta: { guestOnly: true },
       },
     ],
   },
@@ -61,5 +51,4 @@ const routes = [
     component: () => import('@/pages/ErrorNotFound.vue'),
   },
 ]
-
 export default routes

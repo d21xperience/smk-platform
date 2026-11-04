@@ -30,7 +30,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func createTestEvent(eventName string, payload map[string]interface{}) types.DomainEvent {
+func createTestEvent(eventName string, payload map[string]any) types.DomainEvent {
 	return types.NewBaseEventBuilder(eventName, "Test", "agg-001").
 		WithEventID("evt-001").
 		WithContext(&platformctx.OperationalContext{
@@ -46,10 +46,10 @@ func TestHandleAttendanceSubmitted(t *testing.T) {
 	db := setupTestDB(t)
 	dp := NewDashboardProjection(db)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"classId":   "class-x-1",
 		"teacherId": "teacher-001",
-		"statistics": map[string]interface{}{
+		"statistics": map[string]any{
 			"total":          36.0,
 			"present":        30.0,
 			"absent":         3.0,
@@ -110,7 +110,7 @@ func TestHandleStudentCreated(t *testing.T) {
 	db := setupTestDB(t)
 	dp := NewDashboardProjection(db)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"studentId": "student-001",
 		"nisn":      "1234567890",
 	}
@@ -138,10 +138,10 @@ func TestHandleAssessmentSubmitted(t *testing.T) {
 	db := setupTestDB(t)
 	dp := NewDashboardProjection(db)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"classId":   "class-x-1",
 		"teacherId": "teacher-001",
-		"statistics": map[string]interface{}{
+		"statistics": map[string]any{
 			"total":    36.0,
 			"passing":  30.0,
 			"average":  78.5,
@@ -176,10 +176,10 @@ func TestMultipleEventsAggregation(t *testing.T) {
 
 	// Submit 3 attendance sessions
 	for i := 0; i < 3; i++ {
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"classId":   "class-x-1",
 			"teacherId": "teacher-001",
-			"statistics": map[string]interface{}{
+			"statistics": map[string]any{
 				"total":   36.0,
 				"present": 30.0,
 				"absent":  6.0,
@@ -205,7 +205,7 @@ func TestUnknownEventIgnored(t *testing.T) {
 	db := setupTestDB(t)
 	dp := NewDashboardProjection(db)
 
-	event := createTestEvent("UnknownEvent", map[string]interface{}{})
+	event := createTestEvent("UnknownEvent", map[string]any{})
 
 	// Should not error
 	err := dp.Handle(context.Background(), event)

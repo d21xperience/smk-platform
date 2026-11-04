@@ -19,8 +19,13 @@ const psb = {
     // {
     //   path: 'generate-kelas',
     //   name: 'generate-kelas',
-    //   component: () => import('pages/psb/PemetaanKelas.vue'),
+    //   component: () => import('@/pages/psb/PemetaanKelas.vue'),
     // },
+    {
+      path: 'create-kelas',
+      name: 'create-kelas',
+      component: () => import('@/pages/psb/PemetaanKelas.vue'),
+    },
   ],
 }
 export default psb

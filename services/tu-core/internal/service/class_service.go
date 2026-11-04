@@ -289,7 +289,7 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 	return toClassResponse(repoUpdated), nil
 }
 
-// DeleteClass menghapus rombel (soft delete).
+// DeleteClass menghapus rombel (hard delete — tabel_kelas tidak punya kolom deleted_at).
 func (s *ClassService) DeleteClass(ctx context.Context, classID string) error {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {

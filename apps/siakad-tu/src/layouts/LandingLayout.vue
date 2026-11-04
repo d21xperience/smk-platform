@@ -1,12 +1,9 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <!-- Header -->
     <q-header elevated class="bg-white text-dark">
       <q-toolbar>
-        <!-- Mobile menu button -->
         <q-btn flat dense round icon="menu" aria-label="Menu" class="lt-sm" @click="toggleLeftDrawer" />
 
-        <!-- Logo -->
         <q-toolbar-title class="flex no-wrap items-center">
           <div>
             <q-icon name="school" size="2em" class="q-mr-sm" />
@@ -19,7 +16,6 @@
 
         <q-space />
 
-        <!-- Desktop Navigation -->
         <div class="gt-xs row items-center no-wrap text-weight-medium">
           <q-tabs align="center" active-color="primary" indicator-color="primary">
             <q-route-tab v-for="item in menuItems" :key="item.routeName" :to="{ name: item.routeName }"
@@ -31,11 +27,11 @@
           </q-tabs>
         </div>
         <q-space />
-        <!-- Context Selector (Desktop) -->
+        
         <div class="gt-sm q-mr-md">
           <ContextSelector />
         </div>
-        <!-- User menu (jika sudah login) -->
+        
         <q-space class="lt-sm" />
 
         <div v-if="isAuthenticated" class="row items-center q-gutter-sm">
@@ -61,10 +57,8 @@
       </q-toolbar>
 
       <TuMenuToolbar :visible="isAuthenticated" @menu-click="onMenuSelected" />
-
     </q-header>
 
-    <!-- Mobile Drawer -->
     <q-drawer v-model="leftDrawerOpen" bordered class="bg-grey-1">
       <q-list>
         <q-item-label header class="text-weight-bold text-primary">
@@ -95,18 +89,15 @@
       </q-list>
     </q-drawer>
 
-    <!-- Main Content -->
     <q-page-container>
       <router-view />
     </q-page-container>
 
-    <!-- Footer -->
     <q-footer class="bg-grey-2 text-grey-8 q-py-sm">
       <div class="row items-center q-px-md text-center">
-        <!-- 1. Kolom Kiri: Dibuat kosong sebagai penyeimbang -->
         <div class="col-4 gt-xs"></div>
         <div class="col-xs-12 col-sm-4 text-weight-bold">
-          <div class="q-mt-xs">SDP SMK &copy; 2026. (Made with <span class="text-red-14">❤</span> by. Deden Moh.J.)
+          <div class="q-mt-xs">SDP SMK &copy; 2026. Made with <span class="text-red-14">❤</span> by. Deden Moh.J.
           </div>
         </div>
         <q-space />
@@ -117,7 +108,6 @@
       </div>
     </q-footer>
 
-    <!-- Search Dialog -->
     <q-dialog v-model="isSearchOpen" persistent>
       <q-card style="width: 500px; max-width: 90vw">
         <q-card-section class="row items-center q-pb-none">
@@ -144,7 +134,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- Login Required Dialog -->
     <q-dialog v-model="showLoginDialog" persistent>
       <q-card style="width: 400px; max-width: 90vw">
         <q-card-section class="row items-center q-pb-none">
@@ -168,25 +157,21 @@
       </q-card>
     </q-dialog>
 
-
-    <!-- ✅ REUSABLE LOGIN DIALOG COMPONENT -->
     <LoginDialog v-model="showLoginDialog1"
       message="Halaman ini hanya dapat diakses oleh pegawai Tata Usaha yang sudah login." :is-loading="isLoggingIn"
       :error-message="loginError" @login="handleLoginSubmit" @cancel="handleLoginCancel" />
-
-
   </q-layout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLandingLayout } from '@/composables/landing/useLandingLayout'
 import { useOperationalContext } from '@/composables/context/useOperationalContext'
 import { useCurrentDateTime } from '@/composables/ui/useCurrentDateTime'
 import { useAuthStore } from '@/stores/authStore'
+import { useContextStore } from '@/stores/contextStore'
 
-// Components
 import DropDownMenu from '@/components/DropDownMenu.vue'
 import ContextSelector from '@/components/ContextSelector.vue'
 import LoginDialog from '@/components/LoginDialog.vue'
@@ -194,6 +179,8 @@ import TuMenuToolbar from '@/components/dashboard/TuMenuToolbar.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const contextStore = useContextStore()
+
 const { currentDate, currentTime } = useCurrentDateTime()
 const { schoolLabel } = useOperationalContext()
 
@@ -208,7 +195,6 @@ const {
   cancelLogin,
 } = useLandingLayout()
 
-// === STATE ===
 const leftDrawerOpen = ref(false)
 const pendingNavigation = ref(null)
 const isLoggingIn = ref(false)
@@ -223,16 +209,18 @@ const showLoginDialog1 = ref(false)
 const handleLoginDialog = () => {
   showLoginDialog1.value = true
 }
-// === COMPUTED AUTH ===
-// Ini akan otomatis berubah (reaktif) jika user login/logout
+
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
-// === ACTIONS ===
+// Tambahkan onMounted untuk inisialisasi context saat halaman publik dimuat
+onMounted(() => {
+  contextStore.initialize()
+})
+
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-// Fungsi untuk memicu pop-up login dari halaman/komponen lain
 function requestAccess(routeName = null, params = {}) {
   if (isAuthenticated.value) {
     if (routeName) router.push({ name: routeName, params })
@@ -245,7 +233,7 @@ function requestAccess(routeName = null, params = {}) {
 function handleSearch() {
   if (!isAuthenticated.value) {
     closeSearch()
-    requestAccess() // Panggil pop-up login
+    requestAccess()
   } else {
     console.log('Search executed')
   }
@@ -263,11 +251,13 @@ async function handleLoginSubmit(credentials) {
   try {
     const success = await authStore.login(credentials)
     if (success) {
-      authStore.closeLoginDialog() // Tutup popup via store
-      // Redirect ke halaman yang sebelumnya tertunda, atau ke home
+      // PERBAIKAN: Muat ulang context setelah login agar semester terisi
+      await contextStore.initialize()
+
+      authStore.closeLoginDialog()
       if (authStore.redirectUrl) {
         router.push(authStore.redirectUrl)
-        authStore.redirectUrl = null // Reset
+        authStore.redirectUrl = null
       } else if (pendingNavigation.value) {
         router.push(pendingNavigation.value)
         pendingNavigation.value = null
@@ -295,16 +285,13 @@ async function handleLogout() {
   router.push({ name: 'landing-home' })
 }
 
-// Menangkap event emit ketika menu diklik
 const onMenuSelected = (data) => {
   if (!isAuthenticated.value) {
-    requestAccess() // Jika belum login, munculkan pop-up
+    requestAccess()
   } else {
-    // Lakukan aksi routing di sini jika diperlukan
     console.log(`Menu ${data.menu} diklik dengan item:`, data.item)
   }
 }
-
 </script>
 
 <style scoped>

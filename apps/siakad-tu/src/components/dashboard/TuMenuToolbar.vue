@@ -29,6 +29,9 @@ const handleItemClick = (menuLabel, itemData) => {
   })
 }
 
+const itemPengaturan = [
+  { title: 'Tahun Ajaran & Semester', to: '/pengaturan/tahun-ajaran' }
+]
 const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
   { title: 'Surat Keluar', to: '/persuratan/surat-keluar' },
@@ -64,6 +67,7 @@ const itemPsb = [
 
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
+  { title: 'Kelas', to: '/kesiswaan/kelas' },
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
   { title: 'Mutasi Siswa', to: { name: 'student-mutation' } },
@@ -111,6 +115,7 @@ const menus = computed(() => [
   { label: 'Ur. Hubin', items: itemHubin },
   { label: 'Persuratan', items: itemPersuratan },
   { label: 'PSB', items: itemPsb },
+  { label: 'Pengaturan Sistem', items: itemPengaturan } // <-- MENU BARU DITAMBAHKAN DI SINI
   // { label: 'portal', items: itemPortal }
 ])
 </script>

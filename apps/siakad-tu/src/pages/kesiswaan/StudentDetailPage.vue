@@ -7,9 +7,8 @@
     <div v-else-if="student">
       <div class="row items-center justify-between q-mb-md">
         <div>
-          <div class="text-h5 text-weight-bold">
-            {{ student.fullName?.firstName }} {{ student.fullName?.lastName }}
-          </div>
+          <!-- Perbaikan: fullName sekarang String, bukan Object -->
+          <div class="text-h5 text-weight-bold">{{ student.fullName }}</div>
           <div class="text-grey-7">NISN: {{ student.nisn }} | NIS: {{ student.nis }}</div>
         </div>
         <div>
@@ -18,7 +17,6 @@
         </div>
       </div>
 
-      <!-- Status Badge -->
       <q-badge :color="getStatusColor(student.status)" class="q-mb-md">
         {{ student.status }}
       </q-badge>
@@ -30,11 +28,19 @@
           <div class="row q-gutter-md">
             <div class="col-12 col-sm-6">
               <div class="text-caption text-grey-7">Jenis Kelamin</div>
-              <div>{{ formatGender(student.gender) }}</div>
+              <div>{{ student.gender === 'L' ? 'Laki-laki' : 'Perempuan' }}</div>
             </div>
             <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">Tanggal Lahir</div>
-              <div>{{ formatDate(student.birthDate) }}</div>
+              <div class="text-caption text-grey-7">Tempat, Tanggal Lahir</div>
+              <div>{{ student.birthPlace || '-' }}, {{ formatDate(student.birthDate) }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Kelas Saat Ini</div>
+              <div>{{ student.className || '-' }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Wali Kelas</div>
+              <div>{{ student.waliKelas || '-' }}</div>
             </div>
           </div>
         </q-card-section>
@@ -44,64 +50,28 @@
       <q-card class="q-mb-md">
         <q-card-section>
           <div class="text-h6 q-mb-md">Alamat</div>
-          <div v-if="student.address">
-            <div>{{ student.address.street }}</div>
-            <div v-if="student.address.rtRw">RT/RW: {{ student.address.rtRw }}</div>
-            <div>
-              {{ student.address.village }}{{ student.address.district ? ', ' + student.address.district : '' }}
-            </div>
-            <div>
-              {{ student.address.city }}{{ student.address.postalCode ? ' ' + student.address.postalCode : '' }}
-            </div>
-          </div>
-          <div v-else class="text-grey-6">-</div>
+          <div>{{ student.address || '-' }}</div>
         </q-card-section>
       </q-card>
 
-      <!-- Kontak -->
-      <q-card class="q-mb-md">
-        <q-card-section>
-          <div class="text-h6 q-mb-md">Kontak</div>
-          <div class="row q-gutter-md">
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">No. Telepon</div>
-              <div>{{ student.contactInfo?.phone || '-' }}</div>
-            </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">Email</div>
-              <div>{{ student.contactInfo?.email || '-' }}</div>
-            </div>
-          </div>
-        </q-card-section>
-      </q-card>
-
-      <!-- Wali -->
+      <!-- Kontak & Orang Tua -->
       <q-card>
         <q-card-section>
-          <div class="text-h6 q-mb-md">Data Wali</div>
-          <div v-if="student.guardianInfo">
-            <div class="row q-gutter-md">
-              <div class="col-12 col-sm-6">
-                <div class="text-caption text-grey-7">Nama Wali</div>
-                <div>{{ student.guardianInfo.name || '-' }}</div>
-              </div>
-              <div class="col-12 col-sm-6">
-                <div class="text-caption text-grey-7">Hubungan</div>
-                <div>{{ student.guardianInfo.relation || '-' }}</div>
-              </div>
+          <div class="text-h6 q-mb-md">Kontak & Data Orang Tua</div>
+          <div class="row q-gutter-md">
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">No. Telepon Siswa</div>
+              <div>{{ student.phone || '-' }}</div>
             </div>
-            <div class="row q-gutter-md q-mt-md">
-              <div class="col-12 col-sm-6">
-                <div class="text-caption text-grey-7">No. Telepon</div>
-                <div>{{ student.guardianInfo.phone || '-' }}</div>
-              </div>
-              <div class="col-12 col-sm-6">
-                <div class="text-caption text-grey-7">Pekerjaan</div>
-                <div>{{ student.guardianInfo.occupation || '-' }}</div>
-              </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Nama Ayah</div>
+              <div>{{ student.parentName || '-' }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7">Nama Ibu</div>
+              <div>{{ student.motherName || '-' }}</div>
             </div>
           </div>
-          <div v-else class="text-grey-6">-</div>
         </q-card-section>
       </q-card>
     </div>
@@ -115,12 +85,11 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import { useStudentDetail } from '@/composables/kesiswaan/useStudentDetail'
+import { useStudentDetail } from '@/composables/student/useStudentDetail'
 
 const {
   student,
   isLoading,
-  formatGender,
   formatDate,
   getStatusColor,
   editStudent,

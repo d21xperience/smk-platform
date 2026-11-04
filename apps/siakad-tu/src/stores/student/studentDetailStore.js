@@ -1,59 +1,31 @@
 // apps/siakad-tu/src/stores/student/studentDetailStore.js
 
 import { defineStore } from 'pinia'
+import { useStudentQueryService } from '@/services/student/serviceFactory.js'
+import { useContextStore } from '@/stores/contextStore.js'
 
-/**
- * studentDetailStore — Mengelola state detail siswa per ID.
- *
- * Menggunakan cache Map<studentId, data> untuk menghindari fetch berulang.
- *
- * STATE ONLY. Tidak ada logika bisnis.
- */
 export const useStudentDetailStore = defineStore('studentDetail', {
   state: () => ({
-    /** @type {Map<string, Object>} Cache data siswa by studentId */
     cache: new Map(),
-    /** @type {Set<string>} IDs yang sedang di-fetch */
     loadingIds: new Set(),
-    /** @type {Map<string, Object>} Error per studentId */
     errorMap: new Map(),
   }),
 
   getters: {
-    /**
-     * Ambil data siswa by ID (reactive via Map)
-     */
     getById: (state) => (studentId) => {
       return state.cache.get(studentId) || null
     },
-
-    /**
-     * Cek apakah siswa sedang di-fetch
-     */
     isLoading: (state) => (studentId) => {
       return state.loadingIds.has(studentId)
     },
-
-    /**
-     * Ambil error untuk siswa tertentu
-     */
     getError: (state) => (studentId) => {
       return state.errorMap.get(studentId) || null
     },
-
-    /**
-     * Jumlah siswa di-cache
-     */
     cacheSize: (state) => state.cache.size,
   },
 
   actions: {
-    /**
-     * Set data siswa ke cache
-     */
     setItem(studentId, data) {
-      // Pinia perlu plain object, bukan Map instance
-      // Kita gunakan object biasa untuk reactivity
       this.cache = new Map(this.cache)
       this.cache.set(studentId, data)
       this.loadingIds = new Set(this.loadingIds)
@@ -62,9 +34,6 @@ export const useStudentDetailStore = defineStore('studentDetail', {
       this.errorMap.delete(studentId)
     },
 
-    /**
-     * Set loading state untuk studentId tertentu
-     */
     setLoading(studentId, loading) {
       this.loadingIds = new Set(this.loadingIds)
       if (loading) {
@@ -74,9 +43,6 @@ export const useStudentDetailStore = defineStore('studentDetail', {
       }
     },
 
-    /**
-     * Set error untuk studentId tertentu
-     */
     setError(studentId, error) {
       this.errorMap = new Map(this.errorMap)
       this.errorMap.set(studentId, error)
@@ -85,8 +51,7 @@ export const useStudentDetailStore = defineStore('studentDetail', {
     },
 
     /**
-     * Invalidate cache untuk studentId tertentu
-     * (akan force refetch saat diakses lagi)
+     * Invalidasi cache untuk 1 siswa (misal: setelah selesai Edit)
      */
     invalidate(studentId) {
       this.cache = new Map(this.cache)
@@ -94,12 +59,41 @@ export const useStudentDetailStore = defineStore('studentDetail', {
     },
 
     /**
-     * Clear seluruh cache (saat context berubah)
+     * Invalidasi SELURUH cache.
+     * Digunakan saat Tahun Ajaran/Semester berubah, atau menerima event dari NAT.
      */
     reset() {
       this.cache = new Map()
       this.loadingIds = new Set()
       this.errorMap = new Map()
+      console.log('[StudentDetailStore] Cache dibersihkan (Invalidated).')
     },
+
+    async fetchStudentById(studentId) {
+      // CACHE-FIRST STRATEGY: Jika sudah ada di cache, langsung return.
+      if (this.cache.has(studentId)) {
+        console.log(`[StudentDetailStore] Mengambil data ${studentId} dari Cache.`)
+        return
+      }
+
+      console.log(`[StudentDetailStore] Memanggil API untuk ${studentId}...`)
+      this.setLoading(studentId, true)
+      
+      try {
+        const queryService = useStudentQueryService()
+        const contextStore = useContextStore()
+        const context = contextStore.currentContext
+
+        const result = await queryService.getStudentById(studentId, context)
+        
+        if (result.success) {
+          this.setItem(studentId, result.data)
+        } else {
+          this.setError(studentId, result.error)
+        }
+      } catch (err) {
+        this.setError(studentId, { message: err.message })
+      }
+    }
   },
 })

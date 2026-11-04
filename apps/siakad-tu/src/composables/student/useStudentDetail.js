@@ -1,22 +1,76 @@
-import { ref } from 'vue'
-import { useStudentAffairsStore } from '@/stores/kesiswaan/studentAffairsStore'
+// apps/siakad-tu/src/composables/student/useStudentDetail.js
 
-export function useStudentDetail(studentId) {
-  const store = useStudentAffairsStore()
-  const loading = ref(false)
-  const error = ref(null)
-  const student = ref(null)
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useStudentDetailStore } from '@/stores/student/studentDetailStore'
 
-  async function loadDetail() {
-    loading.value = true
-    try {
-      student.value = await store.loadStudentById(studentId)
-    } catch (err) {
-      error.value = err
-    } finally {
-      loading.value = false
+export function useStudentDetail() {
+  const router = useRouter()
+  const route = useRoute()
+  const studentDetailStore = useStudentDetailStore()
+
+  // === LOCAL UI STATE ===
+  const showNotification = ref(false)
+  const notificationMessage = ref('')
+  const notificationType = ref('success')
+
+  // === COMPUTED ===
+  const studentId = computed(() => route.params.id)
+
+  // Perbaikan: Gunakan getById dan isLoading(studentId) dari Store
+  const student = computed(() => studentDetailStore.getById(studentId.value))
+  const isLoading = computed(() => studentDetailStore.isLoading(studentId.value))
+  const error = computed(() => studentDetailStore.getError(studentId.value))
+
+  // === HELPER FUNCTIONS ===
+  function formatDate(dateString) {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  function getStatusColor(status) {
+    const colors = {
+      ACTIVE: 'positive',
+      Aktif: 'positive',
+      GRADUATED: 'blue',
+      TRANSFERRED: 'orange',
+    }
+    return colors[status] || 'grey'
+  }
+
+  // === ACTIONS ===
+  function editStudent() {
+    router.push({ name: 'student-edit', params: { id: studentId.value } })
+  }
+
+  function goBack() {
+    router.push({ name: 'student-list' }) // Pastikan nama route ini sesuai di router.js
+  }
+
+  function loadData() {
+    if (studentId.value) {
+      // Panggil action baru di Store
+      studentDetailStore.fetchStudentById(studentId.value)
     }
   }
 
-  return { student, loading, error, loadDetail }
+  // === RETURN ===
+  return {
+    student,
+    isLoading,
+    error,
+    showNotification,
+    notificationMessage,
+    notificationType,
+    studentId,
+    formatDate,
+    getStatusColor,
+    editStudent,
+    goBack,
+    loadData,
+  }
 }

@@ -110,7 +110,7 @@
     <!-- Footer -->
     <q-footer class="text-white q-py-md bg-blue-10">
       <div class="text-center text-caption">
-        <div class="q-mt-xs">SIAKAD SMK &copy; 2026. (Made with <span class="text-red-14">❤</span> by. Deden M.J.)</div>
+        <div class="q-mt-xs">SIAKAD SMK &copy; 2026. Made with <span class="text-red-14">❤</span> by. Deden M.J.</div>
       </div>
     </q-footer>
   </q-layout>

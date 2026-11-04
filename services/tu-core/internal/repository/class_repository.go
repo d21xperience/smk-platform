@@ -10,25 +10,28 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Class merepresentasikan entitas Rombongan Belajar di database.
+const (
+	defaultJenisRombel = 1
+	defaultKurikulumID = 1
+)
+
 type Class struct {
 	ID               string
 	SchoolID         string
 	AcademicPeriodID string
 	Name             string
-	Grade            int // 10, 11, 12
-	WaliTeacherID    string
-	Level            int // 1, 2, 3
+	Grade            int
+	WaliTeacherID    string // ptk_id (hasil scan)
+	Level            int    // VIRTUAL (diisi = Grade saat scan)
 	Major            string
-	HomeroomID       string // PTK ID
+	HomeroomID       string // ptk_id (diisi Service saat write)
 	Capacity         int
-	Status           string // active, inactive
+	Status           string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        *time.Time
 }
 
-// ClassFilter untuk query dengan filter.
 type ClassFilter struct {
 	SchoolID         string
 	AcademicPeriodID string
@@ -39,7 +42,6 @@ type ClassFilter struct {
 	Offset           int
 }
 
-// ClassRepository adalah kontrak untuk akses data class.
 type ClassRepository interface {
 	Create(ctx context.Context, class *Class) error
 	GetByID(ctx context.Context, schoolID, periodID, classID string) (*Class, error)
@@ -50,112 +52,153 @@ type ClassRepository interface {
 	GetByGradeAndPeriod(ctx context.Context, schoolID, periodID string, grade int) ([]Class, error)
 }
 
-// pgxClassRepository mengimplementasikan ClassRepository.
 type pgxClassRepository struct {
 	db *pgxpool.Pool
 }
 
-// NewClassRepository membuat instance baru dari ClassRepository.
 func NewClassRepository(db *pgxpool.Pool) ClassRepository {
 	return &pgxClassRepository{db: db}
 }
 
-// Create menyimpan class baru ke database.
+func (c *Class) homeroomID() string {
+	if c.WaliTeacherID != "" {
+		return c.WaliTeacherID
+	}
+	return c.HomeroomID
+}
+
+func nullableUUID(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func nullableString(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func nullableInt(n int) interface{} {
+	if n <= 0 {
+		return nil
+	}
+	return n
+}
+
+const classSelectColumns = `
+	rombongan_belajar_id,
+	sekolah_id,
+	semester_id,
+	nm_kelas,
+	COALESCE(tingkat_pendidikan_id, 0),
+	COALESCE(ptk_id::text, ''),
+	COALESCE(nama_jurusan_sp, ''),
+	COALESCE(capacity, 0),
+	COALESCE(created_at, '1970-01-01 00:00:00+00'::timestamptz),
+	COALESCE(updated_at, '1970-01-01 00:00:00+00'::timestamptz)
+`
+
+func scanClass(row pgx.Row, c *Class) error {
+	if err := row.Scan(
+		&c.ID,
+		&c.SchoolID,
+		&c.AcademicPeriodID,
+		&c.Name,
+		&c.Grade,
+		&c.WaliTeacherID,
+		&c.Major,
+		&c.Capacity,
+		&c.CreatedAt,
+		&c.UpdatedAt,
+	); err != nil {
+		return err
+	}
+	c.HomeroomID = c.WaliTeacherID
+	c.Status = "active"
+	c.Level = c.Grade // FIX: Level diisi dari Grade agar JSON "level" tidak kosong ("X", "XI", dll via service)
+	return nil
+}
+
 func (r *pgxClassRepository) Create(ctx context.Context, class *Class) error {
 	if class.SchoolID == "" || class.AcademicPeriodID == "" {
 		return ErrMissingOperationalContext
 	}
+	if class.ID == "" || class.Name == "" {
+		return fmt.Errorf("%w: rombongan_belajar_id dan nm_kelas wajib diisi", ErrInvalidInput)
+	}
 
 	query := `
-        INSERT INTO classes (
-            id, school_id, period_id, name, grade, level, major, homeroom_id,
-            capacity, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `
+	INSERT INTO tabel_kelas (
+		rombongan_belajar_id, sekolah_id, semester_id, nm_kelas,
+		tingkat_pendidikan_id, ptk_id, nama_jurusan_sp, jenis_rombel,
+		kurikulum_id, capacity, created_at, updated_at
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+	`
 
 	_, err := r.db.Exec(ctx, query,
-		class.ID, class.SchoolID, class.AcademicPeriodID, class.Name, class.Grade,
-		class.Level, class.Major, class.HomeroomID, class.Capacity, class.Status,
+		class.ID, class.SchoolID, class.AcademicPeriodID, class.Name,
+		class.Grade, nullableUUID(class.homeroomID()), nullableString(class.Major),
+		defaultJenisRombel, defaultKurikulumID, nullableInt(class.Capacity),
 	)
-
 	if err != nil {
 		if isDuplicateKeyError(err) {
 			return fmt.Errorf("%w: %v", ErrDuplicateEntry, err)
 		}
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-
 	return nil
 }
 
-// GetByID mengambil class berdasarkan ID.
 func (r *pgxClassRepository) GetByID(ctx context.Context, schoolID, periodID, classID string) (*Class, error) {
 	if schoolID == "" || periodID == "" {
 		return nil, ErrMissingOperationalContext
 	}
 
 	query := `
-        SELECT
-            id, school_id, period_id, name, grade, level, major, homeroom_id,
-            capacity, status, created_at, updated_at, deleted_at
-        FROM classes
-        WHERE id = $1 AND school_id = $2 AND period_id = $3 AND deleted_at IS NULL
-    `
+	SELECT ` + classSelectColumns + `
+	FROM tabel_kelas
+	WHERE rombongan_belajar_id = $1 AND sekolah_id = $2 AND semester_id = $3
+	`
 
 	var c Class
-	err := r.db.QueryRow(ctx, query, classID, schoolID, periodID).Scan(
-		&c.ID, &c.SchoolID, &c.AcademicPeriodID, &c.Name, &c.Grade, &c.Level,
-		&c.Major, &c.HomeroomID, &c.Capacity, &c.Status,
-		&c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
-	)
-
-	if err != nil {
+	if err := scanClass(r.db.QueryRow(ctx, query, classID, schoolID, periodID), &c); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-
 	return &c, nil
 }
 
-// List mengambil daftar class dengan filter dan pagination.
 func (r *pgxClassRepository) List(ctx context.Context, filter ClassFilter) ([]Class, int, error) {
 	if filter.SchoolID == "" || filter.AcademicPeriodID == "" {
 		return nil, 0, ErrMissingOperationalContext
 	}
 
-	// Build WHERE clause
-	whereClause := "WHERE school_id = $1 AND period_id = $2 AND deleted_at IS NULL"
+	whereClause := "WHERE sekolah_id = $1 AND semester_id = $2"
 	args := []interface{}{filter.SchoolID, filter.AcademicPeriodID}
 	argIndex := 3
 
 	if filter.Grade > 0 {
-		whereClause += fmt.Sprintf(" AND grade = $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND tingkat_pendidikan_id = $%d", argIndex)
 		args = append(args, filter.Grade)
 		argIndex++
 	}
-
-	if filter.Status != "" {
-		whereClause += fmt.Sprintf(" AND status = $%d", argIndex)
-		args = append(args, filter.Status)
-		argIndex++
-	}
-
 	if filter.Keyword != "" {
-		whereClause += fmt.Sprintf(" AND (name ILIKE $%d OR major ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (nm_kelas ILIKE $%d OR nama_jurusan_sp ILIKE $%d)", argIndex, argIndex)
 		args = append(args, "%"+filter.Keyword+"%")
 		argIndex++
 	}
 
-	// Count total
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM classes %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM tabel_kelas %s", whereClause)
 	var total int
 	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	// Set default limit/offset
 	if filter.Limit <= 0 {
 		filter.Limit = 20
 	}
@@ -163,16 +206,13 @@ func (r *pgxClassRepository) List(ctx context.Context, filter ClassFilter) ([]Cl
 		filter.Offset = 0
 	}
 
-	// Query data
 	dataQuery := fmt.Sprintf(`
-        SELECT
-            id, school_id, period_id, name, grade, level, major, homeroom_id,
-            capacity, status, created_at, updated_at, deleted_at
-        FROM classes
-        %s
-        ORDER BY grade ASC, name ASC
-        LIMIT $%d OFFSET $%d
-    `, whereClause, argIndex, argIndex+1)
+	SELECT `+classSelectColumns+`
+	FROM tabel_kelas
+	%s
+	ORDER BY tingkat_pendidikan_id ASC NULLS LAST, nm_kelas ASC
+	LIMIT $%d OFFSET $%d
+	`, whereClause, argIndex, argIndex+1)
 	args = append(args, filter.Limit, filter.Offset)
 
 	rows, err := r.db.Query(ctx, dataQuery, args...)
@@ -184,109 +224,86 @@ func (r *pgxClassRepository) List(ctx context.Context, filter ClassFilter) ([]Cl
 	var classes []Class
 	for rows.Next() {
 		var c Class
-		if err := rows.Scan(
-			&c.ID, &c.SchoolID, &c.AcademicPeriodID, &c.Name, &c.Grade, &c.Level,
-			&c.Major, &c.HomeroomID, &c.Capacity, &c.Status,
-			&c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
-		); err != nil {
+		if err := scanClass(rows, &c); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}
 		classes = append(classes, c)
 	}
-
-	return classes, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+	return classes, total, nil
 }
 
-// Update memperbarui data class.
 func (r *pgxClassRepository) Update(ctx context.Context, class *Class) error {
 	if class.SchoolID == "" || class.AcademicPeriodID == "" {
 		return ErrMissingOperationalContext
 	}
 
 	query := `
-        UPDATE classes SET
-            name = $1, grade = $2, level = $3, major = $4,
-            homeroom_id = $5, capacity = $6, status = $7, updated_at = NOW()
-        WHERE id = $8 AND school_id = $9 AND period_id = $10 AND deleted_at IS NULL
-    `
+	UPDATE tabel_kelas SET
+		nm_kelas = $1, tingkat_pendidikan_id = $2, ptk_id = $3,
+		nama_jurusan_sp = $4, capacity = $5, updated_at = NOW()
+	WHERE rombongan_belajar_id = $6 AND sekolah_id = $7 AND semester_id = $8
+	`
 
 	result, err := r.db.Exec(ctx, query,
-		class.Name, class.Grade, class.Level, class.Major,
-		class.HomeroomID, class.Capacity, class.Status,
+		class.Name, class.Grade, nullableUUID(class.homeroomID()),
+		nullableString(class.Major), nullableInt(class.Capacity),
 		class.ID, class.SchoolID, class.AcademicPeriodID,
 	)
-
 	if err != nil {
+		if isDuplicateKeyError(err) {
+			return fmt.Errorf("%w: %v", ErrDuplicateEntry, err)
+		}
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-
 	if result.RowsAffected() == 0 {
 		return ErrNotFound
 	}
-
 	return nil
 }
 
-// Delete melakukan soft delete pada class.
 func (r *pgxClassRepository) Delete(ctx context.Context, schoolID, periodID, classID string) error {
 	if schoolID == "" || periodID == "" {
 		return ErrMissingOperationalContext
 	}
 
-	query := `
-        UPDATE classes
-        SET deleted_at = NOW(), updated_at = NOW()
-        WHERE id = $1 AND school_id = $2 AND period_id = $3 AND deleted_at IS NULL
-    `
-
+	query := `DELETE FROM tabel_kelas WHERE rombongan_belajar_id = $1 AND sekolah_id = $2 AND semester_id = $3`
 	result, err := r.db.Exec(ctx, query, classID, schoolID, periodID)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-
 	if result.RowsAffected() == 0 {
 		return ErrNotFound
 	}
-
 	return nil
 }
 
-// CountActiveMembers menghitung jumlah siswa aktif di suatu class (via enrollments).
 func (r *pgxClassRepository) CountActiveMembers(ctx context.Context, schoolID, periodID, classID string) (int, error) {
 	if schoolID == "" || periodID == "" {
 		return 0, ErrMissingOperationalContext
 	}
 
-	query := `
-        SELECT COUNT(*)
-        FROM enrollments
-        WHERE class_id = $1 AND period_id = $2 AND status = 'active'
-    `
-
+	query := `SELECT COUNT(*) FROM tabel_anggotakelas WHERE rombongan_belajar_id = $1 AND semester_id = $2`
 	var count int
-	err := r.db.QueryRow(ctx, query, classID, periodID).Scan(&count)
-	if err != nil {
+	if err := r.db.QueryRow(ctx, query, classID, periodID).Scan(&count); err != nil {
 		return 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-
 	return count, nil
 }
 
-// GetByGradeAndPeriod mengambil class berdasarkan grade dan period (untuk validasi pindah rombel).
 func (r *pgxClassRepository) GetByGradeAndPeriod(ctx context.Context, schoolID, periodID string, grade int) ([]Class, error) {
 	if schoolID == "" || periodID == "" {
 		return nil, ErrMissingOperationalContext
 	}
 
 	query := `
-        SELECT
-            id, school_id, period_id, name, grade, level, major, homeroom_id,
-            capacity, status, created_at, updated_at, deleted_at
-        FROM classes
-        WHERE school_id = $1 AND period_id = $2 AND grade = $3 AND status = 'active' AND deleted_at IS NULL
-        ORDER BY name ASC
-    `
-
+	SELECT ` + classSelectColumns + `
+	FROM tabel_kelas
+	WHERE sekolah_id = $1 AND semester_id = $2 AND tingkat_pendidikan_id = $3
+	ORDER BY nm_kelas ASC
+	`
 	rows, err := r.db.Query(ctx, query, schoolID, periodID, grade)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
@@ -296,15 +313,13 @@ func (r *pgxClassRepository) GetByGradeAndPeriod(ctx context.Context, schoolID, 
 	var classes []Class
 	for rows.Next() {
 		var c Class
-		if err := rows.Scan(
-			&c.ID, &c.SchoolID, &c.AcademicPeriodID, &c.Name, &c.Grade, &c.Level,
-			&c.Major, &c.HomeroomID, &c.Capacity, &c.Status,
-			&c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
-		); err != nil {
+		if err := scanClass(rows, &c); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}
 		classes = append(classes, c)
 	}
-
-	return classes, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+	return classes, nil
 }
