@@ -27,6 +27,7 @@ type Router struct {
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
+	userHandler           *UserHandler // <-- BARU
 }
 
 func NewRouter(
@@ -42,6 +43,7 @@ func NewRouter(
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
+	userService *service.UserService, // <-- BARU
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -56,20 +58,19 @@ func NewRouter(
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
+		userHandler:           NewUserHandler(userService), // <-- BARU
 	}
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/v1/students", r.handleStudents)
 	mux.HandleFunc("/api/v1/students/", r.handleStudentByID)
-
 	mux.HandleFunc("/api/v1/mutations", r.stubHandler)
 	mux.HandleFunc("/api/v1/registrations", r.stubHandler)
 	mux.HandleFunc("/api/v1/attendance", r.stubHandler)
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
-
 	mux.HandleFunc("/api/v1/classes", r.handleClasses)
 	mux.HandleFunc("/api/v1/classes/{id}", r.handleClassByID)
 	mux.HandleFunc("/api/v1/classes/{id}/members", r.handleClassMembers)
@@ -89,14 +90,53 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/auth/login", r.authHandler.Login)
 	mux.HandleFunc("/api/v1/public/stats", r.publicHandler.GetStats)
 
-	// === ENDPOINT MANAJEMEN PERIODE (ADMIN) ===
+	// Endpoint Manajemen Periode
 	mux.HandleFunc("/api/v1/academic/periods", r.handleCreateAcademicPeriod)
 	mux.HandleFunc("/api/v1/academic/periods/", r.handleAcademicPeriodsByID)
+
+	// Endpoint Manajemen Pengguna
+	mux.HandleFunc("/api/v1/users", r.handleUsers)
+	mux.HandleFunc("/api/v1/users/", r.handleUsersByID)
 
 	return mux
 }
 
-// === WRAPPER UNTUK ENDPOINT YANG BUTUH CONTEXT ===
+// === WRAPPER USER MANAGEMENT ===
+func (r *Router) handleUsers(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	req = req.WithContext(ctx)
+
+	switch req.Method {
+	case http.MethodGet:
+		r.userHandler.ListUsers(w, req)
+	case http.MethodPost:
+		r.userHandler.CreateUser(w, req)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleUsersByID(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	req = req.WithContext(ctx)
+
+	switch req.Method {
+	case http.MethodPut:
+		r.userHandler.UpdateUser(w, req)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+// === WRAPPER PERIODE ===
 func (r *Router) handleCreateAcademicPeriod(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
@@ -106,7 +146,6 @@ func (r *Router) handleCreateAcademicPeriod(w http.ResponseWriter, req *http.Req
 	r.contextHandler.CreatePeriod(w, req.WithContext(ctx))
 }
 
-// Fungsi Routing Terpusat untuk endpoint /api/v1/academic/periods/{id} dan /{id}/activate
 func (r *Router) handleAcademicPeriodsByID(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
@@ -125,7 +164,6 @@ func (r *Router) handleAcademicPeriodsByID(w http.ResponseWriter, req *http.Requ
 		r.contextHandler.DeletePeriod(w, req)
 		return
 	}
-
 	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 }
 

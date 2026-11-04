@@ -20,7 +20,13 @@ const routes = [
         path: 'pengaturan/tahun-ajaran',
         name: 'pengaturan-tahun-ajaran',
         component: () => import('@/pages/pengaturan/AcademicPeriodPage.vue'),
-        meta: { requiresAuth: true } // Bisa ditambahkan guard admin di sini nanti
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'pengaturan/pengguna',
+        name: 'pengaturan-pengguna',
+        component: () => import('@/pages/pengaturan/UserManagementPage.vue'),
+        meta: { requiresAuth: true }
       }
     ],
   },

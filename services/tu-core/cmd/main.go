@@ -136,6 +136,7 @@ func main() {
 	// BARU: AuthService sekarang butuh academicRepo.
 	authService := service.NewAuthService(userRepo, academicRepo)
 	publicService := service.NewPublicService(publicRepo)
+	userService := service.NewUserService(userRepo)
 	// =========================================================================
 	// 8. BACKGROUND WORKERS
 	// =========================================================================
@@ -189,6 +190,7 @@ func main() {
 		prefService,   // <-- BATCH 6: tambah parameter terakhir
 		authService,   // <-- TAMBAHKAN
 		publicService, // <-- TAMBAHKAN
+		userService,
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

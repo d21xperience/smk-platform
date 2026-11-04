@@ -30,7 +30,8 @@ const handleItemClick = (menuLabel, itemData) => {
 }
 
 const itemPengaturan = [
-  { title: 'Tahun Ajaran & Semester', to: '/pengaturan/tahun-ajaran' }
+  { title: 'Tahun Ajaran & Semester', to: '/pengaturan/tahun-ajaran' },
+  { title: 'Manajemen Pengguna', to: '/pengaturan/pengguna' } // <-- MENU BARU
 ]
 const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
@@ -80,7 +81,6 @@ const itemSarpras = [
   { title: 'Dashboard', to: '/sarpras/dashboard' },
   {
     title: 'Inventaris', icon: 'wallet', children: [
-      // { title: 'Tambah', to: '/sarpras/inventaris/tambah' },
       { title: 'Logistik', to: '/sarpras/inventaris/logistik' },
       { title: 'Ruangan', to: '/sarpras/inventaris/ruangan' },
       { title: 'Cetak QR', to: '/sarpras/inventaris/cetak-qr' },
@@ -116,7 +116,6 @@ const menus = computed(() => [
   { label: 'Persuratan', items: itemPersuratan },
   { label: 'PSB', items: itemPsb },
   { label: 'Pengaturan Sistem', items: itemPengaturan } // <-- MENU BARU DITAMBAHKAN DI SINI
-  // { label: 'portal', items: itemPortal }
 ])
 </script>
 
