@@ -27,6 +27,12 @@ const routes = [
         name: 'pengaturan-pengguna',
         component: () => import('@/pages/pengaturan/UserManagementPage.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'pengaturan/sekolah',
+        name: 'pengaturan-sekolah',
+        component: () => import('@/pages/pengaturan/SchoolProfilePage.vue'),
+        meta: { requiresAuth: true }
       }
     ],
   },

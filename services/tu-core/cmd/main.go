@@ -53,7 +53,6 @@ func main() {
 	// =========================================================================
 	// 1. DATABASE CONNECTION (dengan validasi)
 	// =========================================================================
-	// DIPERBAIKI: Default URL match dengan .env
 	dbURL := getEnv("DATABASE_URL", "postgres://-smk_dev:-secret123@localhost:5432/-smk_platform?sslmode=disable")
 
 	db, err := initDatabase(ctx, dbURL)
@@ -102,20 +101,21 @@ func main() {
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	publicRepo := repository.NewPublicRepository(db)
-	// BARU: AcademicRepository diperlukan oleh AuthService untuk me-resolve
-	// academic_period_id aktif saat login.
 	academicRepo := repository.NewAcademicRepository(db)
+	schoolRepo := repository.NewSchoolRepository(db) // <-- BARU
+
 	// =========================================================================
 	// 5. DOMAIN ENGINES
 	// =========================================================================
 	studentEngine := studentEngine.NewStudentEngine()
 	mutEngine := mutationEngine.NewMutationEngine()
-	regEngine := registrationEngine.NewRegistrationEngine() // <-- TAMBAHKAN
+	regEngine := registrationEngine.NewRegistrationEngine()
 	attEngine := attendEngine.NewAttendanceEngine()
 	assEngine := assessmentEngine.NewAssessmentEngine()
 	finEngine := financeEngine.NewFinanceEngine()
 	corrEngine := correspondenceEngine.NewCorrespondenceEngine()
 	classEngine := classEngine.NewClassEngine()
+
 	// =========================================================================
 	// 6. EVENT PUBLISHER
 	// =========================================================================
@@ -126,17 +126,18 @@ func main() {
 	// =========================================================================
 	studentService := service.NewStudentService(studentRepo, studentEngine, eventPublisher)
 	mutationService := service.NewMutationService(mutationRepository, studentRepo, mutEngine, eventPublisher)
-	registrationService := service.NewRegistrationService(registrationRepo, studentRepo, regEngine, eventPublisher) // <-- TAMBAHKAN
+	registrationService := service.NewRegistrationService(registrationRepo, studentRepo, regEngine, eventPublisher)
 	attendanceService := service.NewAttendanceService(attendanceRepo, studentRepo, attEngine, eventPublisher)
 	assessmentService := service.NewAssessmentService(assessmentRepo, studentRepo, assEngine, eventPublisher)
 	financeService := service.NewFinanceService(financeRepo, studentRepo, finEngine, eventPublisher)
 	correspondenceService := service.NewCorrespondenceService(correspondenceRepo, corrEngine, eventPublisher)
 	classService := service.NewClassService(classRepo, classEngine, eventPublisher)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
-	// BARU: AuthService sekarang butuh academicRepo.
 	authService := service.NewAuthService(userRepo, academicRepo)
 	publicService := service.NewPublicService(publicRepo)
 	userService := service.NewUserService(userRepo)
+	schoolService := service.NewSchoolService(schoolRepo) // <-- BARU
+
 	// =========================================================================
 	// 8. BACKGROUND WORKERS
 	// =========================================================================
@@ -152,9 +153,7 @@ func main() {
 	// =========================================================================
 	// 10. SERVERS (gRPC + HTTP)
 	// =========================================================================
-	// --- 1. gRPC Server ---
 	grpcConfig := server.Config{Port: getEnvAsInt("GRPC_PORT", 50051)}
-	// grpcServer, err := server.NewGRPCServer(grpcConfig, studentService, mutationSvc, &dummyLogger{})
 	grpcServer, err := server.NewGRPCServer(
 		grpcConfig,
 		studentService,
@@ -170,13 +169,11 @@ func main() {
 		log.Fatalf("❌ Gagal membuat gRPC Server: %v", err)
 	}
 
-	// --- 2. HTTP Server (Health/Metrics) ---
 	httpConfig := server.HTTPServerConfig{Port: getEnvAsInt("HTTP_PORT", 8080)}
 	healthHandler := health.NewHealthHandler(db, nc, js)
 	httpServer := server.NewHTTPServer(httpConfig, healthHandler)
 
-	// --- 3. REST Server (NEW: Untuk Frontend Integration) ---
-	restConfig := server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)} // Port 8081 agar tidak bentrok dengan 8080
+	restConfig := server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)}
 	restHandler := rest.NewRouter(
 		studentService,
 		mutationService,
@@ -187,15 +184,15 @@ func main() {
 		correspondenceService,
 		classService,
 		enrollmentService,
-		prefService,   // <-- BATCH 6: tambah parameter terakhir
-		authService,   // <-- TAMBAHKAN
-		publicService, // <-- TAMBAHKAN
+		prefService,
+		authService,
+		publicService,
 		userService,
+		schoolService, // <-- BARU
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 
-	// --- 4. AppServer (Mengelola ketiganya) ---
-	appServer := server.NewAppServer(grpcServer, httpServer, restServer) // <-- UPDATE: Tambahkan restServer
+	appServer := server.NewAppServer(grpcServer, httpServer, restServer)
 	appServer.Start()
 
 	// =========================================================================
@@ -220,7 +217,6 @@ func main() {
 // INITIALIZATION FUNCTIONS
 // =========================================================================
 
-// initDatabase membuat koneksi database dan MEMVALIDASInya dengan Ping.
 func initDatabase(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	dbConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
@@ -237,7 +233,6 @@ func initDatabase(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("gagal membuat pool: %w", err)
 	}
 
-	// VALIDASI KONEKSI dengan Ping
 	pingCtx, pingCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer pingCancel()
 
@@ -258,7 +253,6 @@ func initDatabase(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	return db, nil
 }
 
-// initNATS membuat koneksi NATS dan menginisialisasi JetStream.
 func initNATS(natsURL string) (*nats.Conn, nats.JetStreamContext, error) {
 	nc, err := nats.Connect(natsURL, nats.Name("tu-core-service"))
 	if err != nil {
@@ -305,11 +299,9 @@ func setupNotificationPlatform() *notifDispatcher.NotificationDispatcher {
 }
 
 func setupBackgroundWorkers(ctx context.Context, db *pgxpool.Pool, js nats.JetStreamContext, _ *notifDispatcher.NotificationDispatcher, _ notifHandlers.InvoiceRepository) {
-	// 1. Outbox Worker
 	outboxWorker := outbox.NewOutboxWorker(db, js)
 	go outboxWorker.Start(ctx)
 
-	// 2. Projection Manager
 	projManager := projection.NewProjectionManager()
 	projManager.Register(projection.NewStudentProjection(db))
 

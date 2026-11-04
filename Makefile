@@ -287,6 +287,8 @@ dev-fe-psb:
 #=============================================================================
 .PHONY: dev-be
 dev-be:
+	@$(E) "$(GREEN)$(I_BE) Rebuild TU-Core...$(NC)"
+	@cd $(SERVICES_DIR)/tu-core && go build ./... && echo "✅ ALL BUILD OK"
 	@$(E) "$(GREEN)$(I_BE) Starting TU-Core...$(NC)"
 	@cd $(SERVICES_DIR)/tu-core && go run ./cmd/main.go
 

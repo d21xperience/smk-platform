@@ -30,8 +30,9 @@ const handleItemClick = (menuLabel, itemData) => {
 }
 
 const itemPengaturan = [
+  { title: 'Profil Sekolah', to: '/pengaturan/sekolah' }, // <-- MENU BARU
   { title: 'Tahun Ajaran & Semester', to: '/pengaturan/tahun-ajaran' },
-  { title: 'Manajemen Pengguna', to: '/pengaturan/pengguna' } // <-- MENU BARU
+  { title: 'Manajemen Pengguna', to: '/pengaturan/pengguna' }
 ]
 const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
@@ -115,7 +116,7 @@ const menus = computed(() => [
   { label: 'Ur. Hubin', items: itemHubin },
   { label: 'Persuratan', items: itemPersuratan },
   { label: 'PSB', items: itemPsb },
-  { label: 'Pengaturan Sistem', items: itemPengaturan } // <-- MENU BARU DITAMBAHKAN DI SINI
+  { label: 'Pengaturan Sistem', items: itemPengaturan }
 ])
 </script>
 

@@ -27,7 +27,8 @@ type Router struct {
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
-	userHandler           *UserHandler // <-- BARU
+	userHandler           *UserHandler
+	schoolHandler         *SchoolHandler // <-- BARU
 }
 
 func NewRouter(
@@ -43,7 +44,8 @@ func NewRouter(
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
-	userService *service.UserService, // <-- BARU
+	userService *service.UserService,
+	schoolService *service.SchoolService, // <-- BARU
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -58,7 +60,8 @@ func NewRouter(
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
-		userHandler:           NewUserHandler(userService), // <-- BARU
+		userHandler:           NewUserHandler(userService),
+		schoolHandler:         NewSchoolHandler(schoolService), // <-- BARU
 	}
 
 	mux := http.NewServeMux()
@@ -98,7 +101,29 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/users", r.handleUsers)
 	mux.HandleFunc("/api/v1/users/", r.handleUsersByID)
 
+	// Endpoint Profil Sekolah (BARU)
+	mux.HandleFunc("/api/v1/school", r.handleSchool)
+
 	return mux
+}
+
+// === WRAPPER SEKOLAH ===
+func (r *Router) handleSchool(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	req = req.WithContext(ctx)
+
+	switch req.Method {
+	case http.MethodGet:
+		r.schoolHandler.GetSchool(w, req)
+	case http.MethodPut:
+		r.schoolHandler.UpdateSchool(w, req)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
 }
 
 // === WRAPPER USER MANAGEMENT ===
