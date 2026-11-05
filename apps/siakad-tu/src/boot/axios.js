@@ -21,24 +21,24 @@ api.interceptors.request.use((config) => {
   const contextStore = useContextStore()
   const authStore = useAuthStore()
 
-  // Tanpa login, jangan tempelkan header palsu. Biarkan backend menolak
-  // (request ke halaman terproteksi tetap akan ditangani guard router).
+  // Tanpa login, jangan tempelkan header palsu.
   if (!authStore.isAuthenticated) {
     return config
   }
 
   const userId = contextStore.userId
   const schoolId = contextStore.schoolId
-  const semesterId = contextStore.selectedSemesterId
-  const academicYear = contextStore.academicYear
-  const semester = contextStore.semester
+  
+  // FIX: Fallback ke authStore jika contextStore kosong (terjadi saat refresh halaman)
+  const semesterId = contextStore.selectedSemesterId || String(authStore.user?.academic_period_id || '')
+  const academicYear = contextStore.academicYear || authStore.user?.academic_year || ''
+  const semester = contextStore.semester || authStore.user?.semester || 1
   const role = authStore.userRole
 
   if (userId) config.headers['x-user-id'] = userId
   if (schoolId) config.headers['x-school-id'] = schoolId
   if (role) config.headers['x-user-role'] = role
   if (semesterId) config.headers['x-academic-period-id'] = semesterId
-  // Backend memvalidasi x-academic-year dengan regex ^\d{4}/\d{4}$.
   if (academicYear) config.headers['x-academic-year'] = academicYear
   if (semester) config.headers['x-semester'] = String(semester)
 

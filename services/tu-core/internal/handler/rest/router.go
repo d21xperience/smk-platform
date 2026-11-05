@@ -24,11 +24,14 @@ type Router struct {
 	correspondenceService *service.CorrespondenceService
 	classService          *service.ClassService
 	enrollmentService     *service.EnrollmentService
+	statisticsService     *service.StatisticsService
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
 	userHandler           *UserHandler
-	schoolHandler         *SchoolHandler // <-- BARU
+	schoolHandler         *SchoolHandler
+	attendanceHandler     *AttendanceHandler
+	scheduleHandler       *ScheduleHandler
 }
 
 func NewRouter(
@@ -41,11 +44,13 @@ func NewRouter(
 	correspondenceService *service.CorrespondenceService,
 	classService *service.ClassService,
 	enrollmentService *service.EnrollmentService,
+	statisticsService *service.StatisticsService,
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
 	userService *service.UserService,
-	schoolService *service.SchoolService, // <-- BARU
+	schoolService *service.SchoolService,
+	scheduleHandler *ScheduleHandler,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -57,16 +62,20 @@ func NewRouter(
 		correspondenceService: correspondenceService,
 		classService:          classService,
 		enrollmentService:     enrollmentService,
+		statisticsService:     statisticsService,
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
 		userHandler:           NewUserHandler(userService),
-		schoolHandler:         NewSchoolHandler(schoolService), // <-- BARU
+		schoolHandler:         NewSchoolHandler(schoolService),
+		attendanceHandler:     NewAttendanceHandler(attendanceService),
+		scheduleHandler:       scheduleHandler,
 	}
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/v1/students", r.handleStudents)
+	mux.HandleFunc("/api/v1/students/available", r.handleAvailableStudents)
 	mux.HandleFunc("/api/v1/students/", r.handleStudentByID)
 	mux.HandleFunc("/api/v1/mutations", r.stubHandler)
 	mux.HandleFunc("/api/v1/registrations", r.stubHandler)
@@ -74,6 +83,7 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
+	mux.HandleFunc("/api/v1/statistics", r.handleStatistics)
 	mux.HandleFunc("/api/v1/classes", r.handleClasses)
 	mux.HandleFunc("/api/v1/classes/{id}", r.handleClassByID)
 	mux.HandleFunc("/api/v1/classes/{id}/members", r.handleClassMembers)
@@ -93,18 +103,46 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/auth/login", r.authHandler.Login)
 	mux.HandleFunc("/api/v1/public/stats", r.publicHandler.GetStats)
 
-	// Endpoint Manajemen Periode
+	// === ENDPOINT Manajemen Periode ===
 	mux.HandleFunc("/api/v1/academic/periods", r.handleCreateAcademicPeriod)
 	mux.HandleFunc("/api/v1/academic/periods/", r.handleAcademicPeriodsByID)
 
-	// Endpoint Manajemen Pengguna
+	// === ENDPOINT Manajemen Pengguna ===
 	mux.HandleFunc("/api/v1/users", r.handleUsers)
 	mux.HandleFunc("/api/v1/users/", r.handleUsersByID)
 
-	// Endpoint Profil Sekolah (BARU)
+	// === ENDPOINT Profil Sekolah ===
 	mux.HandleFunc("/api/v1/school", r.handleSchool)
 
+	// === ENDPOINT JADWAL PELAJARAN  ===
+	mux.HandleFunc("/api/v1/schedules", r.wrapWithContext(r.handleSchedules))
+	mux.HandleFunc("/api/v1/schedules/options", r.wrapWithContext(r.scheduleHandler.GetOptions))
+
 	return mux
+}
+
+// === WRAPPER JADWAL ===
+func (r *Router) handleSchedules(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		r.scheduleHandler.ListSchedules(w, req)
+	case http.MethodPost:
+		r.scheduleHandler.CreateSchedule(w, req)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+// Helper Wrapper
+func (r *Router) wrapWithContext(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx, err := r.enrichContext(req)
+		if err != nil {
+			http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+			return
+		}
+		next(w, req.WithContext(ctx))
+	}
 }
 
 // === WRAPPER SEKOLAH ===
@@ -279,8 +317,12 @@ func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 	searchStr := req.URL.Query().Get("search")
 	statusStr := req.URL.Query().Get("status")
 
-	if limit <= 0 { limit = 20 }
-	if offset < 0 { offset = 0 }
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 
 	filter := repository.StudentFilter{
 		Limit:   limit,
@@ -366,12 +408,72 @@ func (r *Router) stubHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func splitPath(p string) []string {
-	if p == "" { return []string{} }
-	if idx := strings.Index(p, "?"); idx != -1 { p = p[:idx] }
+	if p == "" {
+		return []string{}
+	}
+	if idx := strings.Index(p, "?"); idx != -1 {
+		p = p[:idx]
+	}
 	parts := strings.Split(p, "/")
 	var result []string
 	for _, part := range parts {
-		if part != "" { result = append(result, part) }
+		if part != "" {
+			result = append(result, part)
+		}
 	}
 	return result
+}
+
+func (r *Router) handleAvailableStudents(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.Method != http.MethodGet {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	opCtx := middleware.GetOperationalContext(ctx)
+
+	keyword := req.URL.Query().Get("keyword")
+	filter := repository.StudentFilter{
+		Keyword: keyword,
+		Limit:   100,
+		Offset:  0,
+	}
+
+	resp, err := r.studentService.ListAvailableStudentsForUI(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, filter)
+	if err != nil {
+		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (r *Router) handleStatistics(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.Method != http.MethodGet {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	opCtx := middleware.GetOperationalContext(ctx)
+	stats, err := r.statisticsService.GetDashboardStats(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID)
+	if err != nil {
+		http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
 }

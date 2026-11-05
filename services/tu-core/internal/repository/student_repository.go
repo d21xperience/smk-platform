@@ -45,20 +45,20 @@ type StudentFilter struct {
 }
 
 type StudentUIDTO struct {
-	ID           string     `json:"id"`
-	NIS          string     `json:"nis"`
-	NISN         string     `json:"nisn"`
-	Name         string     `json:"name"`
-	BirthPlace   *string    `json:"birthPlace,omitempty"`
-	BirthDate    *time.Time `json:"birthDate,omitempty"`
-	Gender       *string    `json:"gender,omitempty"`
-	Agama        *string    `json:"agama,omitempty"`
-	Address      *string    `json:"address,omitempty"`
-	Phone        *string    `json:"phone,omitempty"`
-	ParentName   *string    `json:"parentName,omitempty"`
-	ParentNameIbu *string   `json:"nm_ibu,omitempty"`
-	ClassName    string     `json:"className"`
-	Status       string     `json:"status"`
+	ID            string     `json:"id"`
+	NIS           string     `json:"nis"`
+	NISN          string     `json:"nisn"`
+	Name          string     `json:"name"`
+	BirthPlace    *string    `json:"birthPlace,omitempty"`
+	BirthDate     *time.Time `json:"birthDate,omitempty"`
+	Gender        *string    `json:"gender,omitempty"`
+	Agama         *string    `json:"agama,omitempty"`
+	Address       *string    `json:"address,omitempty"`
+	Phone         *string    `json:"phone,omitempty"`
+	ParentName    *string    `json:"parentName,omitempty"`
+	ParentNameIbu *string    `json:"nm_ibu,omitempty"`
+	ClassName     string     `json:"className"`
+	Status        string     `json:"status"`
 }
 
 type StudentRepository interface {
@@ -73,6 +73,7 @@ type StudentRepository interface {
 
 	// Area UI
 	ListForUI(ctx context.Context, filter StudentFilter) ([]StudentUIDTO, int, error)
+	ListAvailableForUI(ctx context.Context, filter StudentFilter) ([]StudentUIDTO, int, error)
 	GetByIDForUI(ctx context.Context, schoolID, academicPeriodID, studentID string) (*StudentUIDTO, error)
 	UpdateForUI(ctx context.Context, schoolID, academicPeriodID, studentID string, name, birthPlace, gender, address, phone, className string) error
 	DeleteForUI(ctx context.Context, schoolID, academicPeriodID, studentID string) error
@@ -187,7 +188,9 @@ func (r *pgxStudentRepository) GetByNIS(ctx context.Context, schoolID, academicP
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-	if birthDate != nil { s.BirthDate = *birthDate }
+	if birthDate != nil {
+		s.BirthDate = *birthDate
+	}
 	s.SchoolID = schoolID
 	s.AcademicPeriodID = academicPeriodID
 	s.Status = "Aktif"
@@ -219,7 +222,9 @@ func (r *pgxStudentRepository) GetByNISN(ctx context.Context, schoolID, academic
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-	if birthDate != nil { s.BirthDate = *birthDate }
+	if birthDate != nil {
+		s.BirthDate = *birthDate
+	}
 	s.SchoolID = schoolID
 	s.AcademicPeriodID = academicPeriodID
 	s.Status = "Aktif"
@@ -256,7 +261,9 @@ func (r *pgxStudentRepository) GetByID(ctx context.Context, schoolID, academicPe
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-	if birthDate != nil { s.BirthDate = *birthDate }
+	if birthDate != nil {
+		s.BirthDate = *birthDate
+	}
 	s.SchoolID = schoolID
 	s.AcademicPeriodID = academicPeriodID
 	s.Status = "Aktif"
@@ -290,8 +297,12 @@ func (r *pgxStudentRepository) List(ctx context.Context, filter StudentFilter) (
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 { filter.Limit = 20 }
-	if filter.Offset < 0 { filter.Offset = 0 }
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
 
 	dataQuery := fmt.Sprintf(`
 		SELECT
@@ -325,7 +336,9 @@ func (r *pgxStudentRepository) List(ctx context.Context, filter StudentFilter) (
 		); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}
-		if birthDate != nil { s.BirthDate = *birthDate }
+		if birthDate != nil {
+			s.BirthDate = *birthDate
+		}
 		s.SchoolID = filter.SchoolID
 		s.AcademicPeriodID = filter.AcademicPeriodID
 		s.Status = "Aktif"
@@ -451,8 +464,12 @@ func (r *pgxStudentRepository) ListForUI(ctx context.Context, filter StudentFilt
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 { filter.Limit = 20 }
-	if filter.Offset < 0 { filter.Offset = 0 }
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
 
 	dataQuery := fmt.Sprintf(`
 		SELECT
@@ -601,4 +618,70 @@ func containsHelper(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func (r *pgxStudentRepository) ListAvailableForUI(ctx context.Context, filter StudentFilter) ([]StudentUIDTO, int, error) {
+	whereClause := "WHERE tak.anggota_rombel_id IS NULL"
+	args := []any{filter.AcademicPeriodID, filter.SchoolID}
+	argIndex := 3
+
+	if filter.Keyword != "" {
+		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d)", argIndex, argIndex)
+		args = append(args, "%"+filter.Keyword+"%")
+		argIndex++
+	}
+
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM tabel_siswa ts
+		LEFT JOIN tabel_anggotakelas tak ON ts.peserta_didik_id = tak.peserta_didik_id AND tak.semester_id = $1
+		LEFT JOIN tabel_kelas tk ON tak.rombongan_belajar_id = tk.rombongan_belajar_id AND tk.sekolah_id::text = $2
+		%s
+	`, whereClause)
+	var total int
+	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+
+	dataQuery := fmt.Sprintf(`
+		SELECT
+			ts.peserta_didik_id, ts.nis, ts.nisn, ts.nm_siswa, ts.tempat_lahir, ts.tanggal_lahir,
+			ts.jenis_kelamin, ts.agama, ts.alamat_siswa, ts.telepon_siswa,
+			ts.nm_ayah, ts.nm_ibu, '' as nm_kelas
+		FROM tabel_siswa ts
+		LEFT JOIN tabel_anggotakelas tak ON ts.peserta_didik_id = tak.peserta_didik_id AND tak.semester_id = $1
+		LEFT JOIN tabel_kelas tk ON tak.rombongan_belajar_id = tk.rombongan_belajar_id AND tk.sekolah_id::text = $2
+		%s
+		ORDER BY ts.nm_siswa ASC
+		LIMIT $%d OFFSET $%d
+	`, whereClause, argIndex, argIndex+1)
+	args = append(args, filter.Limit, filter.Offset)
+
+	rows, err := r.db.Query(ctx, dataQuery, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+	defer rows.Close()
+
+	var students []StudentUIDTO
+	for rows.Next() {
+		var s StudentUIDTO
+		if err := rows.Scan(
+			&s.ID, &s.NIS, &s.NISN, &s.Name, &s.BirthPlace, &s.BirthDate,
+			&s.Gender, &s.Agama, &s.Address, &s.Phone,
+			&s.ParentName, &s.ParentNameIbu, &s.ClassName,
+		); err != nil {
+			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+		}
+		s.Status = "Aktif"
+		students = append(students, s)
+	}
+	return students, total, rows.Err()
 }

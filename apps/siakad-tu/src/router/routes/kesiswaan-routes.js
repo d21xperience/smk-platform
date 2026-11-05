@@ -16,6 +16,11 @@ const kesiswaanRoutes = {
       name: 'kesiswaan-kelas',
       component: () => import('@/pages/kesiswaan/DataKelas.vue'),
     },
+    {
+      path: 'rekap-kehadiran',
+      name: 'rekap-kehadiran',
+      component: () => import('@/pages/kesiswaan/AttendanceSessionPage.vue'),
+    },
     // ===================================
     {
       path: 'siswa',

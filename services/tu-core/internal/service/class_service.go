@@ -16,7 +16,6 @@ import (
 	"sekolah-platform/services/tu-core/internal/repository"
 )
 
-// ClassService mengorchestrasi use case untuk domain Class/Rombel.
 type ClassService struct {
 	repo   repository.ClassRepository
 	engine interface {
@@ -27,7 +26,6 @@ type ClassService struct {
 	publisher EventPublisher
 }
 
-// NewClassService membuat instance baru dari ClassService.
 func NewClassService(
 	repo repository.ClassRepository,
 	eng interface {
@@ -47,7 +45,6 @@ func NewClassService(
 	}
 }
 
-// ClassRequest untuk create & update
 type CreateClassRequest struct {
 	Name       string `json:"name"`
 	Grade      int    `json:"grade"`
@@ -64,25 +61,26 @@ type UpdateClassRequest struct {
 	Major      string `json:"major"`
 	HomeroomID string `json:"homeroomId"`
 	Capacity   int    `json:"capacity"`
-	Status     string `json:"status"` // active / inactive
+	Status     string `json:"status"`
 }
 
+// FIX: Tambahkan CurrentStudents ke Response
 type ClassResponse struct {
-	ID         string    `json:"id"`
-	SchoolID   string    `json:"schoolId"`
-	PeriodID   string    `json:"periodId"`
-	Name       string    `json:"name"`
-	Grade      int       `json:"grade"`
-	Level      string    `json:"level"`
-	Major      string    `json:"major"`
-	HomeroomID string    `json:"homeroomId"`
-	Capacity   int       `json:"capacity"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	ID              string    `json:"id"`
+	SchoolID        string    `json:"schoolId"`
+	PeriodID        string    `json:"periodId"`
+	Name            string    `json:"name"`
+	Grade           int       `json:"grade"`
+	Level           string    `json:"level"`
+	Major           string    `json:"major"`
+	HomeroomID      string    `json:"homeroomId"`
+	Capacity        int       `json:"capacity"`
+	CurrentStudents int       `json:"currentStudents"` // <-- TAMBAHAN
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
-// CreateClass membuat rombel baru.
 func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) (*ClassResponse, error) {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
@@ -96,7 +94,6 @@ func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) 
 		return nil, fmt.Errorf("%w: kapasitas harus lebih dari 0", ErrInvalidInput)
 	}
 
-	// 1. Siapkan command
 	cmd := commands.CreateClassCommand{
 		ClassID:    uuid.New().String(),
 		Name:       req.Name,
@@ -107,7 +104,6 @@ func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) 
 		Capacity:   req.Capacity,
 	}
 
-	// 2. Panggil Engine
 	result := s.engine.CreateClass(cmd, opCtx)
 	if result.Error != nil {
 		return nil, NewServiceError("CreateClass", "Class", "", "gagal membuat class", result.Error)
@@ -115,7 +111,6 @@ func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) 
 
 	domainClass := result.Class
 
-	// 3. Simpan ke Repository
 	repoClass := &repository.Class{
 		ID:               domainClass.ID(),
 		SchoolID:         domainClass.SchoolID(),
@@ -135,7 +130,6 @@ func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) 
 		return nil, NewServiceError("CreateClass", "Class", repoClass.ID, "gagal simpan ke database", err)
 	}
 
-	// 4. Publish Event (opsional)
 	event := DomainEvent{
 		EventType:        "ClassCreated",
 		AggregateType:    "Class",
@@ -151,7 +145,6 @@ func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) 
 	return toClassResponse(repoClass), nil
 }
 
-// GetClass mengambil data rombel berdasarkan ID.
 func (s *ClassService) GetClass(ctx context.Context, classID string) (*ClassResponse, error) {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
@@ -168,7 +161,6 @@ func (s *ClassService) GetClass(ctx context.Context, classID string) (*ClassResp
 	return toClassResponse(class), nil
 }
 
-// ListClasses mengambil daftar rombel dengan filter.
 func (s *ClassService) ListClasses(ctx context.Context, filter repository.ClassFilter) (*ClassListResponse, error) {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
@@ -202,14 +194,12 @@ func (s *ClassService) ListClasses(ctx context.Context, filter repository.ClassF
 	}, nil
 }
 
-// UpdateClass memperbarui data rombel.
 func (s *ClassService) UpdateClass(ctx context.Context, classID string, req UpdateClassRequest) (*ClassResponse, error) {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
 		return nil, ErrMissingOperationalContext
 	}
 
-	// 1. Ambil existing dari repository
 	existing, err := s.repo.GetByID(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, classID)
 	if err != nil {
 		if isNotFoundError(err) {
@@ -218,7 +208,6 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 		return nil, NewServiceError("UpdateClass", "Class", classID, "gagal ambil data", err)
 	}
 
-	// 2. Rekonstruksi domain Class dari data repository
 	domainClass := models.LoadClass(
 		existing.ID,
 		existing.SchoolID,
@@ -233,7 +222,6 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 		existing.CreatedAt,
 	)
 
-	// 3. Siapkan command
 	cmd := commands.UpdateClassCommand{
 		ClassID:    classID,
 		Name:       req.Name,
@@ -245,7 +233,6 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 		Status:     req.Status,
 	}
 
-	// 4. Panggil Engine
 	result := s.engine.UpdateClass(cmd, domainClass, opCtx)
 	if result.Error != nil {
 		return nil, NewServiceError("UpdateClass", "Class", classID, "gagal update class", result.Error)
@@ -253,7 +240,6 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 
 	updated := result.Class
 
-	// 5. Simpan ke Repository
 	repoUpdated := &repository.Class{
 		ID:               updated.ID(),
 		SchoolID:         updated.SchoolID(),
@@ -273,7 +259,6 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 		return nil, NewServiceError("UpdateClass", "Class", classID, "gagal update database", err)
 	}
 
-	// 6. Event
 	event := DomainEvent{
 		EventType:        "ClassUpdated",
 		AggregateType:    "Class",
@@ -289,7 +274,6 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 	return toClassResponse(repoUpdated), nil
 }
 
-// DeleteClass menghapus rombel (hard delete — tabel_kelas tidak punya kolom deleted_at).
 func (s *ClassService) DeleteClass(ctx context.Context, classID string) error {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
@@ -318,7 +302,6 @@ func (s *ClassService) DeleteClass(ctx context.Context, classID string) error {
 	return nil
 }
 
-// SetHomeroom mengatur wali kelas.
 func (s *ClassService) SetHomeroom(ctx context.Context, classID, teacherID string) error {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
@@ -387,8 +370,6 @@ func (s *ClassService) SetHomeroom(ctx context.Context, classID, teacherID strin
 	return nil
 }
 
-// --- Response DTOs ---
-
 type ClassListResponse struct {
 	Data    []ClassResponse `json:"data"`
 	Total   int             `json:"total"`
@@ -397,26 +378,24 @@ type ClassListResponse struct {
 	HasMore bool            `json:"hasMore"`
 }
 
-// Helper functions
-
 func toClassResponse(c *repository.Class) *ClassResponse {
 	return &ClassResponse{
-		ID:         c.ID,
-		SchoolID:   c.SchoolID,
-		PeriodID:   c.AcademicPeriodID,
-		Name:       c.Name,
-		Grade:      c.Grade,
-		Level:      mapLevelToString(c.Level),
-		Major:      c.Major,
-		HomeroomID: c.HomeroomID,
-		Capacity:   c.Capacity,
-		Status:     c.Status,
-		CreatedAt:  c.CreatedAt,
-		UpdatedAt:  c.UpdatedAt,
+		ID:              c.ID,
+		SchoolID:        c.SchoolID,
+		PeriodID:        c.AcademicPeriodID,
+		Name:            c.Name,
+		Grade:           c.Grade,
+		Level:           mapLevelToString(c.Level),
+		Major:           c.Major,
+		HomeroomID:      c.HomeroomID,
+		Capacity:        c.Capacity,
+		CurrentStudents: c.CurrentStudents, // <-- TAMBAHAN
+		Status:          c.Status,
+		CreatedAt:       c.CreatedAt,
+		UpdatedAt:       c.UpdatedAt,
 	}
 }
 
-// mapLevelToInt mengubah level string ke integer (untuk repository)
 func mapLevelToInt(level string) int {
 	switch level {
 	case "X":
@@ -430,7 +409,6 @@ func mapLevelToInt(level string) int {
 	}
 }
 
-// mapLevelToString mengubah integer ke string (untuk response)
 func mapLevelToString(level int) string {
 	switch level {
 	case 10:

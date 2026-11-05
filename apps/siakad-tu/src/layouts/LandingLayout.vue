@@ -1,104 +1,141 @@
 <template>
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-white text-dark">
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" class="lt-sm" @click="toggleLeftDrawer" />
+      <!-- ========================================== -->
+      <!-- BARIS 1: HEADER UTAMA                      -->
+      <!-- ========================================== -->
+      <q-toolbar class="q-py-sm">
+        <!-- 1. Tombol Hamburger (Hanya muncul di Mobile/Tablet) -->
+        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer"
+          class="lt-md q-mr-sm text-grey-8" />
 
-        <q-toolbar-title class="flex no-wrap items-center">
-          <div>
-            <q-icon name="school" size="2em" class="q-mr-sm" />
+        <!-- 2. Brand / Logo Aplikasi -->
+        <q-toolbar-title class="flex no-wrap items-center gt-xs">
+          <div class="row items-center no-wrap">
+            <q-icon name="school" size="1.8em" class="q-mr-sm text-primary" />
             <div class="column">
-              <div class="text-h6 text-weight-bold">SDP</div>
-              <div class="text-caption gt-xs">{{ schoolLabel }}</div>
+              <div class="text-h6 text-weight-bold text-primary" style="line-height: 1.1;">SDP</div>
+              <div class="text-caption text-grey-7" style="line-height: 1.1;">{{ schoolLabel }}</div>
             </div>
           </div>
         </q-toolbar-title>
 
-        <q-space />
-
-        <div class="gt-xs row items-center no-wrap text-weight-medium">
-          <q-tabs align="center" active-color="primary" indicator-color="primary">
+        <!-- 3. Menu Utama Horizontal (Hanya muncul di Desktop/Layar Lebar) -->
+        <div class="gt-sm row items-center no-wrap text-weight-medium q-ml-lg">
+          <q-tabs align="left" active-color="primary" indicator-color="primary" class="text-grey-8">
             <q-route-tab v-for="item in menuItems" :key="item.routeName" :to="{ name: item.routeName }"
-              :icon="item.icon" :label="item.name" />
+              :icon="item.icon" :label="item.name" no-caps />
             <DropDownMenu label="PORTAL" :items="itemPortal" align="center" />
-            <q-btn flat icon="search" label="cari..." @click="openSearch" class="q-ml-md">
-              <q-tooltip>Cari siswa</q-tooltip>
-            </q-btn>
           </q-tabs>
         </div>
-        <q-space />
-        
-        <div class="gt-sm q-mr-md">
-          <ContextSelector />
-        </div>
-        
-        <q-space class="lt-sm" />
 
-        <div v-if="isAuthenticated" class="row items-center q-gutter-sm">
-          <q-btn flat round>
-            <q-avatar color="primary" text-color="white" size="2em">
-              {{ currentUser?.name?.charAt(0) || 'U' }}
-            </q-avatar>
-            <q-menu>
-              <q-list style="min-width: 150px">
-                <q-item clickable v-close-popup @click="handleLogout">
-                  <q-item-section avatar>
-                    <q-icon name="logout" />
-                  </q-item-section>
-                  <q-item-section>Logout</q-item-section>
-                </q-item>
-              </q-list>
-            </q-menu>
+        <q-space />
+
+        <!-- 4. Area Kanan (Search, Context, User) -->
+        <div class="row items-center no-wrap q-gutter-sm">
+          <!-- Tombol Search -->
+          <q-btn flat round dense icon="search" @click="openSearch" class="text-grey-8">
+            <q-tooltip>Cari siswa</q-tooltip>
           </q-btn>
-        </div>
-        <div v-else class="row items-center q-gutter-sm">
-          <q-btn flat icon="login" @click="handleLoginDialog" />
+
+          <!-- Context Selector (Tahun Ajaran - Semester) -->
+          <div class="gt-xs">
+            <ContextSelector />
+          </div>
+
+          <!-- User Menu / Login -->
+          <div v-if="isAuthenticated" class="row items-center q-ml-sm">
+            <q-btn flat round>
+              <q-avatar color="primary" text-color="white" size="2em" class="text-weight-bold">
+                {{ currentUser?.name?.charAt(0).toUpperCase() || 'U' }}
+              </q-avatar>
+              <q-menu>
+                <q-list style="min-width: 150px">
+                  <q-item clickable v-close-popup @click="handleLogout">
+                    <q-item-section avatar>
+                      <q-icon name="logout" color="negative" />
+                    </q-item-section>
+                    <q-item-section class="text-negative text-weight-medium">Logout</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </div>
+          <div v-else class="row items-center q-ml-sm">
+            <q-btn flat round icon="login" @click="handleLoginDialog" class="text-primary" />
+          </div>
         </div>
       </q-toolbar>
 
-      <TuMenuToolbar :visible="isAuthenticated" @menu-click="onMenuSelected" />
+      <!-- ========================================== -->
+      <!-- BARIS 2: TOOLBAR KEDUA (Ur. Kesiswaan, dll)-->
+      <!-- ========================================== -->
+      <TuMenuToolbar :visible="isAuthenticated" @menu-click="onMenuSelected" class="gt-xs" />
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" bordered class="bg-grey-1">
-      <q-list>
-        <q-item-label header class="text-weight-bold text-primary">
-          Menu Navigasi
-        </q-item-label>
-
-        <q-item v-for="item in menuItems" :key="item.routeName" clickable :to="{ name: item.routeName }" v-close-popup>
-          <q-item-section avatar>
-            <q-icon :name="item.icon" />
-          </q-item-section>
-          <q-item-section>
-            {{ item.name }}
-          </q-item-section>
-        </q-item>
-
+    <!-- ========================================== -->
+    <!-- SIDENAV (KIRI) - Hanya untuk Mobile        -->
+    <!-- ========================================== -->
+    <q-drawer v-model="leftDrawerOpen" bordered class="bg-white" :width="280" overlay>
+      <q-scroll-area class="fit">
+        <!-- Header Sidenav (Mini Profil) -->
+        <div class="q-pa-md row items-center bg-grey-1">
+          <q-avatar color="primary" text-color="white" icon="school" size="40px" class="q-mr-md" />
+          <div>
+            <div class="text-weight-bold text-primary">SDP SMK</div>
+            <div class="text-caption text-grey-7">{{ schoolLabel }}</div>
+          </div>
+        </div>
         <q-separator />
 
-        <q-item-label header>Portal</q-item-label>
+        <!-- Menu Navigasi Utama (Karena di Mobile Top Menu disembunyikan, menu ini yang dipakai) -->
+        <q-list padding class="menu-list">
+          <q-item-label header class="text-weight-bold text-caption text-grey-6 text-uppercase tracking-wide">
+            Menu Utama
+          </q-item-label>
 
-        <q-item v-for="(portal, index) in itemPortal" :key="index" clickable @click="portal.action" v-close-popup>
-          <q-item-section avatar>
-            <q-icon :name="portal.icon" />
-          </q-item-section>
-          <q-item-section>
-            {{ portal.label }}
-          </q-item-section>
-        </q-item>
-      </q-list>
+          <q-item v-for="item in menuItems" :key="item.routeName" clickable v-ripple :to="{ name: item.routeName }"
+            active-class="bg-blue-1 text-primary text-weight-bold" class="q-mb-xs rounded-borders"
+            @click="leftDrawerOpen = false">
+            <q-item-section avatar>
+              <q-icon :name="item.icon" :color="item.icon ? 'primary' : 'grey-7'" />
+            </q-item-section>
+            <q-item-section>
+              {{ item.name }}
+            </q-item-section>
+          </q-item>
+
+          <q-separator class="q-my-md" />
+
+          <!-- Menu Portal -->
+          <q-item-label header class="text-weight-bold text-caption text-grey-6 text-uppercase tracking-wide">
+            Portal Akses
+          </q-item-label>
+
+          <!-- <q-item v-for="(portal, index) in itemPortal" :key="index" clickable v-ripple
+            @click="portal.action; leftDrawerOpen = false" class="q-mb-xs rounded-borders">
+            <q-item-section avatar>
+              <q-icon :name="portal.icon" color="secondary" />
+            </q-item-section>
+            <q-item-section>
+              {{ portal.label }}
+            </q-item-section>
+          </q-item> -->
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
 
+    <!-- Konten Utama Router -->
     <q-page-container>
       <router-view />
     </q-page-container>
 
+    <!-- Footer -->
     <q-footer class="bg-grey-2 text-grey-8 q-py-sm">
       <div class="row items-center q-px-md text-center">
         <div class="col-4 gt-xs"></div>
         <div class="col-xs-12 col-sm-4 text-weight-bold">
-          <div class="q-mt-xs">SDP SMK &copy; 2026. Made with <span class="text-red-14">❤</span> by. Deden Moh.J.
-          </div>
+          <div class="q-mt-xs">SDP Made with <span class="text-red-14">❤</span> by. Deden Moh.J. - &copy; 2026</div>
         </div>
         <q-space />
         <div class="col-xs-12 col-sm-4 text-right text-weight-medium">
@@ -108,6 +145,7 @@
       </div>
     </q-footer>
 
+    <!-- Dialog Search -->
     <q-dialog v-model="isSearchOpen" persistent>
       <q-card style="width: 500px; max-width: 90vw">
         <q-card-section class="row items-center q-pb-none">
@@ -134,6 +172,7 @@
       </q-card>
     </q-dialog>
 
+    <!-- Dialog Login Required -->
     <q-dialog v-model="showLoginDialog" persistent>
       <q-card style="width: 400px; max-width: 90vw">
         <q-card-section class="row items-center q-pb-none">
@@ -157,6 +196,7 @@
       </q-card>
     </q-dialog>
 
+    <!-- Komponen Login Dialog -->
     <LoginDialog v-model="showLoginDialog1"
       message="Halaman ini hanya dapat diakses oleh pegawai Tata Usaha yang sudah login." :is-loading="isLoggingIn"
       :error-message="loginError" @login="handleLoginSubmit" @cancel="handleLoginCancel" />
@@ -199,6 +239,7 @@ const leftDrawerOpen = ref(false)
 const pendingNavigation = ref(null)
 const isLoggingIn = ref(false)
 const loginError = ref('')
+
 const showLoginDialog = computed({
   get: () => authStore.showLoginDialog,
   set: (val) => { if (!val) authStore.closeLoginDialog() }
@@ -212,7 +253,6 @@ const handleLoginDialog = () => {
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
-// Tambahkan onMounted untuk inisialisasi context saat halaman publik dimuat
 onMounted(() => {
   contextStore.initialize()
 })
@@ -251,7 +291,6 @@ async function handleLoginSubmit(credentials) {
   try {
     const success = await authStore.login(credentials)
     if (success) {
-      // PERBAIKAN: Muat ulang context setelah login agar semester terisi
       await contextStore.initialize()
 
       authStore.closeLoginDialog()
@@ -295,7 +334,25 @@ const onMenuSelected = (data) => {
 </script>
 
 <style scoped>
-.q-tabs {
-  font-size: 0.9rem;
+.menu-list .q-item {
+  border-radius: 8px;
+  margin: 4px 12px;
+}
+
+.q-item.q-router-link--active {
+  color: var(--q-primary);
+  background-color: rgba(25, 118, 210, 0.08);
+  font-weight: 600;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}
+
+/* Memperbaiki tinggi toolbar agar tidak terlalu tinggi di mobile */
+@media (max-width: 599px) {
+  .q-toolbar {
+    min-height: 56px;
+  }
 }
 </style>

@@ -33,6 +33,19 @@ const routes = [
         name: 'pengaturan-sekolah',
         component: () => import('@/pages/pengaturan/SchoolProfilePage.vue'),
         meta: { requiresAuth: true }
+      },
+      // --- ROUTE KESISWAAN BARU ---
+      {
+        path: 'kesiswaan/jadwal-pelajaran',
+        name: 'kesiswaan-jadwal-pelajaran',
+        component: () => import('@/pages/kesiswaan/SchedulePage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'kesiswaan/rekap-kehadiran',
+        name: 'kesiswaan-rekap-kehadiran',
+        component: () => import('@/pages/kesiswaan/AttendanceRecapPage.vue'),
+        meta: { requiresAuth: true }
       }
     ],
   },

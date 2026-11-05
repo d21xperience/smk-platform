@@ -22,6 +22,7 @@ import (
 	"sekolah-platform/services/tu-core/internal/outbox"
 	"sekolah-platform/services/tu-core/internal/projection"
 	"sekolah-platform/services/tu-core/internal/repository"
+	// repository sudah ada
 	"sekolah-platform/services/tu-core/internal/scheduler"
 	"sekolah-platform/services/tu-core/internal/scheduler/jobs"
 	"sekolah-platform/services/tu-core/internal/server"
@@ -98,6 +99,7 @@ func main() {
 	financeRepo := repository.NewFinanceRepository(db)
 	correspondenceRepo := repository.NewCorrespondenceRepository(db)
 	classRepo := repository.NewClassRepository(db)
+	statsRepo := repository.NewStatisticsRepository(db)
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	publicRepo := repository.NewPublicRepository(db)
@@ -132,6 +134,7 @@ func main() {
 	financeService := service.NewFinanceService(financeRepo, studentRepo, finEngine, eventPublisher)
 	correspondenceService := service.NewCorrespondenceService(correspondenceRepo, corrEngine, eventPublisher)
 	classService := service.NewClassService(classRepo, classEngine, eventPublisher)
+	statsService := service.NewStatisticsService(statsRepo)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
 	authService := service.NewAuthService(userRepo, academicRepo)
 	publicService := service.NewPublicService(publicRepo)
@@ -174,6 +177,8 @@ func main() {
 	httpServer := server.NewHTTPServer(httpConfig, healthHandler)
 
 	restConfig := server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)}
+	// INJEKSI SCHEDULE HANDLER DI SINI
+	scheduleHandler := rest.NewScheduleHandler(classRepo, academicRepo, db)
 	restHandler := rest.NewRouter(
 		studentService,
 		mutationService,
@@ -184,11 +189,13 @@ func main() {
 		correspondenceService,
 		classService,
 		enrollmentService,
+		statsService,
 		prefService,
 		authService,
 		publicService,
 		userService,
-		schoolService, // <-- BARU
+		schoolService,
+		scheduleHandler, // <-- BARU
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

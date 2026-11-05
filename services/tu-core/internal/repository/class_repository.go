@@ -21,11 +21,12 @@ type Class struct {
 	AcademicPeriodID string
 	Name             string
 	Grade            int
-	WaliTeacherID    string // ptk_id (hasil scan)
-	Level            int    // VIRTUAL (diisi = Grade saat scan)
+	WaliTeacherID    string
+	Level            int
 	Major            string
-	HomeroomID       string // ptk_id (diisi Service saat write)
+	HomeroomID       string
 	Capacity         int
+	CurrentStudents  int    // <-- TAMBAHAN: Jumlah siswa saat ini
 	Status           string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -88,6 +89,7 @@ func nullableInt(n int) interface{} {
 	return n
 }
 
+// FIX: Tambahkan subquery untuk menghitung total siswa saat ini (CurrentStudents)
 const classSelectColumns = `
 	rombongan_belajar_id,
 	sekolah_id,
@@ -98,7 +100,10 @@ const classSelectColumns = `
 	COALESCE(nama_jurusan_sp, ''),
 	COALESCE(capacity, 0),
 	COALESCE(created_at, '1970-01-01 00:00:00+00'::timestamptz),
-	COALESCE(updated_at, '1970-01-01 00:00:00+00'::timestamptz)
+	COALESCE(updated_at, '1970-01-01 00:00:00+00'::timestamptz),
+	(SELECT COUNT(*) FROM tabel_anggotakelas tak 
+	 WHERE tak.rombongan_belajar_id = tabel_kelas.rombongan_belajar_id 
+	 AND tak.semester_id = tabel_kelas.semester_id) AS current_students
 `
 
 func scanClass(row pgx.Row, c *Class) error {
@@ -113,12 +118,13 @@ func scanClass(row pgx.Row, c *Class) error {
 		&c.Capacity,
 		&c.CreatedAt,
 		&c.UpdatedAt,
+		&c.CurrentStudents, // <-- Scan nilai dari subquery
 	); err != nil {
 		return err
 	}
 	c.HomeroomID = c.WaliTeacherID
 	c.Status = "active"
-	c.Level = c.Grade // FIX: Level diisi dari Grade agar JSON "level" tidak kosong ("X", "XI", dll via service)
+	c.Level = c.Grade
 	return nil
 }
 

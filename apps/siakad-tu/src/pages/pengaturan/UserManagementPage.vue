@@ -6,13 +6,7 @@
       <q-btn color="primary" label="Tambah Staf" icon="person_add" @click="openAddDialog" />
     </div>
 
-    <q-table
-      :rows="users"
-      :columns="columns"
-      row-key="UserID"
-      flat bordered
-      :loading="isLoading"
-    >
+    <q-table :rows="users" :columns="columns" row-key="UserID" flat bordered :loading="isLoading">
       <template v-slot:body-cell-IsActive="props">
         <q-td :props="props">
           <q-badge :color="props.row.IsActive ? 'green' : 'red'" class="q-px-sm q-py-xs">
@@ -29,12 +23,8 @@
           <q-btn color="info" icon="key" size="sm" unelevated @click="openResetDialog(props.row)">
             <q-tooltip>Reset Password</q-tooltip>
           </q-btn>
-          <q-btn 
-            :color="props.row.IsActive ? 'negative' : 'positive'" 
-            :icon="props.row.IsActive ? 'block' : 'check_circle'" 
-            size="sm" unelevated 
-            @click="toggleStatus(props.row)"
-          >
+          <q-btn :color="props.row.IsActive ? 'negative' : 'positive'"
+            :icon="props.row.IsActive ? 'block' : 'check_circle'" size="sm" unelevated @click="toggleStatus(props.row)">
             <q-tooltip>{{ props.row.IsActive ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}</q-tooltip>
           </q-btn>
         </q-td>
@@ -53,15 +43,9 @@
         <q-card-section class="q-pt-none q-gutter-y-md">
           <q-input v-model="form.username" label="Username / NIP" outlined dense :readonly="isEditMode" />
           <q-input v-if="!isEditMode" v-model="form.password" type="password" label="Password" outlined dense />
-          
-          <q-select
-            v-model="form.role"
-            :options="roleOptions"
-            label="Role / Jabatan"
-            outlined dense
-            emit-value
-            map-options
-          />
+
+          <q-select v-model="form.role" :options="roleOptions" label="Role / Jabatan" outlined dense emit-value
+            map-options />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -82,18 +66,14 @@
 
         <q-card-section class="q-pt-none">
           <div class="text-caption q-mb-sm">Atur ulang password untuk <strong>{{ resetTarget?.Name }}</strong></div>
-          <q-input 
-            v-model="newPassword" 
-            type="password" 
-            label="Password Baru" 
-            outlined dense 
-            :rules="[val => val.length >= 6 || 'Minimal 6 karakter']"
-          />
+          <q-input v-model="newPassword" type="password" label="Password Baru" outlined dense
+            :rules="[val => val.length >= 6 || 'Minimal 6 karakter']" />
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat label="Batal" v-close-popup />
-          <q-btn color="info" label="Reset" :loading="isResetting" @click="submitResetPassword" :disable="newPassword.length < 6" />
+          <q-btn color="info" label="Reset" :loading="isResetting" @click="submitResetPassword"
+            :disable="newPassword.length < 6" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -145,7 +125,7 @@ async function fetchUsers() {
     const res = await api.get('/users')
     users.value = res.data
   } catch (err) {
-    Notify.create({ type: 'negative', message: 'Gagal memuat data pengguna' })
+    Notify.create({ type: 'negative', message: `Gagal memuat data pengguna ${err}` })
   } finally {
     isLoading.value = false
   }

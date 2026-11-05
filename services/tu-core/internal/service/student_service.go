@@ -554,3 +554,27 @@ func (s *StudentService) UpdateStudentForUI(ctx context.Context, schoolID, acade
 func (s *StudentService) DeleteStudentForUI(ctx context.Context, schoolID, academicPeriodID, studentID string) error {
 	return s.repo.DeleteForUI(ctx, schoolID, academicPeriodID, studentID)
 }
+
+func (s *StudentService) ListAvailableStudentsForUI(ctx context.Context, schoolID, academicPeriodID string, filter repository.StudentFilter) (*StudentUIResponse, error) {
+	filter.SchoolID = schoolID
+	filter.AcademicPeriodID = academicPeriodID
+
+	students, total, err := s.repo.ListAvailableForUI(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	page := filter.Offset/filter.Limit + 1
+	if filter.Limit == 0 {
+		page = 1
+		filter.Limit = 50
+	}
+
+	return &StudentUIResponse{
+		Data:       students,
+		Total:      total,
+		Page:       page,
+		Limit:      filter.Limit,
+		TotalPages: (total + filter.Limit - 1) / filter.Limit,
+	}, nil
+}

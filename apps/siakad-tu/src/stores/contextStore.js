@@ -9,7 +9,20 @@ export const useContextStore = defineStore('context', () => {
 
   // === STATE ===
   const availablePeriods = ref([])
-  const selectedSemesterId = ref('')
+  
+  // FIX: Inisialisasi sinkron dari AuthStore / LocalStorage agar tidak kosong saat di-refresh
+  let initialSemesterId = ''
+  if (authStore.isAuthenticated && authStore.user) {
+    const cacheKey = `ctx:${authStore.user.id}:${authStore.user.school_id}`
+    const cachedPref = localStorage.getItem(cacheKey)
+    if (cachedPref) {
+      initialSemesterId = cachedPref
+    } else if (authStore.user.academic_period_id) {
+      initialSemesterId = String(authStore.user.academic_period_id)
+    }
+  }
+  
+  const selectedSemesterId = ref(initialSemesterId)
   const isLoading = ref(false)
   const error = ref(null)
 
@@ -54,7 +67,6 @@ export const useContextStore = defineStore('context', () => {
 
   // === COMPUTED: label yang lebih bersih ===
   const selectedYearLabel = computed(() => {
-    // PERBAIKAN: Gunakan String() agar angka 20262 cocok dengan string "20262"
     const selected = availablePeriods.value.find((p) => String(p.semester_id) === String(selectedSemesterId.value))
     
     if (!selected) return '-'
@@ -141,7 +153,7 @@ export const useContextStore = defineStore('context', () => {
     isLoading.value = true
     try {
       const ctx = currentContext.value
-      const sidStr = String(semesterId) // PASTIKAN STRING
+      const sidStr = String(semesterId)
       
       if (authStore.isAuthenticated) {
         await ContextService.updatePreference(ctx, sidStr)

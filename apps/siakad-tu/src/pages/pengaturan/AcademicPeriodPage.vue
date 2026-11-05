@@ -6,13 +6,7 @@
       <q-btn color="primary" label="Tambah Tahun Ajaran" icon="add" @click="showAddDialog = true" />
     </div>
 
-    <q-table
-      :rows="periods"
-      :columns="columns"
-      row-key="semester_id"
-      flat bordered
-      :loading="isLoading"
-    >
+    <q-table :rows="periods" :columns="columns" row-key="semester_id" flat bordered :loading="isLoading">
       <template v-slot:body-cell-status="props">
         <q-td :props="props">
           <q-badge :color="props.row.periode_aktif ? 'green' : 'grey'" class="q-px-sm q-py-xs">
@@ -23,25 +17,13 @@
 
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-x-sm">
-          <q-btn
-            v-if="!props.row.periode_aktif"
-            color="positive"
-            label="Aktifkan"
-            size="sm"
-            unelevated
-            @click="activatePeriod(props.row.semester_id)"
-          />
+          <q-btn v-if="!props.row.periode_aktif" color="positive" label="Aktifkan" size="sm" unelevated
+            @click="activatePeriod(props.row.semester_id)" />
           <span v-else class="text-grey-6 text-italic text-caption q-mr-sm">Sedang Digunakan</span>
 
           <!-- Tombol Hapus (Hanya muncul jika tidak aktif) -->
-          <q-btn
-            v-if="!props.row.periode_aktif"
-            color="negative"
-            icon="delete"
-            size="sm"
-            unelevated
-            @click="confirmDelete(props.row)"
-          >
+          <q-btn v-if="!props.row.periode_aktif" color="negative" icon="delete" size="sm" unelevated
+            @click="confirmDelete(props.row)">
             <q-tooltip>Hapus Periode</q-tooltip>
           </q-btn>
         </q-td>
@@ -58,19 +40,14 @@
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          <q-input 
-            v-model="form.year" 
-            label="Tahun Awal (Cth: 2027)" 
-            mask="####" 
-            fill-mask="0"
-            hint="Sistem akan otomatis membuat format 2027/2028 beserta Semester 1 & 2"
-            outlined dense 
-          />
+          <q-input v-model="form.year" label="Tahun Awal (Cth: 2027)" mask="####" fill-mask="0"
+            hint="Sistem akan otomatis membuat format 2027/2028 beserta Semester 1 & 2" outlined dense />
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat label="Batal" v-close-popup />
-          <q-btn color="primary" label="Simpan" :loading="isSubmitting" @click="submitPeriod" :disable="form.year.length !== 4" />
+          <q-btn color="primary" label="Simpan" :loading="isSubmitting" @click="submitPeriod"
+            :disable="form.year.length !== 4" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -105,7 +82,7 @@ async function fetchPeriods() {
     const res = await api.get('/context/periods')
     periods.value = res.data
   } catch (err) {
-    Notify.create({ type: 'negative', message: 'Gagal memuat data periode' })
+    Notify.create({ type: 'negative', message: `Gagal memuat data periode ${err}` })
   } finally {
     isLoading.value = false
   }
@@ -132,7 +109,7 @@ async function activatePeriod(id) {
     await api.put(`/academic/periods/${id}/activate`)
     Notify.create({ type: 'positive', message: 'Periode berhasil diaktifkan' })
     await fetchPeriods()
-    window.location.reload() 
+    window.location.reload()
   } catch (err) {
     Notify.create({ type: 'negative', message: err.response?.data?.error || 'Gagal mengaktifkan' })
   }
@@ -153,8 +130,8 @@ function confirmDelete(period) {
       await fetchPeriods()
     } catch (err) {
       // Menangkap pesan error dari backend jika semester sedang aktif
-      Notify.create({ 
-        type: 'negative', 
+      Notify.create({
+        type: 'negative',
         message: err.response?.data?.error || 'Gagal menghapus periode',
         timeout: 4000
       })

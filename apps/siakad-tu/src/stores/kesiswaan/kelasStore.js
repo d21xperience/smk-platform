@@ -6,12 +6,16 @@ export const useKelasStore = defineStore('kelas', {
     list: [],
     isLoading: false,
     total: 0,
+    // State untuk Anggota Kelas
+    members: [],
+    availableStudents: [],
+    isLoadingMembers: false,
+    isLoadingAvailable: false
   }),
   actions: {
     async fetchKelas(params = { limit: 100 }) {
       this.isLoading = true
       try {
-        // CUKUP TULIS '/classes' SAJA (baseURL '/api/v1' otomatis ditambahkan)
         const response = await api.get('/classes', { params })
         this.list = response.data.data.data || []
         this.total = response.data.data.total || 0
@@ -22,7 +26,6 @@ export const useKelasStore = defineStore('kelas', {
         this.isLoading = false
       }
     },
-
     async createKelas(payload) {
       this.isLoading = true
       try {
@@ -33,7 +36,6 @@ export const useKelasStore = defineStore('kelas', {
         this.isLoading = false
       }
     },
-
     async updateKelas(id, payload) {
       this.isLoading = true
       try {
@@ -44,7 +46,6 @@ export const useKelasStore = defineStore('kelas', {
         this.isLoading = false
       }
     },
-
     async deleteKelas(id) {
       this.isLoading = true
       try {
@@ -54,6 +55,31 @@ export const useKelasStore = defineStore('kelas', {
       } finally {
         this.isLoading = false
       }
+    },
+    // === ENROLLMENT ACTIONS ===
+    async fetchClassMembers(classId) {
+      this.isLoadingMembers = true
+      try {
+        const response = await api.get(`/classes/${classId}/members`)
+        this.members = response.data.data || []
+      } finally {
+        this.isLoadingMembers = false
+      }
+    },
+    async fetchAvailableStudents(params = { limit: 100 }) {
+      this.isLoadingAvailable = true
+      try {
+        const response = await api.get('/students/available', { params })
+        this.availableStudents = response.data.data || []
+      } finally {
+        this.isLoadingAvailable = false
+      }
+    },
+    async addMember(classId, studentId) {
+      await api.post(`/classes/${classId}/members`, { studentId })
+    },
+    async removeMember(classId, studentId) {
+      await api.delete(`/classes/${classId}/members/${studentId}`)
     }
   },
 })

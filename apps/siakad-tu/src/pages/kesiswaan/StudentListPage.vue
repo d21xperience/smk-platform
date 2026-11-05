@@ -68,8 +68,8 @@
     </q-card>
 
     <!-- Komponen Import Dinamis -->
-    <BaseImportDialog 
-      v-model="showImportDialog" 
+    <BaseImportDialog
+      v-model="showImportDialog"
       title="Data Siswa"
       :loading="isImporting"
       @download-template="downloadTemplate"
@@ -186,14 +186,14 @@ const downloadTemplate = () => {
   const templateData = [
     { NISN: '0088779136', NIS: '20251788779136', Nama: 'Ahmad Fauzi', 'L/P': 'L', Kelas: 'X RPL 1' }
   ]
-  
+
   const worksheet = XLSX.utils.json_to_sheet(templateData)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Siswa')
-  
+
   // Atur lebar kolom agar rapi
   worksheet['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 30 }, { wch: 5 }, { wch: 15 }]
-  
+
   XLSX.writeFile(workbook, 'Template_Import_Siswa.xlsx')
   $q.notify({ type: 'info', message: 'Template berhasil diunduh' })
 }
@@ -209,10 +209,10 @@ const processImport = (file) => {
       const workbook = XLSX.read(data, { type: 'array' })
       const firstSheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[firstSheetName]
-      
+
       // Konversi ke JSON
       const jsonData = XLSX.utils.sheet_to_json(worksheet)
-      
+
       if (jsonData.length === 0) {
         throw new Error('File Excel kosong atau format tidak sesuai.')
       }
@@ -233,7 +233,7 @@ const processImport = (file) => {
 
         // Panggil API (studentApi)
         const res = await studentApi.registerStudent(payload, context)
-        
+
         if (res.success) {
           successCount++
         } else {
@@ -245,15 +245,15 @@ const processImport = (file) => {
       // Selesai
       isImporting.value = false
       showImportDialog.value = false
-      
-      $q.notify({ 
-        type: failedCount === 0 ? 'positive' : 'warning', 
+
+      $q.notify({
+        type: failedCount === 0 ? 'positive' : 'warning',
         message: `Import selesai: ${successCount} berhasil, ${failedCount} gagal.`,
         caption: 'Tabel akan diperbarui otomatis.'
       })
-      
+
       loadData() // Refresh tabel
-      
+
     } catch (err) {
       isImporting.value = false
       $q.notify({ type: 'negative', message: 'Gagal memproses file: ' + err.message })

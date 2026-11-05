@@ -8,29 +8,20 @@
 
 <script setup>
 import { computed } from 'vue'
-import DropDownMenu from '@/components/DropDownMenu.vue' // Sesuaikan jalur folder Anda
+import DropDownMenu from '@/components/DropDownMenu.vue'
 
-// 1. Definisikan Props
 defineProps({
-  visible: {
-    type: Boolean,
-    default: true
-  },
+  visible: { type: Boolean, default: true },
 })
 
-// 2. Definisikan Emit
 const emit = defineEmits(['menu-click'])
 
-// 3. Fungsi untuk menangkap klik dan mengirimnya ke komponen induk
 const handleItemClick = (menuLabel, itemData) => {
-  emit('menu-click', {
-    menu: menuLabel,
-    item: itemData
-  })
+  emit('menu-click', { menu: menuLabel, item: itemData })
 }
 
 const itemPengaturan = [
-  { title: 'Profil Sekolah', to: '/pengaturan/sekolah' }, // <-- MENU BARU
+  { title: 'Profil Sekolah', to: '/pengaturan/sekolah' },
   { title: 'Tahun Ajaran & Semester', to: '/pengaturan/tahun-ajaran' },
   { title: 'Manajemen Pengguna', to: '/pengaturan/pengguna' }
 ]
@@ -70,7 +61,9 @@ const itemPsb = [
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
   { title: 'Kelas', to: '/kesiswaan/kelas' },
+  { title: 'Jadwal Pelajaran', to: '/kesiswaan/jadwal-pelajaran' }, // <-- Menu Baru
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
+  { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' }, // <-- Menu Baru
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
   { title: 'Mutasi Siswa', to: { name: 'student-mutation' } },
   { title: 'Surat Aktif', to: '/kesiswaan/surat-aktif-siswa' },
@@ -108,7 +101,6 @@ const itemSarpras = [
   },
 ]
 
-// Menyatukan data menjadi satu array terstruktur untuk dikirim ke props
 const menus = computed(() => [
   { label: 'Ur. Kesiswaan', items: itemKesiswaan },
   { label: 'Ur. Kepegawaian', items: itemKepegawaian },
