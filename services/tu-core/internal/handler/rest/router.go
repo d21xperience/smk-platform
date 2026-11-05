@@ -25,6 +25,7 @@ type Router struct {
 	classService          *service.ClassService
 	enrollmentService     *service.EnrollmentService
 	statisticsService     *service.StatisticsService
+	teacherService        *service.TeacherService
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
@@ -45,6 +46,7 @@ func NewRouter(
 	classService *service.ClassService,
 	enrollmentService *service.EnrollmentService,
 	statisticsService *service.StatisticsService,
+	teacherService *service.TeacherService,
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
@@ -63,6 +65,7 @@ func NewRouter(
 		classService:          classService,
 		enrollmentService:     enrollmentService,
 		statisticsService:     statisticsService,
+		teacherService:        teacherService,
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
@@ -83,6 +86,8 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
+	mux.HandleFunc("/api/v1/teachers/{id}", r.handleTeacherByID)
+	mux.HandleFunc("/api/v1/teachers", r.handleTeachers)
 	mux.HandleFunc("/api/v1/statistics", r.handleStatistics)
 	mux.HandleFunc("/api/v1/classes", r.handleClasses)
 	mux.HandleFunc("/api/v1/classes/{id}", r.handleClassByID)
@@ -476,4 +481,83 @@ func (r *Router) handleStatistics(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stats)
+}
+
+
+
+func (r *Router) handleTeachers(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+
+	opCtx := middleware.GetOperationalContext(ctx)
+
+	switch req.Method {
+	case http.MethodGet:
+		keyword := req.URL.Query().Get("keyword")
+		teachers, total, err := r.teacherService.ListTeachers(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, keyword)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": teachers, "total": total})
+
+	case http.MethodPost:
+		var body service.TeacherRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			http.Error(w, `{"error": "Invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		if err := r.teacherService.CreateTeacher(ctx, body); err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Guru berhasil ditambahkan"})
+	default:
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+	}
+}
+
+func (r *Router) handleTeacherByID(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Ekstrak ID dari URL
+	pathParts := strings.Split(req.URL.Path, "/")
+	id := pathParts[len(pathParts)-1]
+	if id == "" {
+		http.Error(w, `{"error": "ID required"}`, http.StatusBadRequest)
+		return
+	}
+
+	switch req.Method {
+	case http.MethodPut:
+		var body service.TeacherRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			http.Error(w, `{"error": "Invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		if err := r.teacherService.UpdateTeacher(ctx, id, body); err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]string{"message": "Guru berhasil diupdate"})
+
+	case http.MethodDelete:
+		if err := r.teacherService.DeleteTeacher(ctx, id); err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]string{"message": "Guru berhasil dihapus"})
+
+	default:
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+	}
 }

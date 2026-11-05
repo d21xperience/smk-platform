@@ -27,7 +27,6 @@
           </q-td>
         </template>
 
-        <!-- KOLOM BARU: Total Siswa -->
         <template v-slot:body-cell-totalStudents="props">
           <q-td :props="props">
             <q-badge :color="props.row.currentStudents >= props.row.capacity ? 'red-6' : 'green-6'">
@@ -36,7 +35,16 @@
           </q-td>
         </template>
 
-        <!-- Aksi: Edit, Hapus, dan KELOLA ANGGOTA -->
+        <!-- KOLOM BARU: Wali Kelas -->
+        <template v-slot:body-cell-homeroom="props">
+          <q-td :props="props">
+            <span v-if="props.row.homeroomId" class="text-weight-medium text-primary">
+              {{ getTeacherName(props.row.homeroomId) }}
+            </span>
+            <span v-else class="text-grey-5 italic">Belum diatur</span>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
             <q-btn flat round dense color="teal" icon="people" @click="openMemberDialog(props.row)">
@@ -83,6 +91,11 @@
               </div>
             </div>
             <q-input v-model="form.major" label="Jurusan (Opsional)" filled />
+
+            <!-- DROPDOWN WALI KELAS -->
+            <q-select v-model="form.homeroomId" :options="teacherOptions" label="Wali Kelas" option-value="id"
+              option-label="name" emit-value map-options filled clearable :loading="guruStore.isLoading" />
+
             <div class="row justify-end q-mt-lg">
               <q-btn label="Batal" color="grey" flat v-close-popup class="q-mr-sm" />
               <q-btn label="Simpan Data" color="primary" type="submit" :loading="kelasStore.isLoading" />
@@ -98,32 +111,50 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useKelasStore } from '@/stores/kesiswaan/kelasStore'
+import { useGuruStore } from '@/stores/kepegawaian/guru' // Import store guru
 import KelolaAnggotaDialog from '@/components/kesiswaan/KelolaAnggotaDialog.vue'
 
 const $q = useQuasar()
 const kelasStore = useKelasStore()
+const guruStore = useGuruStore()
 
 const filterKeyword = ref('')
 const dialogOpen = ref(false)
 const isEdit = ref(false)
-const form = ref({ id: '', name: '', grade: 10, major: '', capacity: 36 })
+const form = ref({ id: '', name: '', grade: 10, major: '', capacity: 36, homeroomId: null })
 
 const memberDialogOpen = ref(false)
 const selectedClassForMembers = ref(null)
 
-// Definisi Kolom Tabel (Tambahan Total Siswa)
+// Opsi untuk Dropdown Wali Kelas
+const teacherOptions = computed(() => guruStore.list)
+
 const columns = [
   { name: 'name', label: 'Nama Kelas', field: 'name', align: 'left', sortable: true },
   { name: 'level', label: 'Tingkat', field: 'grade', align: 'center' },
   { name: 'major', label: 'Jurusan', field: 'major', align: 'left' },
-  { name: 'totalStudents', label: 'Total Siswa', field: 'currentStudents', align: 'center', sortable: true }, // <-- KOLOM BARU
+  { name: 'homeroom', label: 'Wali Kelas', field: 'homeroomId', align: 'left' }, // Kolom Baru
+  { name: 'totalStudents', label: 'Total Siswa', field: 'currentStudents', align: 'center', sortable: true },
   { name: 'actions', label: 'Aksi', align: 'center' }
 ]
 
-onMounted(() => loadData())
+onMounted(async () => {
+  loadData()
+  try {
+    await guruStore.fetchTeachers() // Ambil data guru saat halaman dimuat
+  } catch (e) {
+    console.error("Gagal load guru", e)
+  }
+})
+
+// Helper untuk menampilkan nama wali kelas di tabel
+const getTeacherName = (id) => {
+  const teacher = guruStore.list.find(t => t.id === id)
+  return teacher ? teacher.name : id
+}
 
 const loadData = async (keyword = '') => {
   try {
@@ -137,13 +168,21 @@ const searchData = () => loadData(filterKeyword.value)
 
 const openDialog = (row = null) => {
   isEdit.value = !!row
-  form.value = row ? { ...row } : { id: '', name: '', grade: 10, major: '', capacity: 36 }
+  if (row) {
+    form.value = { ...row, homeroomId: row.homeroomId || null }
+  } else {
+    form.value = { id: '', name: '', grade: 10, major: '', capacity: 36, homeroomId: null }
+  }
   dialogOpen.value = true
 }
 
 const onSubmit = async () => {
   try {
-    const payload = { ...form.value, level: form.value.level || '', homeroomId: "" }
+    const payload = {
+      ...form.value,
+      level: form.value.level || '',
+      homeroomId: form.value.homeroomId || "" // Kirim string kosong jika null
+    }
     if (isEdit.value) {
       await kelasStore.updateKelas(form.value.id, payload)
       $q.notify({ color: 'positive', message: 'Kelas diperbarui' })

@@ -100,6 +100,7 @@ func main() {
 	correspondenceRepo := repository.NewCorrespondenceRepository(db)
 	classRepo := repository.NewClassRepository(db)
 	statsRepo := repository.NewStatisticsRepository(db)
+	teacherRepo := repository.NewTeacherRepository(db)
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	publicRepo := repository.NewPublicRepository(db)
@@ -135,6 +136,7 @@ func main() {
 	correspondenceService := service.NewCorrespondenceService(correspondenceRepo, corrEngine, eventPublisher)
 	classService := service.NewClassService(classRepo, classEngine, eventPublisher)
 	statsService := service.NewStatisticsService(statsRepo)
+	teacherService := service.NewTeacherService(teacherRepo)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
 	authService := service.NewAuthService(userRepo, academicRepo)
 	publicService := service.NewPublicService(publicRepo)
@@ -190,6 +192,7 @@ func main() {
 		classService,
 		enrollmentService,
 		statsService,
+		teacherService,
 		prefService,
 		authService,
 		publicService,

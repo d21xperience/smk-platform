@@ -33,11 +33,13 @@ export const useStudentAffairsStore = defineStore('studentAffairs', () => {
           totalJurusan: stats.total_jurusan,
         },
         // Format untuk ApexCharts
-        chartSeries: [{
-          name: 'Jumlah Siswa',
-          data: stats.distribusi_jurusan.map(j => j.total)
-        }],
-        chartCategories: stats.distribusi_jurusan.map(j => j.jurusan),
+        chartSeries: [
+          {
+            name: 'Jumlah Siswa',
+            data: stats.distribusi_jurusan.map((j) => j.total),
+          },
+        ],
+        chartCategories: stats.distribusi_jurusan.map((j) => j.jurusan),
         reminders: [], // Kosongkan sementara (bisa diisi nanti)
       }
     } catch (err) {
@@ -72,15 +74,15 @@ export const useStudentAffairsStore = defineStore('studentAffairs', () => {
     loadStudents()
   }
 
-  async function loadMutations(statusFilter = 'semua') {
+  async function loadMutations() {
     mutations.value = []
   }
 
-  async function approveMutationAction(id, catatan) {
+  async function approveMutationAction() {
     // Placeholder
   }
 
-  async function rejectMutationAction(id, catatan) {
+  async function rejectMutationAction() {
     // Placeholder
   }
 

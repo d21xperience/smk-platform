@@ -77,15 +77,15 @@
           </q-card-section>
         </q-card>
       </div>
-      
+
       <div class="col-12 col-md-4">
         <!-- Placeholder untuk Widget Lain -->
         <q-card class="shadow-1 fit bg-blue-1 text-blue-9 flex flex-center" style="min-height: 300px">
-           <div class="text-center">
-             <q-icon name="insights" size="48px" class="q-mb-sm" />
-             <div class="text-h6">Statistik Lanjutan</div>
-             <div class="text-caption">Segera Hadir</div>
-           </div>
+          <div class="text-center">
+            <q-icon name="insights" size="48px" class="q-mb-sm" />
+            <div class="text-h6">Statistik Lanjutan</div>
+            <div class="text-caption">Segera Hadir</div>
+          </div>
         </q-card>
       </div>
     </div>
@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import apexchart from 'vue3-apexcharts'
 import { useDashboard } from '@/composables/student/useDashboard'
 import { useStudentAffairsStore } from '@/stores/kesiswaan/studentAffairsStore'
@@ -107,12 +107,14 @@ const chartOptions = computed(() => ({
   colors: ['#027BE3'],
   plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '45%' } },
   dataLabels: { enabled: true },
-  xaxis: { 
-    categories: store.dashboardData?.chartCategories || ['Belum Ada Data'] 
+  xaxis: {
+    categories: store.dashboardData?.chartCategories || ['Belum Ada Data']
   }
 }))
 </script>
 
 <style scoped>
-.text-h4 { line-height: 1.1; }
+.text-h4 {
+  line-height: 1.1;
+}
 </style>

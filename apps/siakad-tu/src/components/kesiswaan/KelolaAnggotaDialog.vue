@@ -66,7 +66,7 @@ const props = defineProps({
   modelValue: Boolean,
   classData: Object
 })
-const emit = defineEmits(['update:modelValue'])
+defineEmits(['update:modelValue'])
 
 const $q = useQuasar()
 const kelasStore = useKelasStore()
@@ -118,7 +118,7 @@ const addSelected = async () => {
     $q.notify({ color: 'positive', message: 'Siswa berhasil ditambahkan', icon: 'check' })
     selectedAvailable.value = null
     loadMembers()
-    loadAvailable() 
+    loadAvailable()
   } catch (err) {
     // TANGKAP ERROR 400 DARI BACKEND (Kapasitas Penuh)
     if (err.response?.status === 400 && err.response?.data?.error?.includes('capacity')) {
