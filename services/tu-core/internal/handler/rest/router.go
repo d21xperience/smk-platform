@@ -26,6 +26,8 @@ type Router struct {
 	enrollmentService     *service.EnrollmentService
 	statisticsService     *service.StatisticsService
 	teacherService        *service.TeacherService
+	kurikulumService      *service.KurikulumService
+	scheduleService       service.ScheduleService
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
@@ -47,6 +49,8 @@ func NewRouter(
 	enrollmentService *service.EnrollmentService,
 	statisticsService *service.StatisticsService,
 	teacherService *service.TeacherService,
+	kurikulumService *service.KurikulumService,
+	scheduleService service.ScheduleService,
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
@@ -66,6 +70,8 @@ func NewRouter(
 		enrollmentService:     enrollmentService,
 		statisticsService:     statisticsService,
 		teacherService:        teacherService,
+		kurikulumService:      kurikulumService,
+		scheduleService:       scheduleService,
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
@@ -87,6 +93,17 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
 	mux.HandleFunc("/api/v1/teachers/{id}", r.handleTeacherByID)
+	mux.HandleFunc("/api/v1/subjects", r.handleSubjects)
+	mux.HandleFunc("/api/v1/subjects/{id}", r.handleSubjectByID)
+
+	// === ENDPOINT JADWAL PELAJARAN ===
+	// FIX: /schedules/options HARUS didaftarkan (lebih spesifik dari {id}).
+	mux.HandleFunc("/api/v1/schedules/options", r.wrapWithContext(r.scheduleHandler.GetOptions))
+	mux.HandleFunc("/api/v1/schedules", r.wrapWithContext(r.handleSchedules))
+	mux.HandleFunc("/api/v1/schedules/{id}", r.wrapWithContext(r.handleScheduleByID))
+
+	mux.HandleFunc("/api/v1/kurikulum/statistics", r.handleKurikulumStats)
+	mux.HandleFunc("/api/v1/pembelajaran", r.handlePembelajaran)
 	mux.HandleFunc("/api/v1/teachers", r.handleTeachers)
 	mux.HandleFunc("/api/v1/statistics", r.handleStatistics)
 	mux.HandleFunc("/api/v1/classes", r.handleClasses)
@@ -118,10 +135,6 @@ func NewRouter(
 
 	// === ENDPOINT Profil Sekolah ===
 	mux.HandleFunc("/api/v1/school", r.handleSchool)
-
-	// === ENDPOINT JADWAL PELAJARAN  ===
-	mux.HandleFunc("/api/v1/schedules", r.wrapWithContext(r.handleSchedules))
-	mux.HandleFunc("/api/v1/schedules/options", r.wrapWithContext(r.scheduleHandler.GetOptions))
 
 	return mux
 }
@@ -244,8 +257,11 @@ func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 	userID := req.Header.Get("x-user-id")
 	role := req.Header.Get("x-user-role")
 
-	if schoolID == "" || academicYear == "" || userID == "" || role == "" {
+	if schoolID == "" || userID == "" {
 		return nil, http.ErrAbortHandler
+	}
+	if role == "" {
+		role = "admin"
 	}
 
 	semester := 1
@@ -483,8 +499,6 @@ func (r *Router) handleStatistics(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(stats)
 }
 
-
-
 func (r *Router) handleTeachers(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
@@ -529,7 +543,6 @@ func (r *Router) handleTeacherByID(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Ekstrak ID dari URL
 	pathParts := strings.Split(req.URL.Path, "/")
 	id := pathParts[len(pathParts)-1]
 	if id == "" {
@@ -560,4 +573,101 @@ func (r *Router) handleTeacherByID(w http.ResponseWriter, req *http.Request) {
 	default:
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 	}
+}
+
+func (r *Router) handleSubjects(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		subjects, err := r.kurikulumService.ListSubjects(req.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": subjects})
+	case http.MethodPost:
+		var body repository.Subject
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			http.Error(w, "Invalid body", http.StatusBadRequest)
+			return
+		}
+		if err := r.kurikulumService.CreateSubject(req.Context(), &body); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(body)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (r *Router) handleSubjectByID(w http.ResponseWriter, req *http.Request) {
+	// Implementasi Update & Delete Mapel (mirip handler sebelumnya)
+}
+
+func (r *Router) handlePembelajaran(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	opCtx := middleware.GetOperationalContext(ctx)
+
+	switch req.Method {
+	case http.MethodGet:
+		classID := req.URL.Query().Get("classId")
+		list, err := r.kurikulumService.ListPembelajaran(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, classID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": list})
+	case http.MethodPost:
+		var body struct {
+			ClassID   string `json:"classId"`
+			SubjectID string `json:"subjectId"`
+			TeacherID string `json:"teacherId"`
+		}
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			http.Error(w, "Invalid body", http.StatusBadRequest)
+			return
+		}
+		if err := r.kurikulumService.CreatePembelajaran(ctx, body.ClassID, body.SubjectID, body.TeacherID, opCtx.AcademicPeriodID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Pembelajaran ditambahkan"})
+	}
+}
+
+func (r *Router) handleKurikulumStats(w http.ResponseWriter, req *http.Request) {
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+	opCtx := middleware.GetOperationalContext(ctx)
+
+	stats, err := r.kurikulumService.GetDashboardStats(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(stats)
+}
+
+func (r *Router) handleScheduleByID(w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodDelete {
+		pathParts := strings.Split(req.URL.Path, "/")
+		id := pathParts[len(pathParts)-1]
+		if err := r.scheduleService.DeleteSchedule(req.Context(), id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Jadwal dihapus"})
+		return
+	}
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }

@@ -8,13 +8,7 @@
       <input type="file" ref="fileInput" style="display: none" accept=".xlsx, .xls" @change="handleImportExcel" />
     </div>
 
-    <q-table
-      :rows="schedules"
-      :columns="columns"
-      row-key="id"
-      flat bordered
-      :loading="isLoading"
-    >
+    <q-table :rows="schedules" :columns="columns" row-key="id" flat bordered :loading="isLoading">
       <template v-slot:body-cell-day="props">
         <q-td :props="props">
           <q-badge color="blue-6">{{ props.row.day }}</q-badge>
@@ -37,10 +31,13 @@
         </q-card-section>
 
         <q-card-section class="q-pt-none q-gutter-y-md">
-          <q-select v-model="form.class_id" :options="classOptions" label="Pilih Kelas" outlined dense emit-value map-options />
-          <q-select v-model="form.subject_id" :options="subjectOptions" label="Pilih Mata Pelajaran" outlined dense emit-value map-options />
-          <q-select v-model="form.teacher_id" :options="teacherOptions" label="Pilih Guru Pengampu" outlined dense emit-value map-options />
-          
+          <q-select v-model="form.class_id" :options="classOptions" label="Pilih Kelas" outlined dense emit-value
+            map-options />
+          <q-select v-model="form.subject_id" :options="subjectOptions" label="Pilih Mata Pelajaran" outlined dense
+            emit-value map-options />
+          <q-select v-model="form.teacher_id" :options="teacherOptions" label="Pilih Guru Pengampu" outlined dense
+            emit-value map-options />
+
           <div class="row q-col-gutter-sm">
             <div class="col-4">
               <q-select v-model="form.day" :options="dayOptions" label="Hari" outlined dense />
@@ -67,8 +64,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { Notify } from 'quasar'
 import { api } from '@/boot/axios'
+import { useContextStore } from '@/stores/contextStore'
 import * as XLSX from 'xlsx'
 
+const contextStore = useContextStore()
 const schedules = ref([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
@@ -90,7 +89,7 @@ const form = ref({
 
 const dayOptions = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
-const classOptions = computed(() => classes.value.map(c => ({ label: c.nm_kelas || c.Nama, value: c.rombongan_belajar_id || c.ID })))
+const classOptions = computed(() => classes.value.map(c => ({ label: c.nm_kelas || c.Name, value: c.rombongan_belajar_id || c.ID })))
 const subjectOptions = computed(() => subjects.value.map(s => ({ label: s.name, value: s.id })))
 const teacherOptions = computed(() => teachers.value.map(t => ({ label: t.name, value: t.id })))
 
@@ -105,7 +104,6 @@ const columns = [
 async function fetchData() {
   isLoading.value = true
   try {
-    // PERBAIKAN: Endpoint harusnya /schedules, pastikan backend sudah direstart
     const resSchedules = await api.get('/schedules')
     schedules.value = resSchedules.data || []
 
@@ -115,7 +113,7 @@ async function fetchData() {
     teachers.value = resOptions.data.teachers || []
   } catch (err) {
     console.error('Fetch error:', err)
-    Notify.create({ type: 'negative', message: 'Gagal memuat data. Pastikan backend sudah direstart.' })
+    Notify.create({ type: 'negative', message: 'Gagal memuat data jadwal atau opsi.' })
   } finally {
     isLoading.value = false
   }
@@ -159,12 +157,12 @@ function handleImportExcel(event) {
       const workbook = XLSX.read(data, { type: 'array' })
       const worksheet = workbook.Sheets[workbook.SheetNames[0]]
       const json = XLSX.utils.sheet_to_json(worksheet)
-      
+
       if (json.length === 0) throw new Error("File Excel kosong")
-      
+
       isSubmitting.value = true
       let successCount = 0
-      
+
       for (const row of json) {
         try {
           await api.post('/schedules', {
@@ -180,7 +178,7 @@ function handleImportExcel(event) {
           console.error("Gagal import baris:", row, err)
         }
       }
-      
+
       Notify.create({ type: 'positive', message: `${successCount} Jadwal berhasil diimpor` })
       await fetchData()
     } catch (err) {
@@ -193,5 +191,11 @@ function handleImportExcel(event) {
   reader.readAsArrayBuffer(file)
 }
 
-onMounted(fetchData)
+// PERBAIKAN: Pastikan Context sudah siap sebelum mengambil data
+onMounted(async () => {
+  if (!contextStore.hasContext) {
+    await contextStore.initialize()
+  }
+  await fetchData()
+})
 </script>
