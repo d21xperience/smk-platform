@@ -88,7 +88,6 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/students/", r.handleStudentByID)
 	mux.HandleFunc("/api/v1/mutations", r.stubHandler)
 	mux.HandleFunc("/api/v1/registrations", r.stubHandler)
-	mux.HandleFunc("/api/v1/attendance", r.stubHandler)
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
@@ -97,10 +96,32 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/subjects/{id}", r.handleSubjectByID)
 
 	// === ENDPOINT JADWAL PELAJARAN ===
-	// FIX: /schedules/options HARUS didaftarkan (lebih spesifik dari {id}).
 	mux.HandleFunc("/api/v1/schedules/options", r.wrapWithContext(r.scheduleHandler.GetOptions))
 	mux.HandleFunc("/api/v1/schedules", r.wrapWithContext(r.handleSchedules))
 	mux.HandleFunc("/api/v1/schedules/{id}", r.wrapWithContext(r.handleScheduleByID))
+
+	// === ENDPOINT ABSENSI HARIAN ===
+	// Collection: POST create session, GET list sessions
+	mux.HandleFunc("/api/v1/attendance/sessions", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
+		switch req.Method {
+		case http.MethodPost:
+			r.attendanceHandler.CreateSession(w, req)
+		case http.MethodGet:
+			r.attendanceHandler.ListSessions(w, req)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		}
+	}))
+	// Item: POST /sessions/{id}/submit
+	mux.HandleFunc("/api/v1/attendance/sessions/", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+			return
+		}
+		r.attendanceHandler.SubmitAttendance(w, req)
+	}))
+	// Recap: GET
+	mux.HandleFunc("/api/v1/attendance/recap", r.wrapWithContext(r.attendanceHandler.GetRecap))
 
 	mux.HandleFunc("/api/v1/kurikulum/statistics", r.handleKurikulumStats)
 	mux.HandleFunc("/api/v1/pembelajaran", r.handlePembelajaran)
@@ -125,15 +146,12 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/auth/login", r.authHandler.Login)
 	mux.HandleFunc("/api/v1/public/stats", r.publicHandler.GetStats)
 
-	// === ENDPOINT Manajemen Periode ===
 	mux.HandleFunc("/api/v1/academic/periods", r.handleCreateAcademicPeriod)
 	mux.HandleFunc("/api/v1/academic/periods/", r.handleAcademicPeriodsByID)
 
-	// === ENDPOINT Manajemen Pengguna ===
 	mux.HandleFunc("/api/v1/users", r.handleUsers)
 	mux.HandleFunc("/api/v1/users/", r.handleUsersByID)
 
-	// === ENDPOINT Profil Sekolah ===
 	mux.HandleFunc("/api/v1/school", r.handleSchool)
 
 	return mux
@@ -151,7 +169,6 @@ func (r *Router) handleSchedules(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Helper Wrapper
 func (r *Router) wrapWithContext(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx, err := r.enrichContext(req)
@@ -248,7 +265,7 @@ func (r *Router) handleAcademicPeriodsByID(w http.ResponseWriter, req *http.Requ
 	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 }
 
-// === FUNGSI ASLI ===
+// === ENRICH CONTEXT ===
 func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 	schoolID := req.Header.Get("x-school-id")
 	academicYear := req.Header.Get("x-academic-year")
@@ -337,6 +354,7 @@ func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 	offset, _ := strconv.Atoi(req.URL.Query().Get("offset"))
 	searchStr := req.URL.Query().Get("search")
 	statusStr := req.URL.Query().Get("status")
+	classID := req.URL.Query().Get("class_id") // untuk roster absensi
 
 	if limit <= 0 {
 		limit = 20
@@ -350,6 +368,7 @@ func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 		Offset:  offset,
 		Keyword: searchStr,
 		Status:  statusStr,
+		ClassID: classID,
 	}
 
 	students, err := r.studentService.ListStudentsForUI(req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID, filter)

@@ -29,14 +29,12 @@ func (h *ScheduleHandler) GetOptions(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// 1. Ambil List Kelas
 	classes, err := h.academicRepo.ListClasses(req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Gagal memuat kelas: " + err.Error()})
 		return
 	}
 
-	// 2. Ambil List Mapel (Gunakan COALESCE untuk jaga-jaga jika NULL)
 	rowsMapel, err := h.db.Query(req.Context(), `SELECT mata_pelajaran_id, COALESCE(nm_mapel, 'Tanpa Nama') FROM tabel_mapel ORDER BY nm_mapel ASC`)
 	var mapels []map[string]interface{}
 	if err == nil {
@@ -50,7 +48,6 @@ func (h *ScheduleHandler) GetOptions(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// 3. Ambil List Guru
 	rowsPtk, err := h.db.Query(req.Context(), `SELECT ptk_id::text, COALESCE(nama, 'Tanpa Nama') FROM tabel_ptk ORDER BY nama ASC`)
 	var teachers []map[string]interface{}
 	if err == nil {
@@ -92,13 +89,11 @@ func (h *ScheduleHandler) CreateSchedule(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	// 1. Cari atau Buat Pembelajaran ID
 	var pembelajaranID string
 	queryFind := `SELECT pembelajaran_id FROM tabel_pembelajaran WHERE rombongan_belajar_id = $1 AND mata_pelajaran_id = $2 AND ptk_terdaftar_id = $3 AND semester_id = $4`
 	err := h.db.QueryRow(req.Context(), queryFind, body.ClassID, body.SubjectID, body.TeacherID, opCtx.AcademicPeriodID).Scan(&pembelajaranID)
 
 	if err != nil {
-		// Jika belum ada, buat baru
 		pembelajaranID = uuid.NewString()
 		queryInsert := `INSERT INTO tabel_pembelajaran (pembelajaran_id, rombongan_belajar_id, mata_pelajaran_id, semester_id, ptk_terdaftar_id) VALUES ($1, $2, $3, $4, $5)`
 		_, errInsert := h.db.Exec(req.Context(), queryInsert, pembelajaranID, body.ClassID, body.SubjectID, opCtx.AcademicPeriodID, body.TeacherID)
@@ -108,7 +103,6 @@ func (h *ScheduleHandler) CreateSchedule(w http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	// 2. Simpan ke tabel_jadwal_pelajaran
 	scheduleID := uuid.NewString()
 	querySchedule := `INSERT INTO tabel_jadwal_pelajaran (id, pembelajaran_id, hari, jam_mulai, jam_selesai) VALUES ($1, $2, $3, $4, $5)`
 	_, err = h.db.Exec(req.Context(), querySchedule, scheduleID, pembelajaranID, body.Day, body.StartTime, body.EndTime)
@@ -121,6 +115,8 @@ func (h *ScheduleHandler) CreateSchedule(w http.ResponseWriter, req *http.Reques
 }
 
 // ListSchedules (GET /api/v1/schedules)
+// PATCH: tambah field pembelajaran_id, class_id, subject_id, teacher_id
+// agar frontend Absensi bisa submit sesi tanpa request tambahan.
 func (h *ScheduleHandler) ListSchedules(w http.ResponseWriter, req *http.Request) {
 	opCtx := middleware.GetOperationalContext(req.Context())
 	if opCtx == nil {
@@ -128,10 +124,13 @@ func (h *ScheduleHandler) ListSchedules(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	// PERBAIKAN: Gunakan COALESCE untuk semua kolom string agar tidak panic jika ada data NULL
 	query := `
 		SELECT
 			j.id::text,
+			tp.pembelajaran_id::text,
+			tp.rombongan_belajar_id::text,
+			tp.mata_pelajaran_id::text,
+			tp.ptk_terdaftar_id::text,
 			COALESCE(c.nm_kelas, 'Tanpa Kelas'),
 			COALESCE(m.nm_mapel, 'Tanpa Mapel'),
 			COALESCE(p.nama, 'Belum Ada Guru'),
@@ -148,27 +147,32 @@ func (h *ScheduleHandler) ListSchedules(w http.ResponseWriter, req *http.Request
 	`
 	rows, err := h.db.Query(req.Context(), query, opCtx.SchoolID, opCtx.AcademicPeriodID)
 	if err != nil {
-		// Jika tabel_jadwal_pelajaran belum ada, error akan muncul di sini
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Query Error: " + err.Error()})
 		return
 	}
 	defer rows.Close()
 
-	var result []map[string]interface{}
+	result := []map[string]interface{}{}
 	for rows.Next() {
-		var id, kelas, mapel, guru, hari, jamMulai, jamSelesai string
-		if err := rows.Scan(&id, &kelas, &mapel, &guru, &hari, &jamMulai, &jamSelesai); err != nil {
+		var id, pembID, classID, subjID, teachID, kelas, mapel, guru, hari, jamMulai, jamSelesai string
+		if err := rows.Scan(&id, &pembID, &classID, &subjID, &teachID, &kelas, &mapel, &guru, &hari, &jamMulai, &jamSelesai); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Scan Error: " + err.Error()})
 			return
 		}
 		result = append(result, map[string]interface{}{
-			"id": id, "class_name": kelas, "subject_name": mapel, "teacher_name": guru,
-			"day": hari, "start_time": jamMulai, "end_time": jamSelesai,
+			"id":               id,
+			"pembelajaran_id":  pembID,
+			"class_id":         classID,
+			"subject_id":       subjID,
+			"teacher_id":       teachID,
+			"class_name":       kelas,
+			"subject_name":     mapel,
+			"teacher_name":     guru,
+			"day":              hari,
+			"start_time":       jamMulai,
+			"end_time":         jamSelesai,
 		})
 	}
 
-	if result == nil {
-		result = []map[string]interface{}{}
-	}
 	writeJSON(w, http.StatusOK, result)
 }
