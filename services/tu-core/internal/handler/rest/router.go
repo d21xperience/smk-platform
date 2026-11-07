@@ -27,7 +27,8 @@ type Router struct {
 	statisticsService     *service.StatisticsService
 	teacherService        *service.TeacherService
 	teacherHistoryService *service.TeacherHistoryService
-	ptkLeaveService       *service.PtkLeaveService // <-- NEW
+	ptkLeaveService       *service.PtkLeaveService
+	ptkPerformanceService *service.PtkPerformanceService // <-- NEW
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
 	contextHandler        *ContextHandler
@@ -67,7 +68,8 @@ func NewRouter(
 	signatureService *service.SignatureService,
 	minioClient *storage.MinioClient,
 	teacherHistoryService *service.TeacherHistoryService,
-	ptkLeaveService *service.PtkLeaveService, // <-- NEW
+	ptkLeaveService *service.PtkLeaveService,
+	ptkPerformanceService *service.PtkPerformanceService, // <-- NEW
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -84,7 +86,8 @@ func NewRouter(
 		statisticsService:     statisticsService,
 		teacherService:        teacherService,
 		teacherHistoryService: teacherHistoryService,
-		ptkLeaveService:       ptkLeaveService, // <-- NEW
+		ptkLeaveService:       ptkLeaveService,
+		ptkPerformanceService: ptkPerformanceService, // <-- NEW
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
 		contextHandler:        NewContextHandler(prefService),

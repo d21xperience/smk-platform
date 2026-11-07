@@ -35,11 +35,21 @@ const itemPersuratan = [
 const itemKepegawaian = [
   { title: 'Dashboard', to: { name: 'dashboard-kepegawaian' } },
   { title: 'Direktori GTK', to: { name: 'direktori-gtk' } },
-  { title: 'Kinerja GTK', to: { name: '' } },
+  { title: 'Kinerja GTK', to: { name: 'kinerja-gtk' } },
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },
 ]
+
+// --- MENU KURIKULUM BARU ---
+const itemKurikulum = [
+  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' }, // Sementara mengarah ke preview
+  { title: 'Mata Pelajaran', to: '/kurikulum/mapel' },
+  { title: 'Penugasan Mengajar', to: '/kurikulum/pembelajaran' },
+  // { title: 'Pembelajaran', to: '/kurikulum/pembelajaran' },
+  // { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal' },
+]
+
 const itemHubin = [
   { title: 'Mitra', to: '/hubin/mitra' },
   { title: 'Penempatan', to: '/hubin/penempatan' },
@@ -61,9 +71,9 @@ const itemPsb = [
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
   { title: 'Kelas', to: '/kesiswaan/kelas' },
-  { title: 'Jadwal Pelajaran', to: '/kesiswaan/jadwal-pelajaran' }, // <-- Menu Baru
+  { title: 'Jadwal Pelajaran', to: '/kesiswaan/jadwal-pelajaran' },
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
-  { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' }, // <-- Menu Baru
+  { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
   { title: 'Mutasi Siswa', to: { name: 'student-mutation' } },
   { title: 'Surat Aktif', to: '/kesiswaan/surat-aktif-siswa' },
@@ -103,6 +113,7 @@ const itemSarpras = [
 
 const menus = computed(() => [
   { label: 'Ur. Kesiswaan', items: itemKesiswaan },
+  { label: 'Ur. Kurikulum', items: itemKurikulum }, // <-- Menu Baru Ditambahkan
   { label: 'Ur. Kepegawaian', items: itemKepegawaian },
   { label: 'Ur. Sarpras', items: itemSarpras },
   { label: 'Ur. Hubin', items: itemHubin },

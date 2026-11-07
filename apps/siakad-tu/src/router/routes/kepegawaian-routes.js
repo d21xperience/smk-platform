@@ -2,15 +2,15 @@ const kepegawaian = {
   path: '/kepegawaian',
   children: [
     { path: '', redirect: '/kepegawaian/direktori-gtk' },
-    // {
-    //   path: 'dashboard',
-    //   name: 'dashboard-kepegawaian',
-    //   component: () => import('@/pages/kepegawaian/DashboardKepegawaian.vue'),
-    // },
     {
       path: 'direktori-gtk',
       name: 'direktori-gtk',
       component: () => import('@/pages/kepegawaian/DataGuru.vue'),
+    },
+    {
+      path: 'kinerja-gtk',
+      name: 'kinerja-gtk',
+      component: () => import('@/pages/kepegawaian/KinerjaGTK.vue'),
     },
     {
       path: 'beban-mengajar',
@@ -30,7 +30,7 @@ const kepegawaian = {
   ],
   meta: {
     requiresAuth: true,
-    allowedRoles: ['admin', 'kepegawaian'], // <-- Definisikan role yang diizinkan di sini
+    allowedRoles: ['admin', 'kepegawaian'],
   },
 }
 

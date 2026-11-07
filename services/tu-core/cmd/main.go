@@ -91,7 +91,8 @@ func main() {
 	statsRepo := repository.NewStatisticsRepository(db)
 	teacherRepo := repository.NewTeacherRepository(db)
 	teacherHistoryRepo := repository.NewTeacherHistoryRepository(db)
-	ptkLeaveRepo := repository.NewPtkLeaveRepository(db) // <-- NEW
+	ptkLeaveRepo := repository.NewPtkLeaveRepository(db)
+	ptkPerformanceRepo := repository.NewPtkPerformanceRepository(db) // <-- NEW
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	publicRepo := repository.NewPublicRepository(db)
@@ -128,7 +129,8 @@ func main() {
 	statsService := service.NewStatisticsService(statsRepo)
 	teacherService := service.NewTeacherService(teacherRepo)
 	teacherHistoryService := service.NewTeacherHistoryService(teacherHistoryRepo)
-	ptkLeaveService := service.NewPtkLeaveService(ptkLeaveRepo) // <-- NEW
+	ptkLeaveService := service.NewPtkLeaveService(ptkLeaveRepo)
+	ptkPerformanceService := service.NewPtkPerformanceService(ptkPerformanceRepo) // <-- NEW
 	kurikulumService := service.NewKurikulumService(subjectRepo, pembelajaranRepo, kurikulumStatRepo)
 	scheduleService := service.NewScheduleService(scheduleRepo, db)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
@@ -191,6 +193,7 @@ func main() {
 		minioClient,
 		teacherHistoryService, // <-- NEW
 		ptkLeaveService, // <-- NEW
+		ptkPerformanceService, // <-- NEW
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 
