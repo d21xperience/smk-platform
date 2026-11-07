@@ -46,6 +46,11 @@ func (s *TeacherService) ListTeachers(ctx context.Context, schoolID, periodID, k
 	return s.repo.List(ctx, filter)
 }
 
+// Sesuaikan return type menjadi TeacherWorkloadSummary
+func (s *TeacherService) ListWorkloads(ctx context.Context, schoolID, periodID string) ([]repository.TeacherWorkloadSummary, error) {
+	return s.repo.ListWorkloads(ctx, schoolID, periodID)
+}
+
 func (s *TeacherService) CreateTeacher(ctx context.Context, req TeacherRequest) error {
 	t := &repository.Teacher{
 		ID: uuid.New().String(), Name: req.Name, NIP: req.NIP, NUPTK: req.NUPTK, Gender: req.Gender,

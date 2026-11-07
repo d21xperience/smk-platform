@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -12,30 +13,49 @@ import (
 )
 
 type Teacher struct {
-	ID                string    `json:"id"`
-	Name              string    `json:"name"`
-	NIP               string    `json:"nip"`
-	NUPTK             string    `json:"nuptk"`
-	Gender            string    `json:"gender"`
-	BirthPlace        string    `json:"birthPlace"`
-	BirthDate         time.Time `json:"birthDate"`
-	Address           string    `json:"address"`
-	JenisPtkID        int       `json:"jenisPtkId"`
-	StatusKeaktifan   int       `json:"statusKeaktifan"`
-	SoftDelete        int       `json:"softDelete"`
-	GelarDepan        string    `json:"gelarDepan"`
-	GelarBelakang     string    `json:"gelarBelakang"`
-	IsActiveInPeriod  bool      `json:"isActiveInPeriod"`
-	
+	ID               string    `json:"id"`
+	Name             string    `json:"name"`
+	NIP              string    `json:"nip"`
+	NUPTK            string    `json:"nuptk"`
+	Gender           string    `json:"gender"`
+	BirthPlace       string    `json:"birthPlace"`
+	BirthDate        time.Time `json:"birthDate"`
+	Address          string    `json:"address"`
+	JenisPtkID       int       `json:"jenisPtkId"`
+	StatusKeaktifan  int       `json:"statusKeaktifan"`
+	SoftDelete       int       `json:"softDelete"`
+	GelarDepan       string    `json:"gelarDepan"`
+	GelarBelakang    string    `json:"gelarBelakang"`
+	IsActiveInPeriod bool      `json:"isActiveInPeriod"`
+
 	// Field Baru Fase 1
-	NIK               string    `json:"nik"`
-	AgamaID           int       `json:"agamaId"`
-	StatusKepegawaian int       `json:"statusKepegawaian"`
-	FotoURL           string    `json:"fotoUrl"`
-	NoHP              string    `json:"noHp"`
-	Email             string    `json:"email"`
-	StatusPerkawinan  int       `json:"statusPerkawinan"`
-	NamaIbuKandung    string    `json:"namaIbuKandung"`
+	NIK               string `json:"nik"`
+	AgamaID           int    `json:"agamaId"`
+	StatusKepegawaian int    `json:"statusKepegawaian"`
+	FotoURL           string `json:"fotoUrl"`
+	NoHP              string `json:"noHp"`
+	Email             string `json:"email"`
+	StatusPerkawinan  int    `json:"statusPerkawinan"`
+	NamaIbuKandung    string `json:"namaIbuKandung"`
+}
+
+type ScheduleDetail struct {
+	ID          string `json:"id"`
+	Day         string `json:"day"`
+	StartTime   string `json:"startTime"`
+	EndTime     string `json:"endTime"`
+	ClassName   string `json:"className"`
+	SubjectName string `json:"subjectName"`
+}
+
+// FIX: Renamed to TeacherWorkloadSummary to avoid conflict with kurikulum_stat_repository.go
+type TeacherWorkloadSummary struct {
+	TeacherID     string           `json:"teacherId"`
+	TeacherName   string           `json:"teacherName"`
+	TotalClasses  int              `json:"totalClasses"`
+	TotalSubjects int              `json:"totalSubjects"`
+	TotalSessions int              `json:"totalSessions"`
+	Schedules     []ScheduleDetail `json:"schedules"`
 }
 
 type TeacherFilter struct {
@@ -53,6 +73,7 @@ type TeacherRepository interface {
 	Update(ctx context.Context, t *Teacher) error
 	Delete(ctx context.Context, teacherID string) error
 	UpdatePhoto(ctx context.Context, teacherID, photoURL string) error
+	ListWorkloads(ctx context.Context, schoolID, periodID string) ([]TeacherWorkloadSummary, error)
 }
 
 type pgxTeacherRepository struct {
@@ -101,7 +122,7 @@ func (r *pgxTeacherRepository) GetByID(ctx context.Context, teacherID string) (*
 	query := `SELECT ` + teacherSelectColumns + ` FROM tabel_ptk tp 
 		LEFT JOIN tabel_ptk_pelengkap tpp ON tp.ptk_id = tpp.ptk_id 
 		WHERE tp.ptk_id = $3 AND tp.soft_delete = 0 LIMIT 1`
-	
+
 	var t Teacher
 	if err := scanTeacher(r.db.QueryRow(ctx, query, "", "", teacherID), &t); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -161,6 +182,60 @@ func (r *pgxTeacherRepository) List(ctx context.Context, filter TeacherFilter) (
 		teachers = append(teachers, t)
 	}
 	return teachers, total, rows.Err()
+}
+
+func (r *pgxTeacherRepository) ListWorkloads(ctx context.Context, schoolID, periodID string) ([]TeacherWorkloadSummary, error) {
+	query := `
+		SELECT 
+			tp.ptk_id::text, 
+			COALESCE(tpp.gelar_depan || ' ', '') || tp.nama || COALESCE(', ' || tpp.gelar_belakang, '') AS nama_lengkap,
+			COUNT(DISTINCT tk.rombongan_belajar_id) AS total_classes,
+			COUNT(DISTINCT tm.mata_pelajaran_id) AS total_subjects,
+			COUNT(jp.id) AS total_sessions,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', jp.id,
+						'day', jp.hari,
+						'startTime', jp.jam_mulai::text,
+						'endTime', jp.jam_selesai::text,
+						'className', tk.nm_kelas,
+						'subjectName', tm.nm_mapel
+					) ORDER BY jp.hari, jp.jam_mulai
+				) FILTER (WHERE jp.id IS NOT NULL), 
+				'[]'::json
+			) AS schedules
+		FROM tabel_ptk tp
+		LEFT JOIN tabel_ptk_pelengkap tpp ON tp.ptk_id = tpp.ptk_id
+		JOIN tabel_pembelajaran tpm ON tp.ptk_id = tpm.ptk_terdaftar_id
+		JOIN tabel_kelas tk ON tpm.rombongan_belajar_id = tk.rombongan_belajar_id
+		JOIN tabel_mapel tm ON tpm.mata_pelajaran_id = tm.mata_pelajaran_id
+		LEFT JOIN tabel_jadwal_pelajaran jp ON tpm.pembelajaran_id = jp.pembelajaran_id
+		WHERE tk.sekolah_id::text = $1 AND tpm.semester_id = $2 AND tp.soft_delete = 0
+		GROUP BY tp.ptk_id, tpp.gelar_depan, tp.nama, tpp.gelar_belakang
+		ORDER BY nama_lengkap;
+	`
+	rows, err := r.db.Query(ctx, query, schoolID, periodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var workloads []TeacherWorkloadSummary
+	for rows.Next() {
+		var w TeacherWorkloadSummary
+		var schedulesJSON []byte
+		if err := rows.Scan(&w.TeacherID, &w.TeacherName, &w.TotalClasses, &w.TotalSubjects, &w.TotalSessions, &schedulesJSON); err != nil {
+			return nil, err
+		}
+		if len(schedulesJSON) > 0 {
+			if err := json.Unmarshal(schedulesJSON, &w.Schedules); err != nil {
+				return nil, err
+			}
+		}
+		workloads = append(workloads, w)
+	}
+	return workloads, nil
 }
 
 func (r *pgxTeacherRepository) Create(ctx context.Context, t *Teacher) error {

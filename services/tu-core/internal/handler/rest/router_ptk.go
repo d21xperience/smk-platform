@@ -13,20 +13,41 @@ import (
 
 func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
+	mux.HandleFunc("/api/v1/teachers/workload", r.wrapWithContext(r.handleTeacherWorkload))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
 	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
 	mux.HandleFunc("/api/v1/teachers/history/", r.wrapWithContext(r.handleTeacherHistory))
 	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 }
 
-// Handler Upload Dokumen Riwayat (Ijazah, Sertifikat, dll)
+func (r *Router) handleTeacherWorkload(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	opCtx := middleware.GetOperationalContext(req.Context())
+	if opCtx == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
+		return
+	}
+
+	workloads, err := r.teacherService.ListWorkloads(req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, workloads)
+}
+
 func (r *Router) handleHistoryDocumentUpload(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
-	err := req.ParseMultipartForm(10 << 20) // Max 10MB
+	err := req.ParseMultipartForm(10 << 20)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Gagal parse form"})
 		return
@@ -39,7 +60,6 @@ func (r *Router) handleHistoryDocumentUpload(w http.ResponseWriter, req *http.Re
 	}
 	defer file.Close()
 
-	// Simpan di bucket "documents"
 	objectName := fmt.Sprintf("ptk_history_%s", handler.Filename)
 	url, err := r.minioClient.UploadFile(req.Context(), "documents", objectName, file, handler)
 	if err != nil {
@@ -50,7 +70,6 @@ func (r *Router) handleHistoryDocumentUpload(w http.ResponseWriter, req *http.Re
 	writeJSON(w, http.StatusOK, map[string]string{"url": url})
 }
 
-// ... (handler handleTeachers, handleTeacherByID, handleTeacherPhoto, handleTeacherHistory tetap sama seperti sebelumnya)
 func (r *Router) handleTeachers(w http.ResponseWriter, req *http.Request) {
 	opCtx := middleware.GetOperationalContext(req.Context())
 	if opCtx == nil {
