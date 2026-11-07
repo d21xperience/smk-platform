@@ -17,8 +17,85 @@ func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
 	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
 	mux.HandleFunc("/api/v1/teachers/history/", r.wrapWithContext(r.handleTeacherHistory))
+	
+	// Rute Cuti
+	mux.HandleFunc("/api/v1/teachers/leaves", r.wrapWithContext(r.handleTeacherLeaves))
+	mux.HandleFunc("/api/v1/teachers/leaves/", r.wrapWithContext(r.handleTeacherLeaveByID))
+
 	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 }
+
+func (r *Router) handleTeacherLeaves(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		leaves, err := r.ptkLeaveService.ListLeaves(req.Context())
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, leaves)
+
+	case http.MethodPost:
+		var body repository.LeaveRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			return
+		}
+		if err := r.ptkLeaveService.CreateLeave(req.Context(), body); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"message": "Pengajuan cuti berhasil dibuat"})
+
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleTeacherLeaveByID(w http.ResponseWriter, req *http.Request) {
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/leaves/")
+	parts := splitPath(path)
+	if len(parts) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+	id := parts[0]
+
+	switch req.Method {
+	case http.MethodPut:
+		if len(parts) > 1 && parts[1] == "status" {
+			var body struct {
+				Status string `json:"status"`
+				Note   string `json:"note"`
+			}
+			if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+				return
+			}
+			if err := r.ptkLeaveService.UpdateStatus(req.Context(), id, body.Status, body.Note); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]string{"message": "Status cuti diperbarui"})
+		} else {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid path for PUT"})
+		}
+
+	case http.MethodDelete:
+		if err := r.ptkLeaveService.DeleteLeave(req.Context(), id); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Pengajuan cuti dihapus"})
+
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+// -------------------------------------------------------------------------
+// HANDLER SEBELUMNYA (Workload, Photo, History, Teachers, dll) - TETAP SAMA
+// -------------------------------------------------------------------------
 
 func (r *Router) handleTeacherWorkload(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
