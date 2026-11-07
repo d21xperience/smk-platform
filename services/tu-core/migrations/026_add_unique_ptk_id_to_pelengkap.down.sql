@@ -1,0 +1,1 @@
+ALTER TABLE tabel_ptk_pelengkap DROP CONSTRAINT IF EXISTS tabel_ptk_pelengkap_ptk_id_key;

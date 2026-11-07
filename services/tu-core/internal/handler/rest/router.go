@@ -22,6 +22,8 @@ type Router struct {
 	assessmentService     *service.AssessmentService
 	financeService        *service.FinanceService
 	correspondenceService *service.CorrespondenceService
+	dispositionService    *service.DispositionService
+	signatureService      *service.SignatureService
 	classService          *service.ClassService
 	enrollmentService     *service.EnrollmentService
 	statisticsService     *service.StatisticsService
@@ -35,6 +37,9 @@ type Router struct {
 	schoolHandler         *SchoolHandler
 	attendanceHandler     *AttendanceHandler
 	scheduleHandler       *ScheduleHandler
+	correspondenceHandler *CorrespondenceHandler
+	dispositionHandler    *DispositionHandler
+	signatureHandler      *SignatureHandler
 }
 
 func NewRouter(
@@ -57,6 +62,8 @@ func NewRouter(
 	userService *service.UserService,
 	schoolService *service.SchoolService,
 	scheduleHandler *ScheduleHandler,
+	dispositionService *service.DispositionService,
+	signatureService *service.SignatureService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -66,6 +73,8 @@ func NewRouter(
 		assessmentService:     assessmentService,
 		financeService:        financeService,
 		correspondenceService: correspondenceService,
+		dispositionService:    dispositionService,
+		signatureService:      signatureService,
 		classService:          classService,
 		enrollmentService:     enrollmentService,
 		statisticsService:     statisticsService,
@@ -79,6 +88,9 @@ func NewRouter(
 		schoolHandler:         NewSchoolHandler(schoolService),
 		attendanceHandler:     NewAttendanceHandler(attendanceService),
 		scheduleHandler:       scheduleHandler,
+		correspondenceHandler: NewCorrespondenceHandler(correspondenceService),
+		dispositionHandler:    NewDispositionHandler(dispositionService),
+		signatureHandler:      NewSignatureHandler(signatureService),
 	}
 
 	mux := http.NewServeMux()
@@ -90,10 +102,11 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/registrations", r.stubHandler)
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
-	mux.HandleFunc("/api/v1/correspondence", r.stubHandler)
 	mux.HandleFunc("/api/v1/teachers/{id}", r.handleTeacherByID)
+
+	// === ENDPOINT MATA PELAJARAN ===
 	mux.HandleFunc("/api/v1/subjects", r.handleSubjects)
-	mux.HandleFunc("/api/v1/subjects/{id}", r.handleSubjectByID)
+	mux.HandleFunc("/api/v1/subjects/", r.handleSubjectByID)
 
 	// === ENDPOINT JADWAL PELAJARAN ===
 	mux.HandleFunc("/api/v1/schedules/options", r.wrapWithContext(r.scheduleHandler.GetOptions))
@@ -101,7 +114,6 @@ func NewRouter(
 	mux.HandleFunc("/api/v1/schedules/{id}", r.wrapWithContext(r.handleScheduleByID))
 
 	// === ENDPOINT ABSENSI HARIAN ===
-	// Collection: POST create session, GET list sessions
 	mux.HandleFunc("/api/v1/attendance/sessions", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case http.MethodPost:
@@ -112,7 +124,6 @@ func NewRouter(
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 		}
 	}))
-	// Item: POST /sessions/{id}/submit
 	mux.HandleFunc("/api/v1/attendance/sessions/", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
@@ -120,8 +131,75 @@ func NewRouter(
 		}
 		r.attendanceHandler.SubmitAttendance(w, req)
 	}))
-	// Recap: GET
 	mux.HandleFunc("/api/v1/attendance/recap", r.wrapWithContext(r.attendanceHandler.GetRecap))
+
+	// === ENDPOINT PERSURATAN ===
+	mux.HandleFunc("/api/v1/correspondences", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
+		switch req.Method {
+		case http.MethodPost:
+			r.correspondenceHandler.Create(w, req)
+		case http.MethodGet:
+			r.correspondenceHandler.List(w, req)
+		default:
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		}
+	}))
+	mux.HandleFunc("/api/v1/correspondences/", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
+		if strings.HasSuffix(req.URL.Path, "/archive") {
+			if req.Method == http.MethodPut {
+				r.correspondenceHandler.Archive(w, req)
+				return
+			}
+		} else if strings.HasSuffix(req.URL.Path, "/pdf") {
+			if req.Method == http.MethodGet {
+				r.correspondenceHandler.DownloadPDF(w, req)
+				return
+			}
+		} else if strings.HasSuffix(req.URL.Path, "/dispositions") {
+			id := strings.Split(strings.TrimPrefix(req.URL.Path, "/api/v1/correspondences/"), "/")[0]
+			switch req.Method {
+			case http.MethodPost:
+				r.dispositionHandler.Create(w, req, id)
+			case http.MethodGet:
+				r.dispositionHandler.ListByCorrespondence(w, req, id)
+			default:
+				writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+			}
+			return
+		} else if strings.HasSuffix(req.URL.Path, "/sign") {
+			if req.Method == http.MethodPost {
+				id := strings.Split(strings.TrimPrefix(req.URL.Path, "/api/v1/correspondences/"), "/")[0]
+				r.signatureHandler.Sign(w, req, id)
+				return
+			}
+		} else {
+			switch req.Method {
+			case http.MethodGet:
+				r.correspondenceHandler.GetByID(w, req)
+			case http.MethodPut:
+				r.correspondenceHandler.Update(w, req)
+			case http.MethodDelete:
+				r.correspondenceHandler.Delete(w, req)
+			default:
+				writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+			}
+		}
+	}))
+
+	// === ENDPOINT DISPOSISI & TTD PUBLIK ===
+	mux.HandleFunc("/api/v1/dispositions/inbox", r.wrapWithContext(r.dispositionHandler.GetMyInbox))
+	mux.HandleFunc("/api/v1/dispositions/", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodPut && strings.HasSuffix(req.URL.Path, "/status") {
+			path := strings.TrimPrefix(req.URL.Path, "/api/v1/dispositions/")
+			id := strings.Split(path, "/")[0]
+			r.dispositionHandler.UpdateStatus(w, req, id)
+			return
+		}
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}))
+
+	// Verifikasi TTD bersifat PUBLIK (tanpa wrapWithContext karena tidak butuh token)
+	mux.HandleFunc("/api/v1/signatures/verify/", r.signatureHandler.Verify)
 
 	mux.HandleFunc("/api/v1/kurikulum/statistics", r.handleKurikulumStats)
 	mux.HandleFunc("/api/v1/pembelajaran", r.handlePembelajaran)
@@ -157,7 +235,6 @@ func NewRouter(
 	return mux
 }
 
-// === WRAPPER JADWAL ===
 func (r *Router) handleSchedules(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
@@ -180,7 +257,6 @@ func (r *Router) wrapWithContext(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// === WRAPPER SEKOLAH ===
 func (r *Router) handleSchool(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
@@ -199,7 +275,6 @@ func (r *Router) handleSchool(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// === WRAPPER USER MANAGEMENT ===
 func (r *Router) handleUsers(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
@@ -234,7 +309,6 @@ func (r *Router) handleUsersByID(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// === WRAPPER PERIODE ===
 func (r *Router) handleCreateAcademicPeriod(w http.ResponseWriter, req *http.Request) {
 	ctx, err := r.enrichContext(req)
 	if err != nil {
@@ -265,7 +339,6 @@ func (r *Router) handleAcademicPeriodsByID(w http.ResponseWriter, req *http.Requ
 	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 }
 
-// === ENRICH CONTEXT ===
 func (r *Router) enrichContext(req *http.Request) (context.Context, error) {
 	schoolID := req.Header.Get("x-school-id")
 	academicYear := req.Header.Get("x-academic-year")
@@ -354,7 +427,7 @@ func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 	offset, _ := strconv.Atoi(req.URL.Query().Get("offset"))
 	searchStr := req.URL.Query().Get("search")
 	statusStr := req.URL.Query().Get("status")
-	classID := req.URL.Query().Get("class_id") // untuk roster absensi
+	classID := req.URL.Query().Get("class_id")
 
 	if limit <= 0 {
 		limit = 20
@@ -621,7 +694,51 @@ func (r *Router) handleSubjects(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Router) handleSubjectByID(w http.ResponseWriter, req *http.Request) {
-	// Implementasi Update & Delete Mapel (mirip handler sebelumnya)
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		http.Error(w, `{"error": "Missing operational context headers"}`, http.StatusBadRequest)
+		return
+	}
+
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/subjects/")
+	pathParts := splitPath(path)
+	if len(pathParts) == 0 {
+		http.Error(w, `{"error": "Invalid path"}`, http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(pathParts[0])
+	if err != nil {
+		http.Error(w, `{"error": "Invalid subject ID format"}`, http.StatusBadRequest)
+		return
+	}
+
+	switch req.Method {
+	case http.MethodPut:
+		var body repository.Subject
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			http.Error(w, `{"error": "Invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		body.ID = id
+		if err := r.kurikulumService.UpdateSubject(ctx, &body); err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(body)
+
+	case http.MethodDelete:
+		if err := r.kurikulumService.DeleteSubject(ctx, id); err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Mata pelajaran berhasil dihapus"})
+
+	default:
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+	}
 }
 
 func (r *Router) handlePembelajaran(w http.ResponseWriter, req *http.Request) {

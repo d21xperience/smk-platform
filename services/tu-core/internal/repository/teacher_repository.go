@@ -12,18 +12,20 @@ import (
 )
 
 type Teacher struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	NIP             string    `json:"nip"`
-	NUPTK           string    `json:"nuptk"`
-	Gender          string    `json:"gender"`
-	BirthPlace      string    `json:"birthPlace"`
-	BirthDate       time.Time `json:"birthDate"`
-	Address         string    `json:"address"`
-	StatusKeaktifan int       `json:"statusKeaktifan"`
-	SoftDelete      int       `json:"softDelete"`
-	GelarDepan      string    `json:"gelarDepan"`
-	GelarBelakang   string    `json:"gelarBelakang"`
+	ID               string    `json:"id"`
+	Name             string    `json:"name"`
+	NIP              string    `json:"nip"`
+	NUPTK            string    `json:"nuptk"`
+	Gender           string    `json:"gender"`
+	BirthPlace       string    `json:"birthPlace"`
+	BirthDate        time.Time `json:"birthDate"`
+	Address          string    `json:"address"`
+	JenisPtkID       int       `json:"jenisPtkId"`
+	StatusKeaktifan  int       `json:"statusKeaktifan"`
+	SoftDelete       int       `json:"softDelete"`
+	GelarDepan       string    `json:"gelarDepan"`
+	GelarBelakang    string    `json:"gelarBelakang"`
+	IsActiveInPeriod bool      `json:"isActiveInPeriod"`
 }
 
 type TeacherFilter struct {
@@ -51,26 +53,26 @@ func NewTeacherRepository(db *pgxpool.Pool) TeacherRepository {
 }
 
 const teacherSelectColumns = `
-	tp.ptk_id, 
+	tp.ptk_id::text, 
 	COALESCE(tpp.gelar_depan || ' ', '') || tp.nama || COALESCE(', ' || tpp.gelar_belakang, '') AS nama_lengkap,
 	COALESCE(tp.nip, ''), COALESCE(tp.nuptk, ''), tp.jenis_kelamin, 
-	tp.tempat_lahir, tp.tanggal_lahir, tp.alamat_jalan, tp.status_keaktifan_id, tp.soft_delete,
-	COALESCE(tpp.gelar_depan, ''), COALESCE(tpp.gelar_belakang, '')
-`
-
-const teacherFromClause = `
-	FROM tabel_ptk tp
-	LEFT JOIN tabel_ptk_pelengkap tpp ON tp.ptk_id = tpp.ptk_id
-	JOIN tabel_pembelajaran tpm ON tp.ptk_id = tpm.ptk_terdaftar_id
-	JOIN tabel_kelas tk ON tpm.rombongan_belajar_id = tk.rombongan_belajar_id
+	tp.tempat_lahir, tp.tanggal_lahir, tp.alamat_jalan, tp.jenis_ptk_id, tp.status_keaktifan_id, tp.soft_delete,
+	COALESCE(tpp.gelar_depan, ''), COALESCE(tpp.gelar_belakang, ''),
+	EXISTS (
+		SELECT 1 FROM tabel_pembelajaran tpm
+		JOIN tabel_kelas tk ON tpm.rombongan_belajar_id = tk.rombongan_belajar_id
+		WHERE tpm.ptk_terdaftar_id = tp.ptk_id 
+		  AND tpm.semester_id = $1
+		  AND tk.sekolah_id::text = $2
+	) AS is_active
 `
 
 func scanTeacher(row pgx.Row, t *Teacher) error {
 	var birthDate *time.Time
 	if err := row.Scan(
 		&t.ID, &t.Name, &t.NIP, &t.NUPTK, &t.Gender,
-		&t.BirthPlace, &birthDate, &t.Address, &t.StatusKeaktifan, &t.SoftDelete,
-		&t.GelarDepan, &t.GelarBelakang,
+		&t.BirthPlace, &birthDate, &t.Address, &t.JenisPtkID, &t.StatusKeaktifan, &t.SoftDelete,
+		&t.GelarDepan, &t.GelarBelakang, &t.IsActiveInPeriod,
 	); err != nil {
 		return err
 	}
@@ -81,9 +83,13 @@ func scanTeacher(row pgx.Row, t *Teacher) error {
 }
 
 func (r *pgxTeacherRepository) GetByID(ctx context.Context, teacherID string) (*Teacher, error) {
-	query := `SELECT ` + teacherSelectColumns + teacherFromClause + ` WHERE tp.ptk_id = $1 AND tp.soft_delete = 0 LIMIT 1`
+	query := `SELECT ` + teacherSelectColumns + ` FROM tabel_ptk tp 
+		LEFT JOIN tabel_ptk_pelengkap tpp ON tp.ptk_id = tpp.ptk_id 
+		WHERE tp.ptk_id = $3 AND tp.soft_delete = 0 LIMIT 1`
+	
 	var t Teacher
-	if err := scanTeacher(r.db.QueryRow(ctx, query, teacherID), &t); err != nil {
+	// Passing dummy vars for $1, $2 because GetByID doesn't strictly need period/school check
+	if err := scanTeacher(r.db.QueryRow(ctx, query, "", "", teacherID), &t); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -93,12 +99,12 @@ func (r *pgxTeacherRepository) GetByID(ctx context.Context, teacherID string) (*
 }
 
 func (r *pgxTeacherRepository) List(ctx context.Context, filter TeacherFilter) ([]Teacher, int, error) {
-	if filter.SchoolID == "" || filter.PeriodID == "" {
+	if filter.PeriodID == "" {
 		return nil, 0, ErrMissingOperationalContext
 	}
 
-	whereClause := "WHERE tk.sekolah_id::text = $1 AND tpm.semester_id = $2 AND tp.soft_delete = 0"
-	args := []interface{}{filter.SchoolID, filter.PeriodID}
+	whereClause := "WHERE tp.soft_delete = 0"
+	args := []interface{}{filter.PeriodID, filter.SchoolID} // $1 for period, $2 for school
 	argIndex := 3
 
 	if filter.Keyword != "" {
@@ -107,21 +113,27 @@ func (r *pgxTeacherRepository) List(ctx context.Context, filter TeacherFilter) (
 		argIndex++
 	}
 
-	countQuery := fmt.Sprintf("SELECT COUNT(DISTINCT tp.ptk_id) %s %s", teacherFromClause, whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM tabel_ptk tp %s", whereClause)
 	var total int
-	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, countQuery, args[2:]...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 { filter.Limit = 50 }
-	if filter.Offset < 0 { filter.Offset = 0 }
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
 
 	dataQuery := fmt.Sprintf(`
-	SELECT DISTINCT `+teacherSelectColumns+`
-	%s %s 
+	SELECT `+teacherSelectColumns+`
+	FROM tabel_ptk tp
+	LEFT JOIN tabel_ptk_pelengkap tpp ON tp.ptk_id = tpp.ptk_id
+	%s 
 	ORDER BY nama_lengkap ASC 
 	LIMIT $%d OFFSET $%d
-	`, teacherFromClause, whereClause, argIndex, argIndex+1)
+	`, whereClause, argIndex, argIndex+1)
 	args = append(args, filter.Limit, filter.Offset)
 
 	rows, err := r.db.Query(ctx, dataQuery, args...)
@@ -152,12 +164,12 @@ func (r *pgxTeacherRepository) Create(ctx context.Context, t *Teacher) error {
 		t.ID = uuid.New().String()
 	}
 
-	// 1. Insert ke tabel_ptk
+	// Tidak ada injeksi sekolah_id (Single-Tenant Dapodik)
 	queryPtk := `
 		INSERT INTO tabel_ptk (
 			ptk_id, nama, nip, jenis_ptk_id, jenis_kelamin, tempat_lahir, tanggal_lahir, 
 			nuptk, alamat_jalan, status_keaktifan_id, soft_delete
-		) VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, 1, 0)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0)
 	`
 	var birthDate any = nil
 	if !t.BirthDate.IsZero() {
@@ -165,14 +177,13 @@ func (r *pgxTeacherRepository) Create(ctx context.Context, t *Teacher) error {
 	}
 
 	_, err = tx.Exec(ctx, queryPtk,
-		t.ID, t.Name, nullableString(t.NIP), t.Gender, nullableString(t.BirthPlace),
-		birthDate, nullableString(t.NUPTK), t.Address,
+		t.ID, t.Name, nullableString(t.NIP), t.JenisPtkID, t.Gender, nullableString(t.BirthPlace),
+		birthDate, nullableString(t.NUPTK), t.Address, t.StatusKeaktifan,
 	)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	// 2. Insert ke tabel_ptk_pelengkap
 	queryPelengkap := `
 		INSERT INTO tabel_ptk_pelengkap (
 			ptk_pelengkap_id, ptk_id, gelar_depan, gelar_belakang, nip_niy
@@ -195,12 +206,12 @@ func (r *pgxTeacherRepository) Update(ctx context.Context, t *Teacher) error {
 	}
 	defer tx.Rollback(ctx)
 
-	// 1. Update tabel_ptk
 	queryPtk := `
 		UPDATE tabel_ptk SET
 			nama = $1, nip = $2, jenis_kelamin = $3, tempat_lahir = $4, 
-			tanggal_lahir = $5, nuptk = $6, alamat_jalan = $7
-		WHERE ptk_id = $8 AND soft_delete = 0
+			tanggal_lahir = $5, nuptk = $6, alamat_jalan = $7,
+			jenis_ptk_id = $8, status_keaktifan_id = $9
+		WHERE ptk_id = $10 AND soft_delete = 0
 	`
 	var birthDate any = nil
 	if !t.BirthDate.IsZero() {
@@ -209,7 +220,7 @@ func (r *pgxTeacherRepository) Update(ctx context.Context, t *Teacher) error {
 
 	result, err := tx.Exec(ctx, queryPtk,
 		t.Name, nullableString(t.NIP), t.Gender, nullableString(t.BirthPlace),
-		birthDate, nullableString(t.NUPTK), t.Address, t.ID,
+		birthDate, nullableString(t.NUPTK), t.Address, t.JenisPtkID, t.StatusKeaktifan, t.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
@@ -218,7 +229,7 @@ func (r *pgxTeacherRepository) Update(ctx context.Context, t *Teacher) error {
 		return ErrNotFound
 	}
 
-	// 2. Upsert tabel_ptk_pelengkap
+	// Sekarang menggunakan ON CONFLICT yang valid berkat migrasi 026
 	queryPelengkap := `
 		INSERT INTO tabel_ptk_pelengkap (ptk_pelengkap_id, ptk_id, gelar_depan, gelar_belakang, nip_niy)
 		VALUES ($1, $2, $3, $4, $5)
@@ -231,12 +242,7 @@ func (r *pgxTeacherRepository) Update(ctx context.Context, t *Teacher) error {
 		uuid.New().String(), t.ID, nullableString(t.GelarDepan), nullableString(t.GelarBelakang), nullableString(t.NIP),
 	)
 	if err != nil {
-		// Jika constraint ptk_id belum ada di tabel_pelengkap, kita handle fallback (update manual)
-		queryUpdate := `UPDATE tabel_ptk_pelengkap SET gelar_depan = $1, gelar_belakang = $2, nip_niy = $3 WHERE ptk_id = $4`
-		_, errUpdate := tx.Exec(ctx, queryUpdate, nullableString(t.GelarDepan), nullableString(t.GelarBelakang), nullableString(t.NIP), t.ID)
-		if errUpdate != nil {
-			return fmt.Errorf("%w: %v", ErrDatabaseError, err)
-		}
+		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
 	return tx.Commit(ctx)

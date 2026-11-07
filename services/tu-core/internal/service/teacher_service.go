@@ -19,15 +19,17 @@ func NewTeacherService(repo repository.TeacherRepository) *TeacherService {
 }
 
 type TeacherRequest struct {
-	Name          string `json:"name"`
-	NIP           string `json:"nip"`
-	NUPTK         string `json:"nuptk"`
-	Gender        string `json:"gender"`
-	BirthPlace    string `json:"birthPlace"`
-	BirthDate     string `json:"birthDate"` // Format: YYYY-MM-DD
-	Address       string `json:"address"`
-	GelarDepan    string `json:"gelarDepan"`
-	GelarBelakang string `json:"gelarBelakang"`
+	Name            string `json:"name"`
+	NIP             string `json:"nip"`
+	NUPTK           string `json:"nuptk"`
+	Gender          string `json:"gender"`
+	BirthPlace      string `json:"birthPlace"`
+	BirthDate       string `json:"birthDate"` // Format: YYYY-MM-DD
+	Address         string `json:"address"`
+	GelarDepan      string `json:"gelarDepan"`
+	GelarBelakang   string `json:"gelarBelakang"`
+	JenisPtkID      int    `json:"jenisPtkId"`
+	StatusKeaktifan int    `json:"statusKeaktifan"`
 }
 
 func (s *TeacherService) ListTeachers(ctx context.Context, schoolID, periodID, keyword string) ([]repository.Teacher, int, error) {
@@ -42,17 +44,18 @@ func (s *TeacherService) ListTeachers(ctx context.Context, schoolID, periodID, k
 
 func (s *TeacherService) CreateTeacher(ctx context.Context, req TeacherRequest) error {
 	t := &repository.Teacher{
-		ID:            uuid.New().String(),
-		Name:          req.Name,
-		NIP:           req.NIP,
-		NUPTK:         req.NUPTK,
-		Gender:        req.Gender,
-		BirthPlace:    req.BirthPlace,
-		Address:       req.Address,
-		GelarDepan:    req.GelarDepan,
-		GelarBelakang: req.GelarBelakang,
+		ID:              uuid.New().String(),
+		Name:            req.Name,
+		NIP:             req.NIP,
+		NUPTK:           req.NUPTK,
+		Gender:          req.Gender,
+		BirthPlace:      req.BirthPlace,
+		Address:         req.Address,
+		GelarDepan:      req.GelarDepan,
+		GelarBelakang:   req.GelarBelakang,
+		JenisPtkID:      req.JenisPtkID,
+		StatusKeaktifan: req.StatusKeaktifan,
 	}
-	// Parsing BirthDate (string ke time.Time)
 	if req.BirthDate != "" {
 		parsedTime, err := parseDate(req.BirthDate)
 		if err == nil {
@@ -64,15 +67,17 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req TeacherRequest) 
 
 func (s *TeacherService) UpdateTeacher(ctx context.Context, id string, req TeacherRequest) error {
 	t := &repository.Teacher{
-		ID:            id,
-		Name:          req.Name,
-		NIP:           req.NIP,
-		NUPTK:         req.NUPTK,
-		Gender:        req.Gender,
-		BirthPlace:    req.BirthPlace,
-		Address:       req.Address,
-		GelarDepan:    req.GelarDepan,
-		GelarBelakang: req.GelarBelakang,
+		ID:              id,
+		Name:            req.Name,
+		NIP:             req.NIP,
+		NUPTK:           req.NUPTK,
+		Gender:          req.Gender,
+		BirthPlace:      req.BirthPlace,
+		Address:         req.Address,
+		GelarDepan:      req.GelarDepan,
+		GelarBelakang:   req.GelarBelakang,
+		JenisPtkID:      req.JenisPtkID,
+		StatusKeaktifan: req.StatusKeaktifan,
 	}
 	if req.BirthDate != "" {
 		parsedTime, err := parseDate(req.BirthDate)
@@ -90,7 +95,6 @@ func (s *TeacherService) DeleteTeacher(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
-// Helper sederhana untuk parse tanggal
 func parseDate(dateStr string) (time.Time, error) {
 	return time.Parse("2006-01-02", dateStr)
 }
