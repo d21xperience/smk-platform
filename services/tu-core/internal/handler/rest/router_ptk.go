@@ -1,0 +1,129 @@
+package rest
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"sekolah-platform/services/tu-core/internal/middleware"
+	"sekolah-platform/services/tu-core/internal/service"
+)
+
+func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
+	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
+	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
+}
+
+func (r *Router) handleTeachers(w http.ResponseWriter, req *http.Request) {
+	opCtx := middleware.GetOperationalContext(req.Context())
+	if opCtx == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
+		return
+	}
+
+	switch req.Method {
+	case http.MethodGet:
+		keyword := req.URL.Query().Get("keyword")
+		teachers, total, err := r.teacherService.ListTeachers(req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID, keyword)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"data": teachers, "total": total})
+
+	case http.MethodPost:
+		var body service.TeacherRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			return
+		}
+		if err := r.teacherService.CreateTeacher(req.Context(), body); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"message": "Guru berhasil ditambahkan"})
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleTeacherByID(w http.ResponseWriter, req *http.Request) {
+	opCtx := middleware.GetOperationalContext(req.Context())
+	if opCtx == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
+		return
+	}
+
+	pathParts := strings.Split(req.URL.Path, "/")
+	id := pathParts[len(pathParts)-1]
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+
+	switch req.Method {
+	case http.MethodPut:
+		var body service.TeacherRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			return
+		}
+		if err := r.teacherService.UpdateTeacher(req.Context(), id, body); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Guru berhasil diupdate"})
+
+	case http.MethodDelete:
+		if err := r.teacherService.DeleteTeacher(req.Context(), id); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Guru berhasil dihapus"})
+
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleTeacherPhoto(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/photo/")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+
+	err := req.ParseMultipartForm(10 << 20) // 10 MB max
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Gagal parse form"})
+		return
+	}
+
+	file, handler, err := req.FormFile("photo")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "File 'photo' tidak ditemukan"})
+		return
+	}
+	defer file.Close()
+
+	objectName := fmt.Sprintf("ptk_%s_%s", id, handler.Filename)
+	url, err := r.minioClient.UploadFile(req.Context(), "teachers", objectName, file, handler)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	if err := r.teacherService.UpdatePhoto(req.Context(), id, url); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Foto berhasil diupload", "url": url})
+}

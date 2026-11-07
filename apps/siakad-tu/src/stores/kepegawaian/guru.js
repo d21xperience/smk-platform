@@ -23,8 +23,9 @@ export const useGuruStore = defineStore('guru', {
     async createTeacher(payload) {
       this.isLoading = true
       try {
-        await api.post('/teachers', payload)
-        await this.fetchTeachers()
+        const response = await api.post('/teachers', payload)
+        // Asumsi backend dimodifikasi untuk mengembalikan ID guru baru
+        return response.data
       } finally {
         this.isLoading = false
       }
@@ -34,7 +35,6 @@ export const useGuruStore = defineStore('guru', {
       this.isLoading = true
       try {
         await api.put(`/teachers/${id}`, payload)
-        await this.fetchTeachers()
       } finally {
         this.isLoading = false
       }
@@ -44,7 +44,6 @@ export const useGuruStore = defineStore('guru', {
       this.isLoading = true
       try {
         await api.delete(`/teachers/${id}`)
-        await this.fetchTeachers()
       } finally {
         this.isLoading = false
       }
