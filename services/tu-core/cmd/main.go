@@ -92,7 +92,9 @@ func main() {
 	teacherRepo := repository.NewTeacherRepository(db)
 	teacherHistoryRepo := repository.NewTeacherHistoryRepository(db)
 	ptkLeaveRepo := repository.NewPtkLeaveRepository(db)
-	ptkPerformanceRepo := repository.NewPtkPerformanceRepository(db) // <-- NEW
+	ptkPerformanceRepo := repository.NewPtkPerformanceRepository(db)
+	ptkArchiveRepo := repository.NewPtkArchiveRepository(db)
+	ptkDashboardRepo := repository.NewPtkDashboardRepository(db) // <-- NEW
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	publicRepo := repository.NewPublicRepository(db)
@@ -130,7 +132,9 @@ func main() {
 	teacherService := service.NewTeacherService(teacherRepo)
 	teacherHistoryService := service.NewTeacherHistoryService(teacherHistoryRepo)
 	ptkLeaveService := service.NewPtkLeaveService(ptkLeaveRepo)
-	ptkPerformanceService := service.NewPtkPerformanceService(ptkPerformanceRepo) // <-- NEW
+	ptkPerformanceService := service.NewPtkPerformanceService(ptkPerformanceRepo)
+	ptkArchiveService := service.NewPtkArchiveService(ptkArchiveRepo)
+	ptkDashboardService := service.NewPtkDashboardService(ptkDashboardRepo) // <-- NEW
 	kurikulumService := service.NewKurikulumService(subjectRepo, pembelajaranRepo, kurikulumStatRepo)
 	scheduleService := service.NewScheduleService(scheduleRepo, db)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
@@ -194,6 +198,8 @@ func main() {
 		teacherHistoryService, // <-- NEW
 		ptkLeaveService, // <-- NEW
 		ptkPerformanceService, // <-- NEW
+		ptkArchiveService, // <-- NEW
+		ptkDashboardService, // <-- NEW
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

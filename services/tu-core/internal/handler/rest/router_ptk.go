@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"sekolah-platform/services/tu-core/internal/middleware"
 	"sekolah-platform/services/tu-core/internal/repository"
@@ -13,24 +14,55 @@ import (
 
 func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
+	mux.HandleFunc("/api/v1/teachers/dashboard", r.wrapWithContext(r.handleTeacherDashboard))
 	mux.HandleFunc("/api/v1/teachers/workload", r.wrapWithContext(r.handleTeacherWorkload))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
 	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
 	mux.HandleFunc("/api/v1/teachers/history/", r.wrapWithContext(r.handleTeacherHistory))
 	
-	// Rute Cuti & Kinerja
+	// Rute Cuti, Kinerja, & Arsip
 	mux.HandleFunc("/api/v1/teachers/leaves", r.wrapWithContext(r.handleTeacherLeaves))
 	mux.HandleFunc("/api/v1/teachers/leaves/", r.wrapWithContext(r.handleTeacherLeaveByID))
 	mux.HandleFunc("/api/v1/teachers/performances", r.wrapWithContext(r.handleTeacherPerformances))
 	mux.HandleFunc("/api/v1/teachers/performances/", r.wrapWithContext(r.handleTeacherPerformanceByID))
+	
+	mux.HandleFunc("/api/v1/teachers/archives/upload", r.wrapWithContext(r.handleArchiveUpload))
+	mux.HandleFunc("/api/v1/teachers/archives", r.wrapWithContext(r.handleTeacherArchives))
+	mux.HandleFunc("/api/v1/teachers/archives/", r.wrapWithContext(r.handleTeacherArchiveByID))
 
 	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 }
 
-func (r *Router) handleTeacherPerformances(w http.ResponseWriter, req *http.Request) {
+func (r *Router) handleArchiveUpload(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	err := req.ParseMultipartForm(10 << 20)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Gagal parse form"})
+		return
+	}
+	file, handler, err := req.FormFile("document")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "File 'document' tidak ditemukan"})
+		return
+	}
+	defer file.Close()
+
+	objectName := fmt.Sprintf("ptk_archive_%d_%s", time.Now().Unix(), handler.Filename)
+	url, err := r.minioClient.UploadFile(req.Context(), "documents", objectName, file, handler)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"url": url})
+}
+
+func (r *Router) handleTeacherArchives(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		list, err := r.ptkPerformanceService.ListPerformances(req.Context())
+		list, err := r.ptkArchiveService.ListArchives(req.Context())
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
@@ -38,104 +70,49 @@ func (r *Router) handleTeacherPerformances(w http.ResponseWriter, req *http.Requ
 		writeJSON(w, http.StatusOK, list)
 
 	case http.MethodPost:
-		var body repository.Performance
+		var body repository.Archive
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
 			return
 		}
-		if err := r.ptkPerformanceService.CreatePerformance(req.Context(), body); err != nil {
+		if err := r.ptkArchiveService.CreateArchive(req.Context(), body); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusCreated, map[string]string{"message": "Penilaian kinerja berhasil ditambahkan"})
+		writeJSON(w, http.StatusCreated, map[string]string{"message": "Dokumen berhasil disimpan"})
 
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 	}
 }
 
-func (r *Router) handleTeacherPerformanceByID(w http.ResponseWriter, req *http.Request) {
-	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/performances/")
+func (r *Router) handleTeacherArchiveByID(w http.ResponseWriter, req *http.Request) {
+	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/archives/")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
 		return
 	}
 
-	if req.Method == http.MethodDelete {
-		if err := r.ptkPerformanceService.DeletePerformance(req.Context(), id); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]string{"message": "Penilaian kinerja dihapus"})
-		return
-	}
-
-	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-}
-
-// --- HANDLER CUTI SEBELUMNYA ---
-func (r *Router) handleTeacherLeaves(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case http.MethodGet:
-		leaves, err := r.ptkLeaveService.ListLeaves(req.Context())
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		writeJSON(w, http.StatusOK, leaves)
-
-	case http.MethodPost:
-		var body repository.LeaveRequest
+	case http.MethodPut:
+		var body repository.Archive
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
 			return
 		}
-		if err := r.ptkLeaveService.CreateLeave(req.Context(), body); err != nil {
+		body.ID = id
+		if err := r.ptkArchiveService.UpdateArchive(req.Context(), body); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusCreated, map[string]string{"message": "Pengajuan cuti berhasil dibuat"})
-
-	default:
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-	}
-}
-
-func (r *Router) handleTeacherLeaveByID(w http.ResponseWriter, req *http.Request) {
-	path := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/leaves/")
-	parts := splitPath(path)
-	if len(parts) == 0 {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
-		return
-	}
-	id := parts[0]
-
-	switch req.Method {
-	case http.MethodPut:
-		if len(parts) > 1 && parts[1] == "status" {
-			var body struct {
-				Status string `json:"status"`
-				Note   string `json:"note"`
-			}
-			if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
-				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
-				return
-			}
-			if err := r.ptkLeaveService.UpdateStatus(req.Context(), id, body.Status, body.Note); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-				return
-			}
-			writeJSON(w, http.StatusOK, map[string]string{"message": "Status cuti diperbarui"})
-		} else {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid path for PUT"})
-		}
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Dokumen berhasil diupdate"})
 
 	case http.MethodDelete:
-		if err := r.ptkLeaveService.DeleteLeave(req.Context(), id); err != nil {
+		if err := r.ptkArchiveService.DeleteArchive(req.Context(), id); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]string{"message": "Pengajuan cuti dihapus"})
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Dokumen dihapus"})
 
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
@@ -179,7 +156,7 @@ func (r *Router) handleHistoryDocumentUpload(w http.ResponseWriter, req *http.Re
 		return
 	}
 	defer file.Close()
-	objectName := fmt.Sprintf("ptk_history_%s", handler.Filename)
+	objectName := fmt.Sprintf("ptk_history_%d_%s", time.Now().Unix(), handler.Filename)
 	url, err := r.minioClient.UploadFile(req.Context(), "documents", objectName, file, handler)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -332,4 +309,122 @@ func (r *Router) handleTeacherHistory(w http.ResponseWriter, req *http.Request) 
 	default:
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Unknown history type"})
 	}
+}
+
+func (r *Router) handleTeacherLeaves(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		leaves, err := r.ptkLeaveService.ListLeaves(req.Context())
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, leaves)
+	case http.MethodPost:
+		var body repository.LeaveRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			return
+		}
+		if err := r.ptkLeaveService.CreateLeave(req.Context(), body); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"message": "Pengajuan cuti berhasil dibuat"})
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleTeacherLeaveByID(w http.ResponseWriter, req *http.Request) {
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/leaves/")
+	parts := splitPath(path)
+	if len(parts) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+	id := parts[0]
+	switch req.Method {
+	case http.MethodPut:
+		if len(parts) > 1 && parts[1] == "status" {
+			var body struct {
+				Status string `json:"status"`
+				Note   string `json:"note"`
+			}
+			if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+				return
+			}
+			if err := r.ptkLeaveService.UpdateStatus(req.Context(), id, body.Status, body.Note); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]string{"message": "Status cuti diperbarui"})
+		} else {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid path for PUT"})
+		}
+	case http.MethodDelete:
+		if err := r.ptkLeaveService.DeleteLeave(req.Context(), id); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Pengajuan cuti dihapus"})
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleTeacherPerformances(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		list, err := r.ptkPerformanceService.ListPerformances(req.Context())
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, list)
+	case http.MethodPost:
+		var body repository.Performance
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			return
+		}
+		if err := r.ptkPerformanceService.CreatePerformance(req.Context(), body); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"message": "Penilaian kinerja berhasil ditambahkan"})
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleTeacherPerformanceByID(w http.ResponseWriter, req *http.Request) {
+	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/performances/")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+	if req.Method == http.MethodDelete {
+		if err := r.ptkPerformanceService.DeletePerformance(req.Context(), id); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Penilaian kinerja dihapus"})
+		return
+	}
+	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+}
+
+func (r *Router) handleTeacherDashboard(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	stats, err := r.ptkDashboardService.GetDashboardStats(req.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, stats)
 }
