@@ -15,6 +15,7 @@ type EducationHistory struct {
 	NamaSekolah string `json:"namaSekolah"`
 	TahunLulus  int    `json:"tahunLulus"`
 	Gelar       string `json:"gelar"`
+	DokumenURL  string `json:"dokumenUrl"`
 }
 
 type CertificationHistory struct {
@@ -23,6 +24,7 @@ type CertificationHistory struct {
 	JenisSertifikasi string `json:"jenisSertifikasi"`
 	NomorSertifikat  string `json:"nomorSertifikat"`
 	TahunSertifikasi int    `json:"tahunSertifikasi"`
+	DokumenURL       string `json:"dokumenUrl"`
 }
 
 type TeacherHistoryRepository interface {
@@ -46,7 +48,7 @@ func NewTeacherHistoryRepository(db *pgxpool.Pool) TeacherHistoryRepository {
 // === EDUCATION ===
 
 func (r *pgxTeacherHistoryRepository) ListEducations(ctx context.Context, ptkID string) ([]EducationHistory, error) {
-	query := `SELECT rwy_pend_formal_id, ptk_id, jenjang_pendidikan, COALESCE(jurusan,''), COALESCE(nama_sekolah,''), COALESCE(tahun_lulus,0), COALESCE(gelar,'')
+	query := `SELECT rwy_pend_formal_id, ptk_id, jenjang_pendidikan, COALESCE(jurusan,''), COALESCE(nama_sekolah,''), COALESCE(tahun_lulus,0), COALESCE(gelar,''), COALESCE(dokumen_url,'') 
 	          FROM tabel_rwy_pend_formal WHERE ptk_id = $1 ORDER BY tahun_lulus DESC`
 	rows, err := r.db.Query(ctx, query, ptkID)
 	if err != nil {
@@ -57,7 +59,7 @@ func (r *pgxTeacherHistoryRepository) ListEducations(ctx context.Context, ptkID 
 	var list []EducationHistory
 	for rows.Next() {
 		var e EducationHistory
-		if err := rows.Scan(&e.ID, &e.PtkID, &e.Jenjang, &e.Jurusan, &e.NamaSekolah, &e.TahunLulus, &e.Gelar); err != nil {
+		if err := rows.Scan(&e.ID, &e.PtkID, &e.Jenjang, &e.Jurusan, &e.NamaSekolah, &e.TahunLulus, &e.Gelar, &e.DokumenURL); err != nil {
 			return nil, err
 		}
 		list = append(list, e)
@@ -69,9 +71,9 @@ func (r *pgxTeacherHistoryRepository) CreateEducation(ctx context.Context, edu *
 	if edu.ID == "" {
 		edu.ID = uuid.New().String()
 	}
-	query := `INSERT INTO tabel_rwy_pend_formal (rwy_pend_formal_id, ptk_id, jenjang_pendidikan, jurusan, nama_sekolah, tahun_lulus, gelar)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := r.db.Exec(ctx, query, edu.ID, edu.PtkID, edu.Jenjang, edu.Jurusan, edu.NamaSekolah, edu.TahunLulus, edu.Gelar)
+	query := `INSERT INTO tabel_rwy_pend_formal (rwy_pend_formal_id, ptk_id, jenjang_pendidikan, jurusan, nama_sekolah, tahun_lulus, gelar, dokumen_url)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := r.db.Exec(ctx, query, edu.ID, edu.PtkID, edu.Jenjang, edu.Jurusan, edu.NamaSekolah, edu.TahunLulus, edu.Gelar, edu.DokumenURL)
 	return err
 }
 
@@ -83,7 +85,7 @@ func (r *pgxTeacherHistoryRepository) DeleteEducation(ctx context.Context, eduID
 // === CERTIFICATION ===
 
 func (r *pgxTeacherHistoryRepository) ListCertifications(ctx context.Context, ptkID string) ([]CertificationHistory, error) {
-	query := `SELECT rwy_sertifikasi_id, ptk_id, jenis_sertifikasi, COALESCE(nomor_sertifikat,''), COALESCE(tahun_sertifikasi,0)
+	query := `SELECT rwy_sertifikasi_id, ptk_id, jenis_sertifikasi, COALESCE(nomor_sertifikat,''), COALESCE(tahun_sertifikasi,0), COALESCE(dokumen_url,'') 
 	          FROM tabel_rwy_sertifikasi WHERE ptk_id = $1 ORDER BY tahun_sertifikasi DESC`
 	rows, err := r.db.Query(ctx, query, ptkID)
 	if err != nil {
@@ -94,7 +96,7 @@ func (r *pgxTeacherHistoryRepository) ListCertifications(ctx context.Context, pt
 	var list []CertificationHistory
 	for rows.Next() {
 		var c CertificationHistory
-		if err := rows.Scan(&c.ID, &c.PtkID, &c.JenisSertifikasi, &c.NomorSertifikat, &c.TahunSertifikasi); err != nil {
+		if err := rows.Scan(&c.ID, &c.PtkID, &c.JenisSertifikasi, &c.NomorSertifikat, &c.TahunSertifikasi, &c.DokumenURL); err != nil {
 			return nil, err
 		}
 		list = append(list, c)
@@ -106,9 +108,9 @@ func (r *pgxTeacherHistoryRepository) CreateCertification(ctx context.Context, c
 	if cert.ID == "" {
 		cert.ID = uuid.New().String()
 	}
-	query := `INSERT INTO tabel_rwy_sertifikasi (rwy_sertifikasi_id, ptk_id, jenis_sertifikasi, nomor_sertifikat, tahun_sertifikasi)
-	          VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.Exec(ctx, query, cert.ID, cert.PtkID, cert.JenisSertifikasi, cert.NomorSertifikat, cert.TahunSertifikasi)
+	query := `INSERT INTO tabel_rwy_sertifikasi (rwy_sertifikasi_id, ptk_id, jenis_sertifikasi, nomor_sertifikat, tahun_sertifikasi, dokumen_url)
+	          VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.Exec(ctx, query, cert.ID, cert.PtkID, cert.JenisSertifikasi, cert.NomorSertifikat, cert.TahunSertifikasi, cert.DokumenURL)
 	return err
 }
 

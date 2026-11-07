@@ -14,13 +14,43 @@ import (
 func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
-	
-	// Rute Riwayat & Sertifikasi (Harus didaftarkan SEBELUM /api/v1/teachers/)
+	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
 	mux.HandleFunc("/api/v1/teachers/history/", r.wrapWithContext(r.handleTeacherHistory))
-	
 	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 }
 
+// Handler Upload Dokumen Riwayat (Ijazah, Sertifikat, dll)
+func (r *Router) handleHistoryDocumentUpload(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	err := req.ParseMultipartForm(10 << 20) // Max 10MB
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Gagal parse form"})
+		return
+	}
+
+	file, handler, err := req.FormFile("document")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "File 'document' tidak ditemukan"})
+		return
+	}
+	defer file.Close()
+
+	// Simpan di bucket "documents"
+	objectName := fmt.Sprintf("ptk_history_%s", handler.Filename)
+	url, err := r.minioClient.UploadFile(req.Context(), "documents", objectName, file, handler)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"url": url})
+}
+
+// ... (handler handleTeachers, handleTeacherByID, handleTeacherPhoto, handleTeacherHistory tetap sama seperti sebelumnya)
 func (r *Router) handleTeachers(w http.ResponseWriter, req *http.Request) {
 	opCtx := middleware.GetOperationalContext(req.Context())
 	if opCtx == nil {
@@ -133,9 +163,7 @@ func (r *Router) handleTeacherPhoto(w http.ResponseWriter, req *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Foto berhasil diupload", "url": url})
 }
 
-// Handler khusus untuk Riwayat Pendidikan & Sertifikasi
 func (r *Router) handleTeacherHistory(w http.ResponseWriter, req *http.Request) {
-	// Format URL: /api/v1/teachers/history/{ptkID}/educations atau /certifications
 	path := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/history/")
 	parts := splitPath(path)
 	if len(parts) < 2 {
@@ -144,9 +172,8 @@ func (r *Router) handleTeacherHistory(w http.ResponseWriter, req *http.Request) 
 	}
 
 	ptkID := parts[0]
-	historyType := parts[1] // "educations" atau "certifications"
+	historyType := parts[1]
 	
-	// Jika ada ID di belakang (misal untuk DELETE: /history/xxx/educations/yyy)
 	var itemID string
 	if len(parts) > 2 {
 		itemID = parts[2]

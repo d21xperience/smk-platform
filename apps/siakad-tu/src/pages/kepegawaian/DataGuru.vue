@@ -39,7 +39,7 @@
       </q-table>
     </q-card>
 
-    <!-- Dialog Form Tambah/Edit dengan TABS -->
+    <!-- Dialog Form Tambah/Edit -->
     <q-dialog v-model="dialogOpen" persistent maximized transition-show="slide-up" transition-hide="slide-down">
       <q-card class="column no-wrap">
         <q-card-section class="row items-center q-pb-none bg-primary text-white">
@@ -52,15 +52,15 @@
           <q-form @submit="onSubmit" class="q-gutter-none">
             <q-tabs v-model="tab" class="text-primary" align="left">
               <q-tab name="profil" icon="person" label="Profil & Kepegawaian" />
-              <q-tab name="pendidikan" icon="school" label="Riwayat Pendidikan" :disable="!isEdit" />
-              <q-tab name="sertifikasi" icon="workspace_premium" label="Sertifikasi" :disable="!isEdit" />
+              <q-tab name="pendidikan" icon="school" label="Riwayat Pendidikan" />
+              <q-tab name="sertifikasi" icon="workspace_premium" label="Sertifikasi" />
             </q-tabs>
             <q-separator />
+
             <q-tab-panels v-model="tab" animated class="bg-white">
 
               <!-- TAB 1: PROFIL -->
               <q-tab-panel name="profil">
-                <!-- Foto Profil -->
                 <div class="row justify-center q-mb-md">
                   <q-avatar size="100px" class="shadow-2">
                     <img :src="previewFoto || form.fotoUrl || 'https://cdn.quasar.dev/img/boy-avatar.png'">
@@ -131,12 +131,25 @@
 
               <!-- TAB 2: RIWAYAT PENDIDIKAN -->
               <q-tab-panel name="pendidikan">
+                <q-banner v-if="!isEdit" class="bg-orange-2 text-orange-9 q-mb-md" rounded>
+                  <template v-slot:avatar><q-icon name="info" color="orange-9" /></template>
+                  Silakan isi dan <strong>Simpan Profil</strong> terlebih dahulu.
+                </q-banner>
+
                 <div class="row items-center q-mb-md">
                   <div class="text-subtitle1 text-weight-bold text-primary">Riwayat Pendidikan Formal</div>
                   <q-space />
-                  <q-btn color="secondary" icon="add" label="Tambah" size="sm" @click="addEducation" />
+                  <q-btn color="secondary" icon="add" label="Tambah" size="sm" @click="openEduDialog"
+                    :disable="!isEdit" />
                 </div>
                 <q-table :rows="educations" :columns="eduColumns" row-key="id" flat bordered dense>
+                  <template v-slot:body-cell-dokumen="props">
+                    <q-td :props="props" class="text-center">
+                      <q-btn v-if="props.row.dokumenUrl" flat round dense icon="visibility" color="primary" type="a"
+                        :href="props.row.dokumenUrl" target="_blank" />
+                      <span v-else class="text-grey-5">-</span>
+                    </q-td>
+                  </template>
                   <template v-slot:body-cell-aksi="props">
                     <q-td :props="props" class="text-center">
                       <q-btn flat round dense icon="delete" color="negative" @click="deleteEducation(props.row.id)" />
@@ -147,12 +160,25 @@
 
               <!-- TAB 3: SERTIFIKASI -->
               <q-tab-panel name="sertifikasi">
+                <q-banner v-if="!isEdit" class="bg-orange-2 text-orange-9 q-mb-md" rounded>
+                  <template v-slot:avatar><q-icon name="info" color="orange-9" /></template>
+                  Silakan isi dan <strong>Simpan Profil</strong> terlebih dahulu.
+                </q-banner>
+
                 <div class="row items-center q-mb-md">
                   <div class="text-subtitle1 text-weight-bold text-primary">Sertifikasi</div>
                   <q-space />
-                  <q-btn color="secondary" icon="add" label="Tambah" size="sm" @click="addCertification" />
+                  <q-btn color="secondary" icon="add" label="Tambah" size="sm" @click="openCertDialog"
+                    :disable="!isEdit" />
                 </div>
                 <q-table :rows="certifications" :columns="certColumns" row-key="id" flat bordered dense>
+                  <template v-slot:body-cell-dokumen="props">
+                    <q-td :props="props" class="text-center">
+                      <q-btn v-if="props.row.dokumenUrl" flat round dense icon="visibility" color="primary" type="a"
+                        :href="props.row.dokumenUrl" target="_blank" />
+                      <span v-else class="text-grey-5">-</span>
+                    </q-td>
+                  </template>
                   <template v-slot:body-cell-aksi="props">
                     <q-td :props="props" class="text-center">
                       <q-btn flat round dense icon="delete" color="negative"
@@ -173,6 +199,50 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- Dialog Form Pendidikan -->
+    <q-dialog v-model="eduDialogOpen" persistent>
+      <q-card style="min-width: 500px">
+        <q-card-section class="bg-secondary text-white">
+          <div class="text-h6">Tambah Riwayat Pendidikan</div>
+        </q-card-section>
+        <q-card-section class="q-gutter-y-md">
+          <q-input v-model="eduForm.jenjang" label="Jenjang (SMA/D3/S1/S2)" filled dense required />
+          <q-input v-model="eduForm.jurusan" label="Jurusan" filled dense />
+          <q-input v-model="eduForm.namaSekolah" label="Nama Sekolah/Universitas" filled dense />
+          <div class="row q-col-gutter-sm">
+            <div class="col-6"><q-input v-model.number="eduForm.tahunLulus" label="Tahun Lulus" type="number" filled
+                dense /></div>
+            <div class="col-6"><q-input v-model="eduForm.gelar" label="Gelar Didapat" filled dense /></div>
+          </div>
+          <q-file v-model="eduFile" label="Upload Ijazah (PDF/Gambar)" filled dense accept=".pdf,image/*" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Batal" v-close-popup />
+          <q-btn color="secondary" label="Simpan" @click="submitEducation" :loading="isSubmittingEdu" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Dialog Form Sertifikasi -->
+    <q-dialog v-model="certDialogOpen" persistent>
+      <q-card style="min-width: 500px">
+        <q-card-section class="bg-secondary text-white">
+          <div class="text-h6">Tambah Sertifikasi</div>
+        </q-card-section>
+        <q-card-section class="q-gutter-y-md">
+          <q-input v-model="certForm.jenisSertifikasi" label="Jenis Sertifikasi" filled dense required />
+          <q-input v-model="certForm.nomorSertifikat" label="Nomor Sertifikat" filled dense />
+          <q-input v-model.number="certForm.tahunSertifikasi" label="Tahun Sertifikasi" type="number" filled dense />
+          <q-file v-model="certFile" label="Upload Sertifikat (PDF/Gambar)" filled dense accept=".pdf,image/*" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Batal" v-close-popup />
+          <q-btn color="secondary" label="Simpan" @click="submitCertification" :loading="isSubmittingCert" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -194,6 +264,18 @@ const previewFoto = ref(null)
 // State Riwayat
 const educations = ref([])
 const certifications = ref([])
+
+// State Dialog Pendidikan
+const eduDialogOpen = ref(false)
+const isSubmittingEdu = ref(false)
+const eduForm = ref({ jenjang: 'S1', jurusan: '', namaSekolah: '', tahunLulus: new Date().getFullYear(), gelar: '', dokumenUrl: '' })
+const eduFile = ref(null)
+
+// State Dialog Sertifikasi
+const certDialogOpen = ref(false)
+const isSubmittingCert = ref(false)
+const certForm = ref({ jenisSertifikasi: '', nomorSertifikat: '', tahunSertifikasi: new Date().getFullYear(), dokumenUrl: '' })
+const certFile = ref(null)
 
 const agamaOptions = [
   { label: 'Islam', value: 1 }, { label: 'Kristen', value: 2 }, { label: 'Katolik', value: 3 },
@@ -222,6 +304,7 @@ const eduColumns = [
   { name: 'namaSekolah', label: 'Nama Sekolah', field: 'namaSekolah', align: 'left' },
   { name: 'tahunLulus', label: 'Tahun Lulus', field: 'tahunLulus', align: 'center' },
   { name: 'gelar', label: 'Gelar', field: 'gelar', align: 'left' },
+  { name: 'dokumen', label: 'Ijazah', align: 'center' },
   { name: 'aksi', label: 'Aksi', align: 'center' }
 ]
 
@@ -229,6 +312,7 @@ const certColumns = [
   { name: 'jenisSertifikasi', label: 'Jenis Sertifikasi', field: 'jenisSertifikasi', align: 'left' },
   { name: 'nomorSertifikat', label: 'Nomor Sertifikat', field: 'nomorSertifikat', align: 'left' },
   { name: 'tahunSertifikasi', label: 'Tahun', field: 'tahunSertifikasi', align: 'center' },
+  { name: 'dokumen', label: 'Dokumen', align: 'center' },
   { name: 'aksi', label: 'Aksi', align: 'center' }
 ]
 
@@ -244,15 +328,11 @@ const openDialog = async (row = null) => {
   if (row) {
     isEdit.value = true
     const tgl = row.birthDate ? new Date(row.birthDate).toISOString().split('T')[0] : ''
-
-    // Fix duplikasi gelar
     let namaBersih = row.name
     if (row.gelarBelakang) namaBersih = namaBersih.replace(`, ${row.gelarBelakang}`, '')
     if (row.gelarDepan) namaBersih = namaBersih.replace(`${row.gelarDepan} `, '')
 
     form.value = { ...row, name: namaBersih, birthDate: tgl }
-
-    // Fetch Riwayat
     await fetchEducations(row.id)
     await fetchCertifications(row.id)
   } else {
@@ -278,20 +358,31 @@ const fetchCertifications = async (ptkID) => {
   } catch (err) { console.error(err) }
 }
 
-const addEducation = () => {
-  $q.dialog({
-    title: 'Tambah Riwayat Pendidikan',
-    message: 'Jenjang (SMA/D3/S1/S2):',
-    prompt: { model: 'S1', type: 'text' },
-    cancel: true, persistent: true
-  }).onOk(async (jenjang) => {
-    if (!jenjang) return
-    try {
-      await api.post(`/teachers/history/${form.value.id}/educations`, { jenjang, tahunLulus: new Date().getFullYear() })
-      await fetchEducations(form.value.id)
-      $q.notify({ color: 'positive', message: 'Pendidikan ditambahkan' })
-    } catch (e) { $q.notify({ color: 'negative', message: `Gagal menambah${e}` }) }
-  })
+// --- LOGIKA PENDIDIKAN ---
+const openEduDialog = () => {
+  eduForm.value = { jenjang: 'S1', jurusan: '', namaSekolah: '', tahunLulus: new Date().getFullYear(), gelar: '', dokumenUrl: '' }
+  eduFile.value = null
+  eduDialogOpen.value = true
+}
+
+const submitEducation = async () => {
+  isSubmittingEdu.value = true
+  try {
+    if (eduFile.value) {
+      const formData = new FormData()
+      formData.append('document', eduFile.value)
+      const uploadRes = await api.post('/teachers/history/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      eduForm.value.dokumenUrl = uploadRes.data.url
+    }
+    await api.post(`/teachers/history/${form.value.id}/educations`, eduForm.value)
+    await fetchEducations(form.value.id)
+    eduDialogOpen.value = false
+    $q.notify({ color: 'positive', message: 'Pendidikan ditambahkan' })
+  } catch (e) {
+    $q.notify({ color: 'negative', message: `Gagal menambah pendidikan ${e}` })
+  } finally {
+    isSubmittingEdu.value = false
+  }
 }
 
 const deleteEducation = async (id) => {
@@ -301,27 +392,38 @@ const deleteEducation = async (id) => {
   } catch (e) { $q.notify({ color: 'negative', message: `Gagal menghapus ${e}` }) }
 }
 
-const addCertification = () => {
-  $q.dialog({
-    title: 'Tambah Sertifikasi',
-    message: 'Jenis Sertifikasi:',
-    prompt: { model: 'Pendidik Profesional', type: 'text' },
-    cancel: true, persistent: true
-  }).onOk(async (jenis) => {
-    if (!jenis) return
-    try {
-      await api.post(`/teachers/history/${form.value.id}/certifications`, { jenisSertifikasi: jenis, tahunSertifikasi: new Date().getFullYear() })
-      await fetchCertifications(form.value.id)
-      $q.notify({ color: 'positive', message: 'Sertifikasi ditambahkan' })
-    } catch (e) { $q.notify({ color: 'negative', message: `Gagal menambah${e}` }) }
-  })
+// --- LOGIKA SERTIFIKASI ---
+const openCertDialog = () => {
+  certForm.value = { jenisSertifikasi: '', nomorSertifikat: '', tahunSertifikasi: new Date().getFullYear(), dokumenUrl: '' }
+  certFile.value = null
+  certDialogOpen.value = true
+}
+
+const submitCertification = async () => {
+  isSubmittingCert.value = true
+  try {
+    if (certFile.value) {
+      const formData = new FormData()
+      formData.append('document', certFile.value)
+      const uploadRes = await api.post('/teachers/history/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      certForm.value.dokumenUrl = uploadRes.data.url
+    }
+    await api.post(`/teachers/history/${form.value.id}/certifications`, certForm.value)
+    await fetchCertifications(form.value.id)
+    certDialogOpen.value = false
+    $q.notify({ color: 'positive', message: 'Sertifikasi ditambahkan' })
+  } catch (e) {
+    $q.notify({ color: 'negative', message: `Gagal menambah sertifikasi ${e}` })
+  } finally {
+    isSubmittingCert.value = false
+  }
 }
 
 const deleteCertification = async (id) => {
   try {
     await api.delete(`/teachers/history/${form.value.id}/certifications/${id}`)
     await fetchCertifications(form.value.id)
-  } catch (e) { $q.notify({ color: 'negative', message: `Gagal menghapus${e}` }) }
+  } catch (e) { $q.notify({ color: 'negative', message: `Gagal menghapus ${e}` }) }
 }
 
 const onSubmit = async () => {
