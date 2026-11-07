@@ -33,6 +33,7 @@ type Router struct {
 	ptkDashboardService   *service.PtkDashboardService // <-- NEW
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
+	logisticService       *service.LogisticService // <-- NEW
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
@@ -73,7 +74,8 @@ func NewRouter(
 	ptkLeaveService *service.PtkLeaveService,
 	ptkPerformanceService *service.PtkPerformanceService,
 	ptkArchiveService *service.PtkArchiveService,
-	ptkDashboardService *service.PtkDashboardService, // <-- NEW
+	ptkDashboardService *service.PtkDashboardService,
+	logisticService *service.LogisticService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -96,6 +98,7 @@ func NewRouter(
 		ptkDashboardService:   ptkDashboardService, // <-- NEW
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
+		logisticService:       logisticService,
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
@@ -117,7 +120,7 @@ func NewRouter(
 	r.registerAcademicRoutes(mux)
 	r.registerCorrespondenceRoutes(mux)
 	r.registerSystemRoutes(mux)
-
+	r.registerSarprasRoutes(mux)
 	return mux
 }
 

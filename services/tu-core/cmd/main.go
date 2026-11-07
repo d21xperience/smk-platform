@@ -94,7 +94,7 @@ func main() {
 	ptkLeaveRepo := repository.NewPtkLeaveRepository(db)
 	ptkPerformanceRepo := repository.NewPtkPerformanceRepository(db)
 	ptkArchiveRepo := repository.NewPtkArchiveRepository(db)
-	ptkDashboardRepo := repository.NewPtkDashboardRepository(db) // <-- NEW
+	ptkDashboardRepo := repository.NewPtkDashboardRepository(db)
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	publicRepo := repository.NewPublicRepository(db)
@@ -104,6 +104,7 @@ func main() {
 	pembelajaranRepo := repository.NewPembelajaranRepository(db)
 	kurikulumStatRepo := repository.NewKurikulumStatRepository(db)
 	scheduleRepo := repository.NewScheduleRepository(db)
+	logisticRepo := repository.NewLogisticRepository(db) // <-- NEW
 
 	// ENGINES
 	studentEngine := studentEngine.NewStudentEngine()
@@ -134,7 +135,7 @@ func main() {
 	ptkLeaveService := service.NewPtkLeaveService(ptkLeaveRepo)
 	ptkPerformanceService := service.NewPtkPerformanceService(ptkPerformanceRepo)
 	ptkArchiveService := service.NewPtkArchiveService(ptkArchiveRepo)
-	ptkDashboardService := service.NewPtkDashboardService(ptkDashboardRepo) // <-- NEW
+	ptkDashboardService := service.NewPtkDashboardService(ptkDashboardRepo)
 	kurikulumService := service.NewKurikulumService(subjectRepo, pembelajaranRepo, kurikulumStatRepo)
 	scheduleService := service.NewScheduleService(scheduleRepo, db)
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
@@ -142,6 +143,7 @@ func main() {
 	publicService := service.NewPublicService(publicRepo)
 	userService := service.NewUserService(userRepo)
 	schoolService := service.NewSchoolService(schoolRepo)
+	logisticService := service.NewLogisticService(logisticRepo) // <-- NEW
 
 	setupBackgroundWorkers(ctx, db, js, notifDispatch, notifRepo)
 
@@ -195,11 +197,12 @@ func main() {
 		dispositionService,
 		signatureService,
 		minioClient,
-		teacherHistoryService, // <-- NEW
-		ptkLeaveService, // <-- NEW
-		ptkPerformanceService, // <-- NEW
-		ptkArchiveService, // <-- NEW
-		ptkDashboardService, // <-- NEW
+		teacherHistoryService,
+		ptkLeaveService,
+		ptkPerformanceService,
+		ptkArchiveService,
+		ptkDashboardService,
+		logisticService, // <-- NEW
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 
@@ -209,7 +212,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("\n⏳ Sinyal shutdown diterima. Memulai graceful shutdown...")
+	log.Println("\n🛑 Sinyal shutdown diterima. Memulai graceful shutdown...")
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 	appServer.Stop(shutdownCtx)
@@ -219,30 +222,44 @@ func main() {
 
 func initDatabase(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	dbConfig, err := pgxpool.ParseConfig(dbURL)
-	if err != nil { return nil, fmt.Errorf("gagal parse config database: %w", err) }
+	if err != nil {
+		return nil, fmt.Errorf("gagal parse config database: %w", err)
+	}
 	dbConfig.MaxConns = 10
 	dbConfig.MinConns = 2
 	dbConfig.MaxConnLifetime = 30 * time.Minute
 	dbConfig.MaxConnIdleTime = 5 * time.Minute
 	db, err := pgxpool.NewWithConfig(ctx, dbConfig)
-	if err != nil { return nil, fmt.Errorf("gagal membuat pool: %w", err) }
+	if err != nil {
+		return nil, fmt.Errorf("gagal membuat pool: %w", err)
+	}
 	pingCtx, pingCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer pingCancel()
-	if err := db.Ping(pingCtx); err != nil { db.Close(); return nil, fmt.Errorf("gagal koneksi ke database: %w", err) }
+	if err := db.Ping(pingCtx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("gagal koneksi ke database: %w", err)
+	}
 	return db, nil
 }
 
 func initNATS(natsURL string) (*nats.Conn, nats.JetStreamContext, error) {
 	nc, err := nats.Connect(natsURL, nats.Name("tu-core-service"))
-	if err != nil { return nil, nil, fmt.Errorf("gagal koneksi ke NATS: %w", err) }
+	if err != nil {
+		return nil, nil, fmt.Errorf("gagal koneksi ke NATS: %w", err)
+	}
 	js, err := nc.JetStream()
-	if err != nil { nc.Close(); return nil, nil, fmt.Errorf("gagal inisialisasi JetStream: %w", err) }
+	if err != nil {
+		nc.Close()
+		return nil, nil, fmt.Errorf("gagal inisialisasi JetStream: %w", err)
+	}
 	return nc, js, nil
 }
 
 func setupNotificationPlatform() *notifDispatcher.NotificationDispatcher {
 	templater := notifTemplates.NewTemplateEngine(notifTemplates.NewRegistry())
-	for _, tmpl := range notifTemplates.DefaultTemplates() { templater.Register(tmpl) }
+	for _, tmpl := range notifTemplates.DefaultTemplates() {
+		templater.Register(tmpl)
+	}
 	dispatch := notifDispatcher.NewNotificationDispatcher(nil)
 	dispatch.Register("whatsapp", whatsapp.NewWhatsAppChannel(whatsapp.Config{
 		GatewayURL: getEnv("WA_GATEWAY_URL", "https://api.fonnte.com/send"),
@@ -274,7 +291,11 @@ func setupScheduler(db *pgxpool.Pool, js nats.JetStreamContext) *scheduler.Sched
 	return sched
 }
 
-type natsEventPublisher struct { nc *nats.Conn; js nats.JetStreamContext }
+type natsEventPublisher struct {
+	nc *nats.Conn
+	js nats.JetStreamContext
+}
+
 func (p *natsEventPublisher) Publish(ctx context.Context, event service.DomainEvent) error {
 	payload := []byte(fmt.Sprintf("%+v", event.Payload))
 	msg := &nats.Msg{
@@ -288,12 +309,37 @@ func (p *natsEventPublisher) Publish(ctx context.Context, event service.DomainEv
 	return err
 }
 func (p *natsEventPublisher) PublishBatch(ctx context.Context, events []service.DomainEvent) error {
-	for _, e := range events { if err := p.Publish(ctx, e); err != nil { return err } }
+	for _, e := range events {
+		if err := p.Publish(ctx, e); err != nil {
+			return err
+		}
+	}
 	return nil
 }
-func getEnv(key, fallback string) string { if value, exists := os.LookupEnv(key); exists { return value }; return fallback }
-func getEnvAsInt(key string, fallback int) int { if valueStr, exists := os.LookupEnv(key); exists { var value int; if _, err := fmt.Sscanf(valueStr, "%d", &value); err == nil { return value } }; return fallback }
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return fallback
+}
+func getEnvAsInt(key string, fallback int) int {
+	if valueStr, exists := os.LookupEnv(key); exists {
+		var value int
+		if _, err := fmt.Sscanf(valueStr, "%d", &value); err == nil {
+			return value
+		}
+	}
+	return fallback
+}
+
 type dummyLogger struct{}
-func (l *dummyLogger) Info(msg string, keysAndValues ...interface{}) { log.Printf("[INFO] %s %v", msg, keysAndValues) }
-func (l *dummyLogger) Error(msg string, keysAndValues ...interface{}) { log.Printf("[ERROR] %s %v", msg, keysAndValues) }
-func (l *dummyLogger) Debug(msg string, keysAndValues ...interface{}) { log.Printf("[DEBUG] %s %v", msg, keysAndValues) }
+
+func (l *dummyLogger) Info(msg string, keysAndValues ...interface{}) {
+	log.Printf("[INFO] %s %v", msg, keysAndValues)
+}
+func (l *dummyLogger) Error(msg string, keysAndValues ...interface{}) {
+	log.Printf("[ERROR] %s %v", msg, keysAndValues)
+}
+func (l *dummyLogger) Debug(msg string, keysAndValues ...interface{}) {
+	log.Printf("[DEBUG] %s %v", msg, keysAndValues)
+}
