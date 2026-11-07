@@ -7,13 +7,18 @@ import (
 	"strings"
 
 	"sekolah-platform/services/tu-core/internal/middleware"
+	"sekolah-platform/services/tu-core/internal/repository"
 	"sekolah-platform/services/tu-core/internal/service"
 )
 
 func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
-	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
+	
+	// Rute Riwayat & Sertifikasi (Harus didaftarkan SEBELUM /api/v1/teachers/)
+	mux.HandleFunc("/api/v1/teachers/history/", r.wrapWithContext(r.handleTeacherHistory))
+	
+	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 }
 
 func (r *Router) handleTeachers(w http.ResponseWriter, req *http.Request) {
@@ -100,7 +105,7 @@ func (r *Router) handleTeacherPhoto(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := req.ParseMultipartForm(10 << 20) // 10 MB max
+	err := req.ParseMultipartForm(10 << 20)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Gagal parse form"})
 		return
@@ -126,4 +131,59 @@ func (r *Router) handleTeacherPhoto(w http.ResponseWriter, req *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Foto berhasil diupload", "url": url})
+}
+
+// Handler khusus untuk Riwayat Pendidikan & Sertifikasi
+func (r *Router) handleTeacherHistory(w http.ResponseWriter, req *http.Request) {
+	// Format URL: /api/v1/teachers/history/{ptkID}/educations atau /certifications
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/history/")
+	parts := splitPath(path)
+	if len(parts) < 2 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid URL format"})
+		return
+	}
+
+	ptkID := parts[0]
+	historyType := parts[1] // "educations" atau "certifications"
+	
+	// Jika ada ID di belakang (misal untuk DELETE: /history/xxx/educations/yyy)
+	var itemID string
+	if len(parts) > 2 {
+		itemID = parts[2]
+	}
+
+	switch historyType {
+	case "educations":
+		if req.Method == http.MethodGet {
+			list, err := r.teacherHistoryService.ListEducations(req.Context(), ptkID)
+			if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+			writeJSON(w, http.StatusOK, list)
+		} else if req.Method == http.MethodPost {
+			var body repository.EducationHistory
+			if err := json.NewDecoder(req.Body).Decode(&body); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"}); return }
+			if err := r.teacherHistoryService.AddEducation(req.Context(), ptkID, body); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+			writeJSON(w, http.StatusCreated, map[string]string{"message": "Pendidikan ditambahkan"})
+		} else if req.Method == http.MethodDelete && itemID != "" {
+			if err := r.teacherHistoryService.DeleteEducation(req.Context(), itemID); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+			writeJSON(w, http.StatusOK, map[string]string{"message": "Pendidikan dihapus"})
+		}
+
+	case "certifications":
+		if req.Method == http.MethodGet {
+			list, err := r.teacherHistoryService.ListCertifications(req.Context(), ptkID)
+			if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+			writeJSON(w, http.StatusOK, list)
+		} else if req.Method == http.MethodPost {
+			var body repository.CertificationHistory
+			if err := json.NewDecoder(req.Body).Decode(&body); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"}); return }
+			if err := r.teacherHistoryService.AddCertification(req.Context(), ptkID, body); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+			writeJSON(w, http.StatusCreated, map[string]string{"message": "Sertifikasi ditambahkan"})
+		} else if req.Method == http.MethodDelete && itemID != "" {
+			if err := r.teacherHistoryService.DeleteCertification(req.Context(), itemID); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+			writeJSON(w, http.StatusOK, map[string]string{"message": "Sertifikasi dihapus"})
+		}
+
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Unknown history type"})
+	}
 }

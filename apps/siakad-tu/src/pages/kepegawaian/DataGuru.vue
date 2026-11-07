@@ -9,35 +9,27 @@
     </div>
 
     <q-card class="shadow-1">
-      <q-table :rows="guruStore.list" :columns="columns" row-key="id" :loading="guruStore.isLoading" flat bordered dense>
+      <q-table :rows="guruStore.list" :columns="columns" row-key="id" :loading="guruStore.isLoading" flat bordered
+        dense>
         <template v-slot:body-cell-foto="props">
           <q-td :props="props" class="text-center">
             <q-avatar size="40px">
-              <!-- FIX: Tambahkan @error untuk fallback -->
-              <img 
-                :src="props.row.fotoUrl || 'https://cdn.quasar.dev/img/boy-avatar.png'" 
-                @error="(e) => e.target.src = 'https://cdn.quasar.dev/img/boy-avatar.png'"
-              >
+              <img :src="props.row.fotoUrl || 'https://cdn.quasar.dev/img/boy-avatar.png'"
+                @error="(e) => e.target.src = 'https://cdn.quasar.dev/img/boy-avatar.png'">
             </q-avatar>
           </q-td>
         </template>
-        
         <template v-slot:body-cell-gender="props">
           <q-td :props="props" class="text-center">
-            <q-badge :color="props.value === 'L' ? 'blue-6' : 'pink-6'">
-              {{ props.value === 'L' ? 'L' : 'P' }}
-            </q-badge>
+            <q-badge :color="props.value === 'L' ? 'blue-6' : 'pink-6'">{{ props.value === 'L' ? 'L' : 'P' }}</q-badge>
           </q-td>
         </template>
-
         <template v-slot:body-cell-status="props">
           <q-td :props="props" class="text-center">
-            <q-badge :color="props.row.isActiveInPeriod ? 'green-6' : 'grey-6'">
-              {{ props.row.isActiveInPeriod ? 'Aktif' : 'Tidak Aktif' }}
-            </q-badge>
+            <q-badge :color="props.row.isActiveInPeriod ? 'green-6' : 'grey-6'">{{ props.row.isActiveInPeriod ? 'Aktif'
+              : 'Tidak Aktif' }}</q-badge>
           </q-td>
         </template>
-
         <template v-slot:body-cell-aksi="props">
           <q-td :props="props" class="text-center">
             <q-btn flat round dense icon="edit" color="info" @click="openDialog(props.row)" class="q-mr-sm" />
@@ -47,7 +39,7 @@
       </q-table>
     </q-card>
 
-    <!-- Dialog Form Tambah/Edit -->
+    <!-- Dialog Form Tambah/Edit dengan TABS -->
     <q-dialog v-model="dialogOpen" persistent maximized transition-show="slide-up" transition-hide="slide-down">
       <q-card class="column no-wrap">
         <q-card-section class="row items-center q-pb-none bg-primary text-white">
@@ -56,75 +48,126 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="col scroll">
-          <q-form @submit="onSubmit" class="q-gutter-md">
-            <!-- Foto Profil -->
-            <div class="row justify-center q-mb-md">
-              <q-avatar size="100px" class="shadow-2">
-                <img :src="previewFoto || form.fotoUrl || 'https://cdn.quasar.dev/img/boy-avatar.png'">
-                <q-badge floating color="primary" rounded class="cursor-pointer" @click="$refs.fileInput.pickFiles()">
-                  <q-icon name="camera_alt" size="18px" />
-                </q-badge>
-              </q-avatar>
-              <q-file ref="fileInput" v-model="fileFoto" @update:model-value="onFilePicked" class="hidden" accept="image/*" />
-            </div>
+        <q-card-section class="col scroll q-pa-none">
+          <q-form @submit="onSubmit" class="q-gutter-none">
+            <q-tabs v-model="tab" class="text-primary" align="left">
+              <q-tab name="profil" icon="person" label="Profil & Kepegawaian" />
+              <q-tab name="pendidikan" icon="school" label="Riwayat Pendidikan" :disable="!isEdit" />
+              <q-tab name="sertifikasi" icon="workspace_premium" label="Sertifikasi" :disable="!isEdit" />
+            </q-tabs>
+            <q-separator />
+            <q-tab-panels v-model="tab" animated class="bg-white">
 
-            <div class="text-subtitle1 text-weight-bold text-primary q-mt-md border-bottom">A. Identitas Pribadi</div>
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-4"><q-input v-model="form.nik" label="NIK" filled mask="################" /></div>
-              <div class="col-12 col-md-4"><q-input v-model="form.name" label="Nama Lengkap (Tanpa Gelar)" filled :rules="[val => !!val || 'Wajib diisi']" /></div>
-              <div class="col-12 col-md-2"><q-input v-model="form.gelarDepan" label="Gelar Depan" filled /></div>
-              <div class="col-12 col-md-2"><q-input v-model="form.gelarBelakang" label="Gelar Belakang" filled /></div>
-            </div>
+              <!-- TAB 1: PROFIL -->
+              <q-tab-panel name="profil">
+                <!-- Foto Profil -->
+                <div class="row justify-center q-mb-md">
+                  <q-avatar size="100px" class="shadow-2">
+                    <img :src="previewFoto || form.fotoUrl || 'https://cdn.quasar.dev/img/boy-avatar.png'">
+                    <q-badge floating color="primary" rounded class="cursor-pointer"
+                      @click="$refs.fileInput.pickFiles()">
+                      <q-icon name="camera_alt" size="18px" />
+                    </q-badge>
+                  </q-avatar>
+                  <q-file ref="fileInput" v-model="fileFoto" @update:model-value="onFilePicked" class="hidden"
+                    accept="image/*" />
+                </div>
 
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-3">
-                <q-select v-model="form.gender" :options="[{ label: 'Laki-laki', value: 'L' }, { label: 'Perempuan', value: 'P' }]" emit-value map-options label="Jenis Kelamin" filled :rules="[val => !!val || 'Wajib diisi']" />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select v-model="form.agamaId" :options="agamaOptions" emit-value map-options label="Agama" filled />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select v-model="form.statusPerkawinan" :options="kawinOptions" emit-value map-options label="Status Perkawinan" filled />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-input v-model="form.namaIbuKandung" label="Nama Ibu Kandung" filled />
-              </div>
-            </div>
+                <div class="text-subtitle1 text-weight-bold text-primary q-mt-md border-bottom">A. Identitas Pribadi
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-md-4"><q-input v-model="form.nik" label="NIK" filled mask="################" />
+                  </div>
+                  <div class="col-12 col-md-4"><q-input v-model="form.name" label="Nama Lengkap" filled
+                      :rules="[val => !!val || 'Wajib diisi']" /></div>
+                  <div class="col-12 col-md-2"><q-input v-model="form.gelarDepan" label="Gelar Depan" filled /></div>
+                  <div class="col-12 col-md-2"><q-input v-model="form.gelarBelakang" label="Gelar Belakang" filled />
+                  </div>
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-md-3"><q-select v-model="form.gender"
+                      :options="[{ label: 'Laki-laki', value: 'L' }, { label: 'Perempuan', value: 'P' }]" emit-value
+                      map-options label="JK" filled /></div>
+                  <div class="col-12 col-md-3"><q-select v-model="form.agamaId" :options="agamaOptions" emit-value
+                      map-options label="Agama" filled /></div>
+                  <div class="col-12 col-md-3"><q-select v-model="form.statusPerkawinan" :options="kawinOptions"
+                      emit-value map-options label="Status Perkawinan" filled /></div>
+                  <div class="col-12 col-md-3"><q-input v-model="form.namaIbuKandung" label="Nama Ibu Kandung" filled />
+                  </div>
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-md-6"><q-input v-model="form.birthPlace" label="Tempat Lahir" filled /></div>
+                  <div class="col-12 col-md-6"><q-input v-model="form.birthDate" label="Tanggal Lahir" filled
+                      mask="####-##-##" hint="YYYY-MM-DD" /></div>
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-md-6"><q-input v-model="form.noHp" label="No. HP" filled
+                      mask="##############" />
+                  </div>
+                  <div class="col-12 col-md-6"><q-input v-model="form.email" label="Email" filled type="email" /></div>
+                </div>
+                <q-input v-model="form.address" label="Alamat Lengkap" type="textarea" filled />
 
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-6"><q-input v-model="form.birthPlace" label="Tempat Lahir" filled /></div>
-              <div class="col-12 col-md-6"><q-input v-model="form.birthDate" label="Tanggal Lahir" filled mask="####-##-##" hint="YYYY-MM-DD" /></div>
-            </div>
-            
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-6"><q-input v-model="form.noHp" label="No. HP" filled mask="##############" /></div>
-              <div class="col-12 col-md-6"><q-input v-model="form.email" label="Email" filled type="email" /></div>
-            </div>
-            <q-input v-model="form.address" label="Alamat Lengkap" type="textarea" filled />
+                <div class="text-subtitle1 text-weight-bold text-primary q-mt-lg border-bottom">B. Data Kepegawaian
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-md-3"><q-select v-model="form.jenisPtkId" :options="jenisPtkOptions" emit-value
+                      map-options label="Jenis PTK" filled /></div>
+                  <div class="col-12 col-md-3"><q-select v-model="form.statusKeaktifan" :options="statusAktifOptions"
+                      emit-value map-options label="Status Aktif" filled /></div>
+                  <div class="col-12 col-md-3"><q-select v-model="form.statusKepegawaian"
+                      :options="statusKepegawaianOptions" emit-value map-options label="Status Kepegawaian" filled />
+                  </div>
+                  <div class="col-12 col-md-3"><q-input v-model="form.nip" label="NIP" filled
+                      mask="##################" />
+                  </div>
+                </div>
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-md-6"><q-input v-model="form.nuptk" label="NUPTK" filled
+                      mask="################" />
+                  </div>
+                </div>
+              </q-tab-panel>
 
-            <div class="text-subtitle1 text-weight-bold text-primary q-mt-lg border-bottom">B. Data Kepegawaian</div>
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-3">
-                <q-select v-model="form.jenisPtkId" :options="jenisPtkOptions" emit-value map-options label="Jenis PTK" filled />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select v-model="form.statusKeaktifan" :options="statusAktifOptions" emit-value map-options label="Status Aktif" filled />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select v-model="form.statusKepegawaian" :options="statusKepegawaianOptions" emit-value map-options label="Status Kepegawaian" filled />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-input v-model="form.nip" label="NIP" filled mask="##################" />
-              </div>
-            </div>
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-6"><q-input v-model="form.nuptk" label="NUPTK" filled mask="################" /></div>
-            </div>
+              <!-- TAB 2: RIWAYAT PENDIDIKAN -->
+              <q-tab-panel name="pendidikan">
+                <div class="row items-center q-mb-md">
+                  <div class="text-subtitle1 text-weight-bold text-primary">Riwayat Pendidikan Formal</div>
+                  <q-space />
+                  <q-btn color="secondary" icon="add" label="Tambah" size="sm" @click="addEducation" />
+                </div>
+                <q-table :rows="educations" :columns="eduColumns" row-key="id" flat bordered dense>
+                  <template v-slot:body-cell-aksi="props">
+                    <q-td :props="props" class="text-center">
+                      <q-btn flat round dense icon="delete" color="negative" @click="deleteEducation(props.row.id)" />
+                    </q-td>
+                  </template>
+                </q-table>
+              </q-tab-panel>
 
-            <div class="row justify-end q-mt-xl q-mb-lg">
+              <!-- TAB 3: SERTIFIKASI -->
+              <q-tab-panel name="sertifikasi">
+                <div class="row items-center q-mb-md">
+                  <div class="text-subtitle1 text-weight-bold text-primary">Sertifikasi</div>
+                  <q-space />
+                  <q-btn color="secondary" icon="add" label="Tambah" size="sm" @click="addCertification" />
+                </div>
+                <q-table :rows="certifications" :columns="certColumns" row-key="id" flat bordered dense>
+                  <template v-slot:body-cell-aksi="props">
+                    <q-td :props="props" class="text-center">
+                      <q-btn flat round dense icon="delete" color="negative"
+                        @click="deleteCertification(props.row.id)" />
+                    </q-td>
+                  </template>
+                </q-table>
+              </q-tab-panel>
+
+            </q-tab-panels>
+
+            <div class="row justify-end q-pa-md bg-grey-1">
               <q-btn label="Batal" color="grey" flat v-close-popup class="q-mr-sm" />
-              <q-btn label="Simpan Data" color="primary" type="submit" :loading="guruStore.isLoading" />
+              <q-btn v-if="tab === 'profil'" label="Simpan Profil" color="primary" type="submit"
+                :loading="guruStore.isLoading" />
             </div>
           </q-form>
         </q-card-section>
@@ -144,34 +187,24 @@ const guruStore = useGuruStore()
 
 const dialogOpen = ref(false)
 const isEdit = ref(false)
+const tab = ref('profil')
 const fileFoto = ref(null)
 const previewFoto = ref(null)
 
+// State Riwayat
+const educations = ref([])
+const certifications = ref([])
+
 const agamaOptions = [
-  { label: 'Islam', value: 1 }, { label: 'Kristen', value: 2 }, { label: 'Katolik', value: 3 }, 
+  { label: 'Islam', value: 1 }, { label: 'Kristen', value: 2 }, { label: 'Katolik', value: 3 },
   { label: 'Hindu', value: 4 }, { label: 'Buddha', value: 5 }, { label: 'Konghucu', value: 6 }
 ]
-const kawinOptions = [
-  { label: 'Belum Menikah', value: 1 }, { label: 'Menikah', value: 2 }, 
-  { label: 'Cerai Hidup', value: 3 }, { label: 'Cerai Mati', value: 4 }
-]
-const jenisPtkOptions = [
-  { label: 'Guru Mata Pelajaran', value: 1 }, { label: 'Guru Kelas', value: 2 }, 
-  { label: 'Kepala Sekolah', value: 3 }, { label: 'Tenaga Administrasi', value: 4 }
-]
-const statusAktifOptions = [
-  { label: 'Aktif', value: 1 }, { label: 'Cuti', value: 2 }, { label: 'Pensiun', value: 3 }, { label: 'Non-Aktif', value: 4 }
-]
-const statusKepegawaianOptions = [
-  { label: 'PNS', value: 1 }, { label: 'PPPK', value: 2 }, { label: 'GTY/PTY', value: 3 }, { label: 'Honorer', value: 4 }
-]
+const kawinOptions = [{ label: 'Belum Menikah', value: 1 }, { label: 'Menikah', value: 2 }, { label: 'Cerai Hidup', value: 3 }, { label: 'Cerai Mati', value: 4 }]
+const jenisPtkOptions = [{ label: 'Guru Mata Pelajaran', value: 1 }, { label: 'Guru Kelas', value: 2 }, { label: 'Kepala Sekolah', value: 3 }, { label: 'Tenaga Administrasi', value: 4 }]
+const statusAktifOptions = [{ label: 'Aktif', value: 1 }, { label: 'Cuti', value: 2 }, { label: 'Pensiun', value: 3 }, { label: 'Non-Aktif', value: 4 }]
+const statusKepegawaianOptions = [{ label: 'PNS', value: 1 }, { label: 'PPPK', value: 2 }, { label: 'GTY/PTY', value: 3 }, { label: 'Honorer', value: 4 }]
 
-const form = ref({
-  id: '', name: '', gelarDepan: '', gelarBelakang: '', nip: '', nuptk: '', 
-  gender: 'L', birthPlace: '', birthDate: '', address: '', jenisPtkId: 1, statusKeaktifan: 1,
-  nik: '', agamaId: 1, statusKepegawaian: 1, noHp: '', email: '', statusPerkawinan: 1, 
-  namaIbuKandung: '', fotoUrl: ''
-})
+const form = ref({ id: '', name: '', gelarDepan: '', gelarBelakang: '', nip: '', nuptk: '', gender: 'L', birthPlace: '', birthDate: '', address: '', jenisPtkId: 1, statusKeaktifan: 1, nik: '', agamaId: 1, statusKepegawaian: 1, noHp: '', email: '', statusPerkawinan: 1, namaIbuKandung: '', fotoUrl: '' })
 
 const columns = [
   { name: 'foto', label: 'Foto', align: 'center' },
@@ -183,39 +216,119 @@ const columns = [
   { name: 'aksi', label: 'Aksi', align: 'center' }
 ]
 
+const eduColumns = [
+  { name: 'jenjang', label: 'Jenjang', field: 'jenjang', align: 'left' },
+  { name: 'jurusan', label: 'Jurusan', field: 'jurusan', align: 'left' },
+  { name: 'namaSekolah', label: 'Nama Sekolah', field: 'namaSekolah', align: 'left' },
+  { name: 'tahunLulus', label: 'Tahun Lulus', field: 'tahunLulus', align: 'center' },
+  { name: 'gelar', label: 'Gelar', field: 'gelar', align: 'left' },
+  { name: 'aksi', label: 'Aksi', align: 'center' }
+]
+
+const certColumns = [
+  { name: 'jenisSertifikasi', label: 'Jenis Sertifikasi', field: 'jenisSertifikasi', align: 'left' },
+  { name: 'nomorSertifikat', label: 'Nomor Sertifikat', field: 'nomorSertifikat', align: 'left' },
+  { name: 'tahunSertifikasi', label: 'Tahun', field: 'tahunSertifikasi', align: 'center' },
+  { name: 'aksi', label: 'Aksi', align: 'center' }
+]
+
 onMounted(() => { guruStore.fetchTeachers() })
 
-const onFilePicked = (file) => {
-  if (!file) return
-  previewFoto.value = URL.createObjectURL(file)
-}
+const onFilePicked = (file) => { if (file) previewFoto.value = URL.createObjectURL(file) }
 
-const openDialog = (row = null) => {
+const openDialog = async (row = null) => {
   fileFoto.value = null
   previewFoto.value = null
-  
+  tab.value = 'profil'
+
   if (row) {
     isEdit.value = true
     const tgl = row.birthDate ? new Date(row.birthDate).toISOString().split('T')[0] : ''
-    form.value = { ...row, birthDate: tgl }
+
+    // Fix duplikasi gelar
+    let namaBersih = row.name
+    if (row.gelarBelakang) namaBersih = namaBersih.replace(`, ${row.gelarBelakang}`, '')
+    if (row.gelarDepan) namaBersih = namaBersih.replace(`${row.gelarDepan} `, '')
+
+    form.value = { ...row, name: namaBersih, birthDate: tgl }
+
+    // Fetch Riwayat
+    await fetchEducations(row.id)
+    await fetchCertifications(row.id)
   } else {
     isEdit.value = false
-    form.value = {
-      id: '', name: '', gelarDepan: '', gelarBelakang: '', nip: '', nuptk: '', 
-      gender: 'L', birthPlace: '', birthDate: '', address: '', jenisPtkId: 1, statusKeaktifan: 1,
-      nik: '', agamaId: 1, statusKepegawaian: 1, noHp: '', email: '', statusPerkawinan: 1, 
-      namaIbuKandung: '', fotoUrl: ''
-    }
+    educations.value = []
+    certifications.value = []
+    form.value = { id: '', name: '', gelarDepan: '', gelarBelakang: '', nip: '', nuptk: '', gender: 'L', birthPlace: '', birthDate: '', address: '', jenisPtkId: 1, statusKeaktifan: 1, nik: '', agamaId: 1, statusKepegawaian: 1, noHp: '', email: '', statusPerkawinan: 1, namaIbuKandung: '', fotoUrl: '' }
   }
   dialogOpen.value = true
+}
+
+const fetchEducations = async (ptkID) => {
+  try {
+    const res = await api.get(`/teachers/history/${ptkID}/educations`)
+    educations.value = res.data || []
+  } catch (err) { console.error(err) }
+}
+
+const fetchCertifications = async (ptkID) => {
+  try {
+    const res = await api.get(`/teachers/history/${ptkID}/certifications`)
+    certifications.value = res.data || []
+  } catch (err) { console.error(err) }
+}
+
+const addEducation = () => {
+  $q.dialog({
+    title: 'Tambah Riwayat Pendidikan',
+    message: 'Jenjang (SMA/D3/S1/S2):',
+    prompt: { model: 'S1', type: 'text' },
+    cancel: true, persistent: true
+  }).onOk(async (jenjang) => {
+    if (!jenjang) return
+    try {
+      await api.post(`/teachers/history/${form.value.id}/educations`, { jenjang, tahunLulus: new Date().getFullYear() })
+      await fetchEducations(form.value.id)
+      $q.notify({ color: 'positive', message: 'Pendidikan ditambahkan' })
+    } catch (e) { $q.notify({ color: 'negative', message: `Gagal menambah${e}` }) }
+  })
+}
+
+const deleteEducation = async (id) => {
+  try {
+    await api.delete(`/teachers/history/${form.value.id}/educations/${id}`)
+    await fetchEducations(form.value.id)
+  } catch (e) { $q.notify({ color: 'negative', message: `Gagal menghapus ${e}` }) }
+}
+
+const addCertification = () => {
+  $q.dialog({
+    title: 'Tambah Sertifikasi',
+    message: 'Jenis Sertifikasi:',
+    prompt: { model: 'Pendidik Profesional', type: 'text' },
+    cancel: true, persistent: true
+  }).onOk(async (jenis) => {
+    if (!jenis) return
+    try {
+      await api.post(`/teachers/history/${form.value.id}/certifications`, { jenisSertifikasi: jenis, tahunSertifikasi: new Date().getFullYear() })
+      await fetchCertifications(form.value.id)
+      $q.notify({ color: 'positive', message: 'Sertifikasi ditambahkan' })
+    } catch (e) { $q.notify({ color: 'negative', message: `Gagal menambah${e}` }) }
+  })
+}
+
+const deleteCertification = async (id) => {
+  try {
+    await api.delete(`/teachers/history/${form.value.id}/certifications/${id}`)
+    await fetchCertifications(form.value.id)
+  } catch (e) { $q.notify({ color: 'negative', message: `Gagal menghapus${e}` }) }
 }
 
 const onSubmit = async () => {
   try {
     const payload = { ...form.value }
-    
     let savedId = form.value.id
-    
+
     if (isEdit.value) {
       await guruStore.updateTeacher(form.value.id, payload)
       $q.notify({ color: 'positive', message: 'Data Guru diperbarui' })
@@ -224,15 +337,13 @@ const onSubmit = async () => {
       savedId = res.id
       $q.notify({ color: 'positive', message: 'Guru baru ditambahkan' })
     }
-    
+
     if (fileFoto.value && savedId) {
       const formData = new FormData()
       formData.append('photo', fileFoto.value)
-      await api.post(`/teachers/photo/${savedId}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      await api.post(`/teachers/photo/${savedId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
     }
-    
+
     dialogOpen.value = false
     await guruStore.fetchTeachers()
   } catch (err) {
@@ -241,18 +352,13 @@ const onSubmit = async () => {
 }
 
 const confirmDelete = (row) => {
-  $q.dialog({
-    title: 'Konfirmasi Hapus',
-    message: `Hapus data guru ${row.name}?`,
-    cancel: true, persistent: true
-  }).onOk(async () => {
-    try {
-      await guruStore.deleteTeacher(row.id)
-      $q.notify({ color: 'positive', message: 'Data guru dihapus' })
-    } catch (err) {
-      $q.notify({ color: 'negative', message: `Gagal menghapus data guru ${err}` })
-    }
-  })
+  $q.dialog({ title: 'Konfirmasi Hapus', message: `Hapus data guru ${row.name}?`, cancel: true, persistent: true })
+    .onOk(async () => {
+      try {
+        await guruStore.deleteTeacher(row.id)
+        $q.notify({ color: 'positive', message: 'Data guru dihapus' })
+      } catch (err) { $q.notify({ color: 'negative', message: `Gagal: ${err}` }) }
+    })
 }
 </script>
 
@@ -262,6 +368,7 @@ const confirmDelete = (row) => {
   padding-bottom: 8px;
   margin-bottom: 12px;
 }
+
 .hidden {
   display: none;
 }
