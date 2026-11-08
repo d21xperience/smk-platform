@@ -30,10 +30,12 @@ type Router struct {
 	ptkLeaveService       *service.PtkLeaveService
 	ptkPerformanceService *service.PtkPerformanceService
 	ptkArchiveService     *service.PtkArchiveService
-	ptkDashboardService   *service.PtkDashboardService // <-- NEW
+	ptkDashboardService   *service.PtkDashboardService
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
-	logisticService       *service.LogisticService // <-- NEW
+	jurusanService        *service.JurusanService // <-- TAMBAHAN
+	logisticService       *service.LogisticService
+	kirService            *service.KIRService
 	contextHandler        *ContextHandler
 	authHandler           *AuthHandler
 	publicHandler         *PublicHandler
@@ -61,6 +63,7 @@ func NewRouter(
 	teacherService *service.TeacherService,
 	kurikulumService *service.KurikulumService,
 	scheduleService service.ScheduleService,
+	jurusanService *service.JurusanService, // <-- TAMBAHAN
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
@@ -76,6 +79,7 @@ func NewRouter(
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
 	logisticService *service.LogisticService,
+	kirService *service.KIRService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -95,10 +99,12 @@ func NewRouter(
 		ptkLeaveService:       ptkLeaveService,
 		ptkPerformanceService: ptkPerformanceService,
 		ptkArchiveService:     ptkArchiveService,
-		ptkDashboardService:   ptkDashboardService, // <-- NEW
+		ptkDashboardService:   ptkDashboardService,
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
+		jurusanService:        jurusanService, // <-- TAMBAHAN
 		logisticService:       logisticService,
+		kirService:            kirService,
 		contextHandler:        NewContextHandler(prefService),
 		authHandler:           NewAuthHandler(authService),
 		publicHandler:         NewPublicHandler(publicService),
@@ -114,13 +120,16 @@ func NewRouter(
 
 	mux := http.NewServeMux()
 
-	// Registrasi Rute Terpusat
 	r.registerPtkRoutes(mux)
 	r.registerStudentRoutes(mux)
 	r.registerAcademicRoutes(mux)
 	r.registerCorrespondenceRoutes(mux)
 	r.registerSystemRoutes(mux)
 	r.registerSarprasRoutes(mux)
+	
+	// Daftarkan Rute Jurusan
+	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan) // <-- TAMBAHAN
+
 	return mux
 }
 

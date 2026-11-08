@@ -114,16 +114,22 @@ func (r *Router) handleStudentByID(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusOK, student)
 
 	case http.MethodPut:
+		// PERBAIKAN: Sesuaikan dengan payload JSON dari Frontend (camelCase)
 		var reqBody struct {
-			Name       string `json:"nama"`
-			BirthPlace string `json:"tempatLahir"`
-			Gender     string `json:"jenisKelamin"`
-			Address    string `json:"alamat"`
-			Phone      string `json:"noHp"`
-			ClassName  string `json:"kelas"`
+			Name        string `json:"name"`
+			NIS         string `json:"nis"`
+			NISN        string `json:"nisn"`
+			BirthPlace  string `json:"birthPlace"`
+			BirthDate   string `json:"birthDate"`
+			Gender      string `json:"gender"`
+			Address     string `json:"address"`
+			Phone       string `json:"phone"`
+			ClassName   string `json:"classId"`
+			ParentName  string `json:"parentName"`
+			ParentPhone string `json:"parentPhone"`
 		}
 		if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body: " + err.Error()})
 			return
 		}
 		student, err := r.studentService.UpdateStudentForUI(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, studentID, reqBody)

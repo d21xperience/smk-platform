@@ -1,87 +1,39 @@
-const kesiswaanRoutes = {
-  path: '/kesiswaan',
+export default {
+  path: 'kesiswaan',
   children: [
     {
       path: '',
-      redirect: '/kesiswaan/dashboard',
+      redirect: '/kesiswaan/siswa'
     },
     {
-      path: 'dashboard',
-      name: 'kesiswaan-dashboard',
-      component: () => import('@/pages/kesiswaan/DashboardPage.vue'),
+      path: 'siswa',
+      name: 'kesiswaan-siswa',
+      component: () => import('@/pages/kesiswaan/siswa/StudentListPage.vue'),
+      meta: { requiresAuth: true },
     },
-    // === RUTE BARU UNTUK MODUL KELAS ===
     {
-      path: 'kelas',
-      name: 'kesiswaan-kelas',
-      component: () => import('@/pages/kesiswaan/DataKelas.vue'),
+      path: 'siswa/:id',
+      name: 'kesiswaan-siswa-detail',
+      component: () => import('@/pages/kesiswaan/siswa/StudentDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'siswa/edit/:id',
+      name: 'kesiswaan-siswa-edit',
+      component: () => import('@/pages/kesiswaan/siswa/StudentEditPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'absensi-harian',
+      name: 'kesiswaan-absensi-harian',
+      component: () => import('@/pages/kesiswaan/absensi/AttendanceSessionPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: 'rekap-kehadiran',
-      name: 'rekap-kehadiran',
-      component: () => import('@/pages/kesiswaan/AttendanceSessionPage.vue'),
-    },
-    // ===================================
-    {
-      path: 'siswa',
-      children: [
-        {
-          path: '',
-          name: 'student-list',
-          component: () => import('@/pages/kesiswaan/StudentListPage.vue'),
-        },
-        {
-          path: 'create',
-          name: 'student-create',
-          component: () => import('@/pages/kesiswaan/StudentCreatePage.vue'),
-        },
-        {
-          path: 'import',
-          name: 'student-import',
-          component: () => import('@/pages/kesiswaan/StudentImportPage.vue'),
-        },
-        {
-          path: ':id',
-          name: 'student-detail',
-          component: () => import('@/pages/kesiswaan/StudentDetailPage.vue'),
-        },
-        {
-          path: ':id/edit',
-          name: 'student-edit',
-          component: () => import('@/pages/kesiswaan/StudentEditPage.vue'),
-        },
-      ],
-    },
-    {
-      path: 'mutasi-siswa',
-      children: [
-        {
-          path: '',
-          name: 'student-mutation',
-          component: () => import('@/pages/kesiswaan/StudentMutationPage.vue'),
-        },
-      ],
-    },
-    {
-      path: 'direktori-siswa',
-      name: 'direktori-siswa',
-      component: () => import('@/pages/kesiswaan/DirektoriSiswa.vue'),
-    },
-    {
-      path: 'buku-induk-siswa',
-      name: 'buku-induk-siswa',
-      component: () => import('@/pages/kesiswaan/BukuIndukKlaper.vue'),
-    },
-    {
-      path: 'beasiswa-pip-siswa',
-      name: 'beasiswa-pip-siswa',
-      component: () => import('@/pages/kesiswaan/BeasiswaPip.vue'),
+      name: 'kesiswaan-rekap-kehadiran',
+      component: () => import('@/pages/kesiswaan/absensi/AttendanceRecapPage.vue'),
+      meta: { requiresAuth: true },
     },
   ],
-  meta: {
-    requiresAuth: true,
-    allowedRoles: ['admin', 'kesiswaan'],
-  },
 }
-
-export default kesiswaanRoutes

@@ -17,6 +17,9 @@ type Correspondence struct {
 	SchoolID         string
 	AcademicPeriodID string
 	Type             valueobjects.CorrespondenceType
+	JenisSurat       string
+	Kategori         string
+	KodeKlasifikasi  string
 	Number           string
 	Date             time.Time
 	Subject          string
@@ -24,6 +27,9 @@ type Correspondence struct {
 	ToParty          string
 	Description      string
 	AttachmentURL    string
+	FileURL          string
+	TTDURL           string
+	Konten           map[string]interface{}
 	Status           valueobjects.CorrespondenceStatus
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -31,15 +37,21 @@ type Correspondence struct {
 }
 
 type CorrespondenceData struct {
-	ID            string
-	Type          valueobjects.CorrespondenceType
-	Number        string
-	Date          time.Time
-	Subject       string
-	FromParty     string
-	ToParty       string
-	Description   string
-	AttachmentURL string
+	ID              string
+	Type            valueobjects.CorrespondenceType
+	JenisSurat      string
+	Kategori        string
+	KodeKlasifikasi string
+	Number          string
+	Date            time.Time
+	Subject         string
+	FromParty       string
+	ToParty         string
+	Description     string
+	AttachmentURL   string
+	FileURL         string
+	TTDURL          string
+	Konten          map[string]interface{}
 }
 
 func NewCorrespondence(data CorrespondenceData, ctx *context.OperationalContext) (*Correspondence, error) {
@@ -59,12 +71,18 @@ func NewCorrespondence(data CorrespondenceData, ctx *context.OperationalContext)
 	if data.FromParty == "" || data.ToParty == "" {
 		return nil, errors.New("pengirim dan penerima wajib diisi")
 	}
+	if data.JenisSurat == "" {
+		return nil, errors.New("jenis surat wajib diisi")
+	}
 
 	c := &Correspondence{
 		ID:               data.ID,
 		SchoolID:         ctx.SchoolID,
 		AcademicPeriodID: ctx.AcademicPeriodID,
 		Type:             data.Type,
+		JenisSurat:       data.JenisSurat,
+		Kategori:         data.Kategori,
+		KodeKlasifikasi:  data.KodeKlasifikasi,
 		Number:           data.Number,
 		Date:             data.Date,
 		Subject:          data.Subject,
@@ -72,6 +90,9 @@ func NewCorrespondence(data CorrespondenceData, ctx *context.OperationalContext)
 		ToParty:          data.ToParty,
 		Description:      data.Description,
 		AttachmentURL:    data.AttachmentURL,
+		FileURL:          data.FileURL,
+		TTDURL:           data.TTDURL,
+		Konten:           data.Konten,
 		Status:           valueobjects.StatusDraft,
 		CreatedAt:        time.Now().UTC(),
 		UpdatedAt:        time.Now().UTC(),
@@ -92,15 +113,12 @@ func (c *Correspondence) Process(ctx *context.OperationalContext) error {
 	if c.Status != valueobjects.StatusDraft {
 		return errors.New("hanya surat dengan status DRAFT yang dapat diproses")
 	}
-
 	c.Status = valueobjects.StatusProcessed
 	c.UpdatedAt = time.Now().UTC()
-
 	c.recordEvent(events.NewCorrespondenceProcessed(events.CorrespondenceProcessedPayload{
 		CorrespondenceID: c.ID,
 		Number:           c.Number,
 	}, ctx))
-
 	return nil
 }
 
@@ -108,28 +126,30 @@ func (c *Correspondence) Archive(ctx *context.OperationalContext) error {
 	if !c.Status.CanArchive() {
 		return errors.New("hanya surat dengan status DRAFT atau PROCESSED yang dapat diarsipkan")
 	}
-
 	c.Status = valueobjects.StatusArchived
 	c.UpdatedAt = time.Now().UTC()
-
 	c.recordEvent(events.NewCorrespondenceArchived(events.CorrespondenceArchivedPayload{
 		CorrespondenceID: c.ID,
 		Number:           c.Number,
 	}, ctx))
-
 	return nil
 }
 
-func (c *Correspondence) Update(subject, description, attachmentURL string) error {
+func (c *Correspondence) Update(kategori, kodeKlasifikasi, subject, description, attachmentURL, fileURL, ttdURL string, konten map[string]interface{}) error {
 	if c.Status != valueobjects.StatusDraft {
 		return errors.New("hanya surat dengan status DRAFT yang dapat diubah")
 	}
-
+	c.Kategori = kategori
+	c.KodeKlasifikasi = kodeKlasifikasi
 	c.Subject = subject
 	c.Description = description
 	c.AttachmentURL = attachmentURL
+	c.FileURL = fileURL
+	c.TTDURL = ttdURL
+	if konten != nil {
+		c.Konten = konten
+	}
 	c.UpdatedAt = time.Now().UTC()
-
 	return nil
 }
 

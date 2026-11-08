@@ -21,6 +21,8 @@ const mapBackendToStudent = (backendDto) => {
     address: backendDto.address,
     phone: backendDto.phone,
     parentName: backendDto.parentName,
+    parentPhone: backendDto.parentPhone, // <-- Tambahan
+    motherName: backendDto.motherName,
     enrollments: backendDto.enrollments || [],
   }
 }
@@ -47,7 +49,7 @@ export const studentRealAdapter = {
       const response = await api.get('/students', { params })
       const responseData = response.data
       
-      const items = responseData.items || []
+      const items = responseData.data || []
       const total = responseData.total || items.length
 
       return handleSuccess({
@@ -69,7 +71,6 @@ export const studentRealAdapter = {
 
   async registerStudent(command) {
     try {
-      // Sesuaikan 100% dengan CreateStudentRequest di dto.go (camelCase)
       const payload = {
         nis: command.nis || '',
         nisn: command.nisn || '',
@@ -79,14 +80,12 @@ export const studentRealAdapter = {
         address: command.alamat || '',
         phone: command.noHp || '',
         email: '',
-        parentName: command.namaAyah || 'Belum Diisi',
-        parentPhone: '',
+        parentName: command.parentName || 'Belum Diisi',
+        parentPhone: command.parentPhone || '',
         parentEmail: '',
-        classId: command.kelas || '' // Backend mengharapkan classId (string)
+        classId: command.kelas || ''
       }
 
-      // Cek ketat: Hanya tambahkan birthDate jika formatnya valid (YYYY-MM-DD)
-      // Ini mencegah error "cannot parse empty string to time.Time"
       if (command.tanggalLahir && command.tanggalLahir.trim() !== '') {
         payload.birthDate = command.tanggalLahir;
       }
@@ -98,20 +97,21 @@ export const studentRealAdapter = {
 
   async updateStudentProfile(command) {
     try {
-      // Sesuai dengan UpdateStudentRequest di dto.go
       const payload = {
-        name: command.nama,
+        name: command.name,
         nis: command.nis,
         nisn: command.nisn,
-        classId: command.kelas,
-        gender: command.jenisKelamin === 'L' ? 'MALE' : 'FEMALE',
-        birthPlace: command.tempatLahir,
-        address: command.alamat,
-        phone: command.noHp,
+        classId: command.classId,
+        gender: command.gender,
+        birthPlace: command.birthPlace,
+        address: command.address,
+        phone: command.phone,
+        parentName: command.parentName,   // <-- Tambahan
+        parentPhone: command.parentPhone, // <-- Tambahan
       }
       
-      if (command.tanggalLahir && command.tanggalLahir.trim() !== '') {
-        payload.birthDate = command.tanggalLahir;
+      if (command.birthDate && command.birthDate.trim() !== '') {
+        payload.birthDate = command.birthDate;
       }
 
       const response = await api.put(`/students/${command.studentId}`, payload)

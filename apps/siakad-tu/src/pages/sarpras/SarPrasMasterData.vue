@@ -1,7 +1,8 @@
 <template>
   <q-page class="q-pa-md">
     <q-card flat bordered>
-      <q-tabs v-model="tab" dense class="text-grey" active-color="primary" indicator-color="primary" align="left" narrow-indicator>
+      <q-tabs v-model="tab" dense class="text-grey" active-color="primary" indicator-color="primary" align="left"
+        narrow-indicator>
         <q-tab name="kategori" label="Kategori Barang" />
         <q-tab name="katalog" label="Katalog Barang" />
       </q-tabs>
@@ -15,7 +16,8 @@
             <div class="text-h6">Daftar Kategori</div>
             <q-btn color="primary" icon="add" label="Tambah Kategori" @click="bukaDialogKategori()" no-caps />
           </div>
-          <q-table :rows="kirStore.categories" :columns="columnsKategori" row-key="id" flat bordered :loading="kirStore.isLoading">
+          <q-table :rows="kirStore.categories" :columns="columnsKategori" row-key="id" flat bordered
+            :loading="kirStore.isLoading">
             <template v-slot:body-cell-actions="props">
               <q-td :props="props">
                 <q-btn flat round dense color="primary" icon="edit" @click="bukaDialogKategori(props.row)" />
@@ -31,7 +33,8 @@
             <div class="text-h6">Daftar Katalog (Blueprint Barang)</div>
             <q-btn color="primary" icon="add" label="Tambah Katalog" @click="bukaDialogKatalog()" no-caps />
           </div>
-          <q-table :rows="kirStore.catalogs" :columns="columnsKatalog" row-key="id" flat bordered :loading="kirStore.isLoading">
+          <q-table :rows="kirStore.catalogs" :columns="columnsKatalog" row-key="id" flat bordered
+            :loading="kirStore.isLoading">
             <template v-slot:body-cell-image_url="props">
               <q-td :props="props">
                 <q-avatar v-if="props.value" size="40px" class="shadow-1">
@@ -74,16 +77,18 @@
       <q-card style="min-width: 400px">
         <q-card-section class="text-h6">{{ isEditKatalog ? 'Edit Katalog' : 'Tambah Katalog' }}</q-card-section>
         <q-card-section class="q-gutter-y-md">
-          <q-select v-model="formKatalog.category_id" :options="kirStore.categories" option-value="id" option-label="name" label="Pilih Kategori" outlined dense emit-value map-options />
+          <q-select v-model="formKatalog.category_id" :options="kirStore.categories" option-value="id"
+            option-label="name" label="Pilih Kategori" outlined dense emit-value map-options />
           <q-input v-model="formKatalog.name" label="Nama Barang (Cth: Proyektor Epson)" outlined dense />
           <q-input v-model="formKatalog.brand" label="Merk (Opsional)" outlined dense />
-          
+
           <!-- FITUR UPLOAD FOTO -->
           <div class="row items-center q-gutter-md">
             <q-avatar v-if="formKatalog.image_url" size="60px" class="shadow-1">
               <img :src="formKatalog.image_url" />
             </q-avatar>
-            <q-file v-model="imageFile" label="Upload Foto Barang" outlined dense accept="image/*" @update:model-value="uploadImage" :loading="isUploading">
+            <q-file v-model="imageFile" label="Upload Foto Barang" outlined dense accept="image/*"
+              @update:model-value="uploadImage" :loading="isUploading">
               <template v-slot:prepend><q-icon name="cloud_upload" /></template>
             </q-file>
           </div>
@@ -200,7 +205,7 @@ async function uploadImage(file) {
     formKatalog.value.image_url = url
     $q.notify({ type: 'positive', message: 'Foto berhasil diupload' })
   } catch (e) {
-    $q.notify({ type: 'negative', message: 'Gagal upload foto' })
+    $q.notify({ type: 'negative', message: `Gagal upload foto ${e}` })
     imageFile.value = null
   } finally {
     isUploading.value = false

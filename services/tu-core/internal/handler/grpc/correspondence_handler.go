@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"sekolah-platform/services/tu-core/internal/middleware"
+	"sekolah-platform/services/tu-core/internal/repository"
 	"sekolah-platform/services/tu-core/internal/service"
 	pb "sekolah-platform/services/tu-core/proto/correspondence/v1"
 )
@@ -36,6 +37,10 @@ func (h *CorrespondenceGRPCHandler) CreateCorrespondence(ctx context.Context, re
 		To:            req.GetTo(),
 		Description:   req.GetDescription(),
 		AttachmentURL: req.GetAttachmentUrl(),
+		// Kategori dan KodeKlasifikasi saat ini dikosongkan dari gRPC,
+		// karena field ini baru ditambahkan via REST. Bisa diupdate nanti jika proto di-regenerate.
+		Kategori:        "",
+		KodeKlasifikasi: "",
 	}
 
 	c, err := h.service.CreateCorrespondence(ctx, serviceReq)
@@ -49,7 +54,14 @@ func (h *CorrespondenceGRPCHandler) CreateCorrespondence(ctx context.Context, re
 }
 
 func (h *CorrespondenceGRPCHandler) UpdateCorrespondence(ctx context.Context, req *pb.UpdateCorrespondenceRequest) (*pb.UpdateCorrespondenceResponse, error) {
-	c, err := h.service.UpdateCorrespondence(ctx, req.GetId(), req.GetSubject(), req.GetDescription(), req.GetAttachmentUrl())
+	svcReq := service.UpdateCorrespondenceRequest{
+		Subject:         req.GetSubject(),
+		Description:     req.GetDescription(),
+		AttachmentURL:   req.GetAttachmentUrl(),
+		Kategori:        "",
+		KodeKlasifikasi: "",
+	}
+	c, err := h.service.UpdateCorrespondence(ctx, req.GetId(), svcReq)
 	if err != nil {
 		return nil, mapServiceError(err)
 	}
@@ -73,7 +85,14 @@ func (h *CorrespondenceGRPCHandler) GetCorrespondence(ctx context.Context, req *
 }
 
 func (h *CorrespondenceGRPCHandler) ListCorrespondences(ctx context.Context, req *pb.ListCorrespondencesRequest) (*pb.ListCorrespondencesResponse, error) {
-	correspondences, err := h.service.ListCorrespondences(ctx, req.GetType(), req.GetStatus(), req.GetSearch())
+	// Perbaikan: Menggunakan struct filter yang baru
+	filter := repository.CorrespondenceFilter{
+		Type:   req.GetType(),
+		Status: req.GetStatus(),
+		Search: req.GetSearch(),
+	}
+
+	correspondences, err := h.service.ListCorrespondences(ctx, filter)
 	if err != nil {
 		return nil, mapServiceError(err)
 	}

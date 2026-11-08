@@ -17,7 +17,6 @@ export function useStudentDetail() {
   // === COMPUTED ===
   const studentId = computed(() => route.params.id)
 
-  // Perbaikan: Gunakan getById dan isLoading(studentId) dari Store
   const student = computed(() => studentDetailStore.getById(studentId.value))
   const isLoading = computed(() => studentDetailStore.isLoading(studentId.value))
   const error = computed(() => studentDetailStore.getError(studentId.value))
@@ -44,16 +43,15 @@ export function useStudentDetail() {
 
   // === ACTIONS ===
   function editStudent() {
-    router.push({ name: 'student-edit', params: { id: studentId.value } })
+    router.push(`/kesiswaan/siswa/edit/${studentId.value}`)
   }
 
   function goBack() {
-    router.push({ name: 'student-list' }) // Pastikan nama route ini sesuai di router.js
+    router.push('/kesiswaan/siswa')
   }
 
   function loadData() {
     if (studentId.value) {
-      // Panggil action baru di Store
       studentDetailStore.fetchStudentById(studentId.value)
     }
   }

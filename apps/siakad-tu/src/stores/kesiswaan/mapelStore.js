@@ -1,29 +1,31 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
+import { api } from '@/boot/axios'
 
 export const useMapelStore = defineStore('mapel', {
   state: () => ({
     list: [],
+    isLoading: false,
   }),
   actions: {
-    loadData() {
-      const stored = localStorage.getItem('data_mapel')
-      if (stored) {
-        this.list = JSON.parse(stored)
-      } else {
-        this.list = [
-          { id: 1, nama: 'Matematika', jenis: 'umum' },
-          { id: 2, nama: 'Pemrograman Web', jenis: 'kejuruan' },
-          { id: 3, nama: 'Basis Data', jenis: 'kejuruan' },
-        ]
-        this.saveData()
+    async fetchSubjects() {
+      this.isLoading = true
+      try {
+        const res = await api.get('/subjects')
+        this.list = res.data.data || []
+      } finally {
+        this.isLoading = false
       }
     },
-    saveData() {
-      localStorage.setItem('data_mapel', JSON.stringify(this.list))
+    async createSubject(payload) {
+      await api.post('/subjects', payload)
+      await this.fetchSubjects()
     },
+    async deleteSubject(id) {
+      await api.delete(`/subjects/${id}`)
+      await this.fetchSubjects()
+    }
   },
 })
-
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useMapelStore, import.meta.hot))
 }

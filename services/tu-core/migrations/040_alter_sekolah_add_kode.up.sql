@@ -1,0 +1,1 @@
+ALTER TABLE tabel_sekolah ADD COLUMN IF NOT EXISTS kode_sekolah VARCHAR(20);

@@ -104,7 +104,9 @@ func main() {
 	pembelajaranRepo := repository.NewPembelajaranRepository(db)
 	kurikulumStatRepo := repository.NewKurikulumStatRepository(db)
 	scheduleRepo := repository.NewScheduleRepository(db)
-	logisticRepo := repository.NewLogisticRepository(db) // <-- NEW
+	jurusanRepo := repository.NewJurusanRepository(db) // <-- TAMBAHAN
+	logisticRepo := repository.NewLogisticRepository(db)
+	kirItemRepo := repository.NewInventoryItemRepository(db)
 
 	// ENGINES
 	studentEngine := studentEngine.NewStudentEngine()
@@ -138,12 +140,14 @@ func main() {
 	ptkDashboardService := service.NewPtkDashboardService(ptkDashboardRepo)
 	kurikulumService := service.NewKurikulumService(subjectRepo, pembelajaranRepo, kurikulumStatRepo)
 	scheduleService := service.NewScheduleService(scheduleRepo, db)
+	jurusanService := service.NewJurusanService(jurusanRepo) // <-- TAMBAHAN
 	enrollmentService := service.NewEnrollmentService(db, enrollmentRepo, classRepo, studentRepo, studentEngine, eventPublisher)
 	authService := service.NewAuthService(userRepo, academicRepo)
 	publicService := service.NewPublicService(publicRepo)
 	userService := service.NewUserService(userRepo)
 	schoolService := service.NewSchoolService(schoolRepo)
-	logisticService := service.NewLogisticService(logisticRepo) // <-- NEW
+	logisticService := service.NewLogisticService(logisticRepo)
+	kirService := service.NewKIRService(db, kirItemRepo)
 
 	setupBackgroundWorkers(ctx, db, js, notifDispatch, notifRepo)
 
@@ -188,6 +192,7 @@ func main() {
 		teacherService,
 		kurikulumService,
 		scheduleService,
+		jurusanService, // <-- TAMBAHAN
 		prefService,
 		authService,
 		publicService,
@@ -202,7 +207,8 @@ func main() {
 		ptkPerformanceService,
 		ptkArchiveService,
 		ptkDashboardService,
-		logisticService, // <-- NEW
+		logisticService,
+		kirService,
 	)
 	restServer := server.NewRESTServer(restConfig, restHandler)
 

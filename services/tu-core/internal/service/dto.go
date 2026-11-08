@@ -8,7 +8,6 @@ import (
 )
 
 // FlexString adalah tipe kustom yang bisa menerima string maupun number dari JSON.
-// Sangat berguna untuk import Excel yang kadang membaca NIS/NISN/Phone sebagai Number.
 type FlexString string
 
 func (s *FlexString) UnmarshalJSON(data []byte) error {
@@ -17,7 +16,6 @@ func (s *FlexString) UnmarshalJSON(data []byte) error {
 		*s = ""
 		return nil
 	}
-	// Jika berupa string (ada tanda kutip)
 	if data[0] == '"' {
 		var str string
 		if err := json.Unmarshal(data, &str); err != nil {
@@ -26,7 +24,6 @@ func (s *FlexString) UnmarshalJSON(data []byte) error {
 		*s = FlexString(str)
 		return nil
 	}
-	// Jika berupa angka (Number)
 	if data[0] == '-' || (data[0] >= '0' && data[0] <= '9') {
 		var num json.Number
 		if err := json.Unmarshal(data, &num); err != nil {
@@ -39,14 +36,12 @@ func (s *FlexString) UnmarshalJSON(data []byte) error {
 }
 
 // === STUDENT DTOs ===
-
-// CreateStudentRequest adalah request untuk membuat siswa baru.
 type CreateStudentRequest struct {
 	NIS         FlexString `json:"nis"`
 	NISN        FlexString `json:"nisn"`
 	Name        string     `json:"name"`
 	Gender      string     `json:"gender"`
-	BirthDate   *time.Time `json:"birthDate"` // Diubah ke pointer agar bisa null/string kosong
+	BirthDate   *time.Time `json:"birthDate"`
 	BirthPlace  string     `json:"birthPlace"`
 	Address     string     `json:"address"`
 	Phone       FlexString `json:"phone"`
@@ -57,7 +52,6 @@ type CreateStudentRequest struct {
 	ClassID     string     `json:"classId"`
 }
 
-// UpdateStudentRequest adalah request untuk update siswa.
 type UpdateStudentRequest struct {
 	Name        string     `json:"name"`
 	NIS         FlexString `json:"nis"`
@@ -74,7 +68,6 @@ type UpdateStudentRequest struct {
 	ParentEmail string     `json:"parentEmail"`
 }
 
-// StudentResponse adalah response untuk data siswa.
 type StudentResponse struct {
 	ID               string    `json:"id"`
 	SchoolID         string    `json:"schoolId"`
@@ -97,7 +90,6 @@ type StudentResponse struct {
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
-// StudentListResponse adalah response untuk list siswa dengan pagination.
 type StudentListResponse struct {
 	Data    []StudentResponse `json:"data"`
 	Total   int               `json:"total"`
@@ -106,7 +98,6 @@ type StudentListResponse struct {
 	HasMore bool              `json:"hasMore"`
 }
 
-// StudentFilterRequest adalah request filter untuk list siswa.
 type StudentFilterRequest struct {
 	ClassID string `json:"classId"`
 	Status  string `json:"status"`
@@ -116,8 +107,6 @@ type StudentFilterRequest struct {
 }
 
 // === TEACHER DTOs ===
-
-// CreateTeacherRequest adalah request untuk membuat guru baru.
 type CreateTeacherRequest struct {
 	NIP       string    `json:"nip"`
 	Name      string    `json:"name"`
@@ -129,7 +118,6 @@ type CreateTeacherRequest struct {
 	SubjectID string    `json:"subjectId"`
 }
 
-// TeacherResponse adalah response untuk data guru.
 type TeacherResponse struct {
 	ID               string    `json:"id"`
 	SchoolID         string    `json:"schoolId"`
@@ -147,22 +135,18 @@ type TeacherResponse struct {
 }
 
 // === ATTENDANCE DTOs ===
-
-// SubmitAttendanceRequest adalah request untuk submit absensi.
 type SubmitAttendanceRequest struct {
 	ClassID string                    `json:"classId"`
 	Date    time.Time                 `json:"date"`
 	Records []AttendanceRecordRequest `json:"records"`
 }
 
-// AttendanceRecordRequest adalah data absensi per siswa.
 type AttendanceRecordRequest struct {
 	StudentID string `json:"studentId"`
-	Status    string `json:"status"` // PRESENT, ABSENT, LATE, SICK, PERMISSION
+	Status    string `json:"status"`
 	Note      string `json:"note"`
 }
 
-// AttendanceResponse adalah response untuk data absensi.
 type AttendanceResponse struct {
 	ID        string    `json:"id"`
 	StudentID string    `json:"studentId"`
@@ -172,20 +156,18 @@ type AttendanceResponse struct {
 	Note      string    `json:"note"`
 }
 
-// === ASSESSMENT DTOs===
-// CreateAssessmentRequest adalah request untuk membuat nilai.
+// === ASSESSMENT DTOs ===
 type CreateAssessmentRequest struct {
 	StudentID      string    `json:"studentId"`
 	SubjectID      string    `json:"subjectId"`
-	AssessmentType string    `json:"assessmentType"` // DAILY, MIDTERM, FINAL
+	AssessmentType string    `json:"assessmentType"`
 	Score          float64   `json:"score"`
 	MaxScore       float64   `json:"maxScore"`
 	AssessmentDate time.Time `json:"assessmentDate"`
-	Semester       int       `json:"semester"` // 1 atau 2
+	Semester       int       `json:"semester"`
 	Notes          string    `json:"notes"`
 }
 
-// AssessmentResponse adalah response untuk data nilai.
 type AssessmentResponse struct {
 	ID               string    `json:"id"`
 	SchoolID         string    `json:"schoolId"`
@@ -205,7 +187,6 @@ type AssessmentResponse struct {
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
-// SubjectAverageResponse adalah response untuk rata-rata per mata pelajaran.
 type SubjectAverageResponse struct {
 	SubjectID        string  `json:"subjectId"`
 	SubjectName      string  `json:"subjectName"`
@@ -216,18 +197,15 @@ type SubjectAverageResponse struct {
 }
 
 // === FINANCE DTOs ===
-
-// CreateInvoiceRequest adalah request untuk membuat tagihan.
 type CreateInvoiceRequest struct {
 	StudentID     string    `json:"studentId"`
-	ComponentType string    `json:"componentType"` // SPP, UNIFORM, BOOK
+	ComponentType string    `json:"componentType"`
 	Month         int       `json:"month"`
 	Year          int       `json:"year"`
 	Amount        float64   `json:"amount"`
 	DueDate       time.Time `json:"dueDate"`
 }
 
-// InvoiceResponse adalah response untuk data tagihan.
 type InvoiceResponse struct {
 	ID               string     `json:"id"`
 	SchoolID         string     `json:"schoolId"`
@@ -247,16 +225,14 @@ type InvoiceResponse struct {
 	UpdatedAt        time.Time  `json:"updatedAt"`
 }
 
-// CreatePaymentRequest adalah request untuk membuat pembayaran.
 type CreatePaymentRequest struct {
 	InvoiceID       string    `json:"invoiceId"`
 	Amount          float64   `json:"amount"`
-	PaymentMethod   string    `json:"paymentMethod"` // CASH, TRANSFER, VA, QRIS
+	PaymentMethod   string    `json:"paymentMethod"`
 	PaymentDate     time.Time `json:"paymentDate"`
 	ReferenceNumber string    `json:"referenceNumber"`
 }
 
-// PaymentResponse adalah response untuk data pembayaran.
 type PaymentResponse struct {
 	ID               string    `json:"id"`
 	SchoolID         string    `json:"schoolId"`
@@ -276,27 +252,51 @@ type PaymentResponse struct {
 
 // CreateCorrespondenceRequest adalah request untuk membuat surat.
 type CreateCorrespondenceRequest struct {
-	Type          string    `json:"type"` // INCOMING, OUTGOING
-	Number        string    `json:"number"`
-	Date          time.Time `json:"date"`
-	Subject       string    `json:"subject"`
-	From          string    `json:"from"`
-	To            string    `json:"to"`
-	Description   string    `json:"description"`
-	AttachmentURL string    `json:"attachmentUrl"`
+	Type            string                 `json:"type"` // INCOMING, OUTGOING
+	JenisSurat      string                 `json:"jenis_surat"`
+	Kategori        string                 `json:"kategori"`
+	KodeKlasifikasi string                 `json:"kode_klasifikasi"`
+	Number          string                 `json:"number"`
+	Date            time.Time              `json:"date"`
+	Subject         string                 `json:"subject"`
+	From            string                 `json:"from"`
+	To              string                 `json:"to"`
+	Description     string                 `json:"description"`
+	AttachmentURL   string                 `json:"attachment_url"`
+	FileURL         string                 `json:"file_url"`
+	TTDURL          string                 `json:"ttd_url"`
+	Konten          map[string]interface{} `json:"konten"`
+}
+
+// UpdateCorrespondenceRequest adalah request untuk update surat.
+type UpdateCorrespondenceRequest struct {
+	Kategori        string                 `json:"kategori"`
+	KodeKlasifikasi string                 `json:"kode_klasifikasi"`
+	Subject         string                 `json:"subject"`
+	Description     string                 `json:"description"`
+	AttachmentURL   string                 `json:"attachment_url"`
+	FileURL         string                 `json:"file_url"`
+	TTDURL          string                 `json:"ttd_url"`
+	Konten          map[string]interface{} `json:"konten"`
 }
 
 // CorrespondenceResponse adalah response untuk data surat.
 type CorrespondenceResponse struct {
-	ID            string    `json:"id"`
-	Type          string    `json:"type"`
-	Number        string    `json:"number"`
-	Date          time.Time `json:"date"`
-	Subject       string    `json:"subject"`
-	From          string    `json:"from"`
-	To            string    `json:"to"`
-	Description   string    `json:"description"`
-	AttachmentURL string    `json:"attachmentUrl"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"createdAt"`
+	ID              string                 `json:"id"`
+	Type            string                 `json:"type"`
+	JenisSurat      string                 `json:"jenis_surat"`
+	Kategori        string                 `json:"kategori"`
+	KodeKlasifikasi string                 `json:"kode_klasifikasi"`
+	Number          string                 `json:"number"`
+	Date            time.Time              `json:"date"`
+	Subject         string                 `json:"subject"`
+	From            string                 `json:"from"`
+	To              string                 `json:"to"`
+	Description     string                 `json:"description"`
+	AttachmentURL   string                 `json:"attachment_url"`
+	FileURL         string                 `json:"file_url"`
+	TTDURL          string                 `json:"ttd_url"`
+	Konten          map[string]interface{} `json:"konten"`
+	Status          string                 `json:"status"`
+	CreatedAt       time.Time              `json:"createdAt"`
 }

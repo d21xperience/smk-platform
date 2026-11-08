@@ -56,7 +56,9 @@ type StudentUIDTO struct {
 	Address       *string    `json:"address,omitempty"`
 	Phone         *string    `json:"phone,omitempty"`
 	ParentName    *string    `json:"parentName,omitempty"`
+	ParentPhone   *string    `json:"parentPhone,omitempty"`
 	ParentNameIbu *string    `json:"nm_ibu,omitempty"`
+	ClassID       string     `json:"classId"`
 	ClassName     string     `json:"className"`
 	Status        string     `json:"status"`
 }
@@ -75,7 +77,7 @@ type StudentRepository interface {
 	ListForUI(ctx context.Context, filter StudentFilter) ([]StudentUIDTO, int, error)
 	ListAvailableForUI(ctx context.Context, filter StudentFilter) ([]StudentUIDTO, int, error)
 	GetByIDForUI(ctx context.Context, schoolID, academicPeriodID, studentID string) (*StudentUIDTO, error)
-	UpdateForUI(ctx context.Context, schoolID, academicPeriodID, studentID string, name, birthPlace, gender, address, phone, className string) error
+	UpdateForUI(ctx context.Context, schoolID, academicPeriodID, studentID, name, birthPlace, birthDateStr, gender, address, phone, className, parentName, parentPhone string) error
 	DeleteForUI(ctx context.Context, schoolID, academicPeriodID, studentID string) error
 }
 
@@ -188,9 +190,7 @@ func (r *pgxStudentRepository) GetByNIS(ctx context.Context, schoolID, academicP
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-	if birthDate != nil {
-		s.BirthDate = *birthDate
-	}
+	if birthDate != nil { s.BirthDate = *birthDate }
 	s.SchoolID = schoolID
 	s.AcademicPeriodID = academicPeriodID
 	s.Status = "Aktif"
@@ -222,17 +222,13 @@ func (r *pgxStudentRepository) GetByNISN(ctx context.Context, schoolID, academic
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-	if birthDate != nil {
-		s.BirthDate = *birthDate
-	}
+	if birthDate != nil { s.BirthDate = *birthDate }
 	s.SchoolID = schoolID
 	s.AcademicPeriodID = academicPeriodID
 	s.Status = "Aktif"
 	return &s, nil
 }
 
-// GetByID mengambil profil siswa murni dari tabel_siswa.
-// Menggunakan LEFT JOIN agar siswa tetap ditemukan meskipun belum terdaftar di kelas manapun.
 func (r *pgxStudentRepository) GetByID(ctx context.Context, schoolID, academicPeriodID, studentID string) (*Student, error) {
 	if schoolID == "" || academicPeriodID == "" {
 		return nil, ErrMissingOperationalContext
@@ -261,9 +257,7 @@ func (r *pgxStudentRepository) GetByID(ctx context.Context, schoolID, academicPe
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-	if birthDate != nil {
-		s.BirthDate = *birthDate
-	}
+	if birthDate != nil { s.BirthDate = *birthDate }
 	s.SchoolID = schoolID
 	s.AcademicPeriodID = academicPeriodID
 	s.Status = "Aktif"
@@ -297,12 +291,8 @@ func (r *pgxStudentRepository) List(ctx context.Context, filter StudentFilter) (
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 {
-		filter.Limit = 20
-	}
-	if filter.Offset < 0 {
-		filter.Offset = 0
-	}
+	if filter.Limit <= 0 { filter.Limit = 20 }
+	if filter.Offset < 0 { filter.Offset = 0 }
 
 	dataQuery := fmt.Sprintf(`
 		SELECT
@@ -336,9 +326,7 @@ func (r *pgxStudentRepository) List(ctx context.Context, filter StudentFilter) (
 		); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}
-		if birthDate != nil {
-			s.BirthDate = *birthDate
-		}
+		if birthDate != nil { s.BirthDate = *birthDate }
 		s.SchoolID = filter.SchoolID
 		s.AcademicPeriodID = filter.AcademicPeriodID
 		s.Status = "Aktif"
@@ -384,9 +372,7 @@ func (r *pgxStudentRepository) Update(ctx context.Context, student *Student) err
 	}
 
 	queryPelengkap := `
-		UPDATE tabel_siswa_pelengkap SET
-			telepon_ortu = $1
-		WHERE peserta_didik_id = $2
+		UPDATE tabel_siswa_pelengkap SET telepon_ortu = $1 WHERE peserta_didik_id = $2
 	`
 	_, err = tx.Exec(ctx, queryPelengkap, student.ParentPhone, student.ID)
 	if err != nil {
@@ -464,18 +450,14 @@ func (r *pgxStudentRepository) ListForUI(ctx context.Context, filter StudentFilt
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 {
-		filter.Limit = 20
-	}
-	if filter.Offset < 0 {
-		filter.Offset = 0
-	}
+	if filter.Limit <= 0 { filter.Limit = 20 }
+	if filter.Offset < 0 { filter.Offset = 0 }
 
 	dataQuery := fmt.Sprintf(`
 		SELECT
 			ts.peserta_didik_id, ts.nis, ts.nisn, ts.nm_siswa, ts.tempat_lahir, ts.tanggal_lahir,
 			ts.jenis_kelamin, ts.agama, ts.alamat_siswa, ts.telepon_siswa,
-			ts.nm_ayah, ts.nm_ibu, COALESCE(tk.nm_kelas, '') as nm_kelas
+			ts.nm_ayah, ts.nm_ibu, COALESCE(tak.rombongan_belajar_id::text, '') as class_id, COALESCE(tk.nm_kelas, '') as nm_kelas
 		FROM tabel_siswa ts
 		LEFT JOIN tabel_siswa_pelengkap tsp ON ts.peserta_didik_id = tsp.peserta_didik_id
 		JOIN tabel_anggotakelas tak ON ts.peserta_didik_id = tak.peserta_didik_id
@@ -498,7 +480,7 @@ func (r *pgxStudentRepository) ListForUI(ctx context.Context, filter StudentFilt
 		if err := rows.Scan(
 			&s.ID, &s.NIS, &s.NISN, &s.Name, &s.BirthPlace, &s.BirthDate,
 			&s.Gender, &s.Agama, &s.Address, &s.Phone,
-			&s.ParentName, &s.ParentNameIbu, &s.ClassName,
+			&s.ParentName, &s.ParentNameIbu, &s.ClassID, &s.ClassName,
 		); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}
@@ -513,7 +495,7 @@ func (r *pgxStudentRepository) GetByIDForUI(ctx context.Context, schoolID, acade
 		SELECT
 			ts.peserta_didik_id, ts.nis, ts.nisn, ts.nm_siswa, ts.tempat_lahir, ts.tanggal_lahir,
 			ts.jenis_kelamin, ts.agama, ts.alamat_siswa, ts.telepon_siswa,
-			ts.nm_ayah, ts.nm_ibu, COALESCE(tk.nm_kelas, '') as nm_kelas
+			ts.nm_ayah, ts.nm_ibu, COALESCE(tak.rombongan_belajar_id::text, '') as class_id, COALESCE(tk.nm_kelas, '') as nm_kelas
 		FROM tabel_siswa ts
 		LEFT JOIN tabel_siswa_pelengkap tsp ON ts.peserta_didik_id = tsp.peserta_didik_id
 		JOIN tabel_anggotakelas tak ON ts.peserta_didik_id = tak.peserta_didik_id
@@ -524,7 +506,7 @@ func (r *pgxStudentRepository) GetByIDForUI(ctx context.Context, schoolID, acade
 	err := r.db.QueryRow(ctx, query, studentID, academicPeriodID, schoolID).Scan(
 		&s.ID, &s.NIS, &s.NISN, &s.Name, &s.BirthPlace, &s.BirthDate,
 		&s.Gender, &s.Agama, &s.Address, &s.Phone,
-		&s.ParentName, &s.ParentNameIbu, &s.ClassName,
+		&s.ParentName, &s.ParentNameIbu, &s.ClassID, &s.ClassName,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -536,25 +518,41 @@ func (r *pgxStudentRepository) GetByIDForUI(ctx context.Context, schoolID, acade
 	return &s, nil
 }
 
-func (r *pgxStudentRepository) UpdateForUI(ctx context.Context, schoolID, academicPeriodID, studentID string, name, birthPlace, gender, address, phone, className string) error {
+func (r *pgxStudentRepository) UpdateForUI(ctx context.Context, schoolID, academicPeriodID, studentID, name, birthPlace, birthDateStr, gender, address, phone, className, parentName, parentPhone string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 	defer tx.Rollback(ctx)
 
+	// Parsing BirthDate dari string (YYYY-MM-DD) ke time.Time
+	var birthDate interface{} = nil
+	if birthDateStr != "" {
+		if t, errParse := time.Parse("2006-01-02", birthDateStr); errParse == nil {
+			birthDate = t
+		}
+	}
+
 	querySiswa := `
 		UPDATE tabel_siswa SET
-			nm_siswa = $1, tempat_lahir = $2, jenis_kelamin = $3,
-			alamat_siswa = $4, telepon_siswa = $5
-		WHERE peserta_didik_id = $6
+			nm_siswa = $1, tempat_lahir = $2, tanggal_lahir = $3, jenis_kelamin = $4,
+			alamat_siswa = $5, telepon_siswa = $6, nm_ayah = $7
+		WHERE peserta_didik_id = $8
 	`
-	result, err := tx.Exec(ctx, querySiswa, name, birthPlace, gender, address, phone, studentID)
+	result, err := tx.Exec(ctx, querySiswa, name, birthPlace, birthDate, gender, address, phone, parentName, studentID)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 	if result.RowsAffected() == 0 {
 		return ErrNotFound
+	}
+
+	queryPelengkap := `
+		UPDATE tabel_siswa_pelengkap SET telepon_ortu = $1 WHERE peserta_didik_id = $2
+	`
+	_, err = tx.Exec(ctx, queryPelengkap, parentPhone, studentID)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
 	if className != "" {
@@ -571,20 +569,12 @@ func (r *pgxStudentRepository) UpdateForUI(ctx context.Context, schoolID, academ
 
 		if errFind == nil {
 			var count int
-			tx.QueryRow(ctx, `SELECT COUNT(*) FROM tabel_anggotakelas WHERE peserta_didik_id = $1 AND semester_id = $2`, studentID, academicPeriodID).Scan(&count)
+			_ = tx.QueryRow(ctx, `SELECT COUNT(*) FROM tabel_anggotakelas WHERE peserta_didik_id = $1 AND semester_id = $2`, studentID, academicPeriodID).Scan(&count)
 
 			if count > 0 {
-				queryAnggota := `
-					UPDATE tabel_anggotakelas SET rombongan_belajar_id = $1
-					WHERE peserta_didik_id = $2 AND semester_id = $3
-				`
-				_, err = tx.Exec(ctx, queryAnggota, rombelID, studentID, academicPeriodID)
+				_, err = tx.Exec(ctx, `UPDATE tabel_anggotakelas SET rombongan_belajar_id = $1 WHERE peserta_didik_id = $2 AND semester_id = $3`, rombelID, studentID, academicPeriodID)
 			} else {
-				queryAnggota := `
-					INSERT INTO tabel_anggotakelas (anggota_rombel_id, peserta_didik_id, rombongan_belajar_id, semester_id)
-					VALUES ($1, $2, $3, $4)
-				`
-				_, err = tx.Exec(ctx, queryAnggota, uuid.New().String(), studentID, rombelID, academicPeriodID)
+				_, err = tx.Exec(ctx, `INSERT INTO tabel_anggotakelas (anggota_rombel_id, peserta_didik_id, rombongan_belajar_id, semester_id) VALUES ($1, $2, $3, $4)`, uuid.New().String(), studentID, rombelID, academicPeriodID)
 			}
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrDatabaseError, err)
@@ -643,18 +633,14 @@ func (r *pgxStudentRepository) ListAvailableForUI(ctx context.Context, filter St
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 {
-		filter.Limit = 50
-	}
-	if filter.Offset < 0 {
-		filter.Offset = 0
-	}
+	if filter.Limit <= 0 { filter.Limit = 50 }
+	if filter.Offset < 0 { filter.Offset = 0 }
 
 	dataQuery := fmt.Sprintf(`
 		SELECT
 			ts.peserta_didik_id, ts.nis, ts.nisn, ts.nm_siswa, ts.tempat_lahir, ts.tanggal_lahir,
 			ts.jenis_kelamin, ts.agama, ts.alamat_siswa, ts.telepon_siswa,
-			ts.nm_ayah, ts.nm_ibu, '' as nm_kelas
+			ts.nm_ayah, ts.nm_ibu, '' as class_id, '' as nm_kelas
 		FROM tabel_siswa ts
 		LEFT JOIN tabel_anggotakelas tak ON ts.peserta_didik_id = tak.peserta_didik_id AND tak.semester_id = $1
 		LEFT JOIN tabel_kelas tk ON tak.rombongan_belajar_id = tk.rombongan_belajar_id AND tk.sekolah_id::text = $2
@@ -676,7 +662,7 @@ func (r *pgxStudentRepository) ListAvailableForUI(ctx context.Context, filter St
 		if err := rows.Scan(
 			&s.ID, &s.NIS, &s.NISN, &s.Name, &s.BirthPlace, &s.BirthDate,
 			&s.Gender, &s.Agama, &s.Address, &s.Phone,
-			&s.ParentName, &s.ParentNameIbu, &s.ClassName,
+			&s.ParentName, &s.ParentNameIbu, &s.ClassID, &s.ClassName,
 		); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}

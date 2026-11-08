@@ -60,7 +60,6 @@ export function useStudentList() {
   }
 
   function applyFilters() {
-    // PERBAIKAN: Kirim seluruh state localFilters, biarkan Adapter yang mengabaikan nilai null
     studentListStore.updateFilters(localFilters.value)
     studentListStore.fetchStudents({ page: 1 })
   }
@@ -74,7 +73,6 @@ export function useStudentList() {
   }
 
   function resetFilters() {
-    // Set semua ke default, lalu apply
     localFilters.value = { status: null, search: '', tingkat: null, jurusan: null, kelas: null }
     applyFilters()
   }
@@ -84,8 +82,9 @@ export function useStudentList() {
     studentListStore.fetchStudents({ page, limit: rowsPerPage })
   }
 
+  // PERBAIKAN: Sesuaikan nama route dengan yang ada di kesiswaan-routes.js
   function viewDetail(studentId) {
-    router.push({ name: 'student-detail', params: { id: studentId } })
+    router.push({ name: 'kesiswaan-siswa-detail', params: { id: studentId } })
   }
 
   function openDeleteDialog(student) {

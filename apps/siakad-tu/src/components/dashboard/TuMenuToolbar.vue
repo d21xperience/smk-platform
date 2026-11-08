@@ -46,6 +46,8 @@ const itemKurikulum = [
   { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' }, // Sementara mengarah ke preview
   { title: 'Mata Pelajaran', to: '/kurikulum/mapel' },
   { title: 'Penugasan Mengajar', to: '/kurikulum/pembelajaran' },
+  { title: 'Kelas', to: '/kurikulum/kelas' },
+  { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal-pelajaran' },
   // { title: 'Pembelajaran', to: '/kurikulum/pembelajaran' },
   // { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal' },
 ]
@@ -70,8 +72,7 @@ const itemPsb = [
 
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
-  { title: 'Kelas', to: '/kesiswaan/kelas' },
-  { title: 'Jadwal Pelajaran', to: '/kesiswaan/jadwal-pelajaran' },
+
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
   { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
@@ -83,6 +84,7 @@ const itemKesiswaan = [
 ]
 const itemSarpras = [
   { title: 'Dashboard', to: '/sarpras/dashboard' },
+  { title: 'Master Data', to: '/sarpras/master-data' },
   {
     title: 'Inventaris', icon: 'wallet', children: [
       { title: 'Logistik', to: '/sarpras/inventaris/logistik' },

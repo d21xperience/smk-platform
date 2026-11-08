@@ -10,8 +10,8 @@
 
     <q-card class="shadow-1">
       <q-card-section class="row items-center q-pb-none">
-        <q-select v-model="filterStatus" :options="['semua', 'pending', 'disetujui', 'ditolak']" label="Filter Status" dense
-          outlined class="q-mr-md" style="min-width: 200px" />
+        <q-select v-model="filterStatus" :options="['semua', 'pending', 'disetujui', 'ditolak']" label="Filter Status"
+          dense outlined class="q-mr-md" style="min-width: 200px" />
         <q-btn color="secondary" icon="refresh" label="Refresh" @click="fetchLeaves" :loading="isLoading" flat />
       </q-card-section>
 
@@ -19,15 +19,18 @@
         <q-table :rows="filteredCuti" :columns="columns" row-key="id" flat bordered dense :loading="isLoading">
           <template v-slot:body-cell-status="props">
             <q-td :props="props" class="text-center">
-              <q-badge :color="props.row.status === 'pending' ? 'warning' : (props.row.status === 'disetujui' ? 'positive' : 'negative')">
+              <q-badge
+                :color="props.row.status === 'pending' ? 'warning' : (props.row.status === 'disetujui' ? 'positive' : 'negative')">
                 {{ props.row.status.toUpperCase() }}
               </q-badge>
             </q-td>
           </template>
           <template v-slot:body-cell-aksi="props">
             <q-td :props="props" class="text-center">
-              <div v-if="(authStore.user?.role === 'kepsek' || authStore.user?.role === 'admin') && props.row.status === 'pending'">
-                <q-btn flat round dense icon="check_circle" color="positive" @click="approve(props.row.id)" class="q-mr-sm">
+              <div
+                v-if="(authStore.user?.role === 'kepsek' || authStore.user?.role === 'admin') && props.row.status === 'pending'">
+                <q-btn flat round dense icon="check_circle" color="positive" @click="approve(props.row.id)"
+                  class="q-mr-sm">
                   <q-tooltip>Setujui</q-tooltip>
                 </q-btn>
                 <q-btn flat round dense icon="cancel" color="negative" @click="openRejectDialog(props.row.id)">
@@ -70,13 +73,17 @@
               option-label="nama" emit-value map-options outlined dense :rules="[v => !!v || 'Wajib dipilih']" />
             <div class="row q-col-gutter-sm q-mt-sm">
               <div class="col-6">
-                <q-input v-model="form.tanggalMulai" label="Tanggal Mulai" type="date" outlined dense :rules="[v => !!v || 'Wajib diisi']" />
+                <q-input v-model="form.tanggalMulai" label="Tanggal Mulai" type="date" outlined dense
+                  :rules="[v => !!v || 'Wajib diisi']" />
               </div>
               <div class="col-6">
-                <q-input v-model="form.tanggalSelesai" label="Tanggal Selesai" type="date" outlined dense :rules="[v => !!v || 'Wajib diisi']" />
+                <q-input v-model="form.tanggalSelesai" label="Tanggal Selesai" type="date" outlined dense
+                  :rules="[v => !!v || 'Wajib diisi']" />
               </div>
             </div>
-            <q-select v-model="form.jenisCuti" :options="['Cuti Tahunan', 'Cuti Sakit', 'SPT (Surat Perintah Tugas)', 'Izin']" label="Jenis Cuti" outlined dense class="q-mt-sm" />
+            <q-select v-model="form.jenisCuti"
+              :options="['Cuti Tahunan', 'Cuti Sakit', 'SPT (Surat Perintah Tugas)', 'Izin']" label="Jenis Cuti"
+              outlined dense class="q-mt-sm" />
             <q-input v-model="form.alasan" label="Alasan" type="textarea" rows="2" outlined dense class="q-mt-sm" />
             <div class="row justify-end q-mt-md">
               <q-btn label="Batal" flat color="negative" v-close-popup class="q-mr-sm" />
@@ -94,7 +101,8 @@
           <div class="text-h6">Alasan Penolakan</div>
         </q-card-section>
         <q-card-section>
-          <q-input v-model="rejectNote" label="Catatan / Alasan Penolakan" type="textarea" outlined autofocus :rules="[v => !!v || 'Wajib diisi']" />
+          <q-input v-model="rejectNote" label="Catatan / Alasan Penolakan" type="textarea" outlined autofocus
+            :rules="[v => !!v || 'Wajib diisi']" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Batal" color="negative" v-close-popup />
@@ -157,7 +165,7 @@ const fetchLeaves = async () => {
     const res = await api.get('/teachers/leaves')
     leaves.value = res.data || []
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Gagal memuat data cuti' })
+    $q.notify({ type: 'negative', message: `Gagal memuat data cuti ${err}` })
   } finally {
     isLoading.value = false
   }
@@ -193,7 +201,7 @@ const approve = (id) => {
       $q.notify({ type: 'positive', message: 'Pengajuan disetujui' })
       await fetchLeaves()
     } catch (err) {
-      $q.notify({ type: 'negative', message: 'Gagal menyetujui pengajuan' })
+      $q.notify({ type: 'negative', message: `Gagal menyetujui pengajuan ${err}` })
     }
   })
 }
@@ -213,7 +221,7 @@ const executeReject = async () => {
     rejectDialog.value = false
     await fetchLeaves()
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Gagal menolak pengajuan' })
+    $q.notify({ type: 'negative', message: `Gagal menolak pengajuan ${err}` })
   } finally {
     isSubmitting.value = false
   }
@@ -230,7 +238,7 @@ const confirmDelete = (id) => {
       $q.notify({ type: 'positive', message: 'Data berhasil dihapus' })
       await fetchLeaves()
     } catch (err) {
-      $q.notify({ type: 'negative', message: 'Gagal menghapus data' })
+      $q.notify({ type: 'negative', message: `Gagal menghapus data ${err}` })
     }
   })
 }

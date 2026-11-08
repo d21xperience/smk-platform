@@ -1,9 +1,11 @@
-import hubin from './routes/hubin-routes.js'
+// import hubin from './routes/hubin-routes.js'
 import kepegawaian from './routes/kepegawaian-routes.js'
 import kesiswaanRoutes from './routes/kesiswaan-routes.js'
+import kurikulumRoutes from './routes/kurikulum-routes.js'
 import persuratan from './routes/persuratan.js'
 import previewDev from './routes/preview-routes.js'
 import psb from './routes/psb-routes.js'
+import sarpras from './routes/sarpras.js'
 
 const routes = [
   {
@@ -12,41 +14,30 @@ const routes = [
     children: [
       previewDev,
       kesiswaanRoutes,
+      kurikulumRoutes,
       persuratan,
       psb,
-      hubin,
+      // hubin,
       kepegawaian,
+      sarpras,
       {
         path: 'pengaturan/tahun-ajaran',
         name: 'pengaturan-tahun-ajaran',
         component: () => import('@/pages/pengaturan/AcademicPeriodPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'pengaturan/pengguna',
         name: 'pengaturan-pengguna',
         component: () => import('@/pages/pengaturan/UserManagementPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
       {
         path: 'pengaturan/sekolah',
         name: 'pengaturan-sekolah',
         component: () => import('@/pages/pengaturan/SchoolProfilePage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
       },
-      // --- ROUTE KESISWAAN BARU ---
-      {
-        path: 'kesiswaan/jadwal-pelajaran',
-        name: 'kesiswaan-jadwal-pelajaran',
-        component: () => import('@/pages/kesiswaan/SchedulePage.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'kesiswaan/rekap-kehadiran',
-        name: 'kesiswaan-rekap-kehadiran',
-        component: () => import('@/pages/kesiswaan/AttendanceRecapPage.vue'),
-        meta: { requiresAuth: true }
-      }
     ],
   },
   {
