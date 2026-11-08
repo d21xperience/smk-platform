@@ -15,8 +15,10 @@ import (
 func (r *Router) registerStudentRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/students", r.handleStudents)
 	mux.HandleFunc("/api/v1/students/available", r.handleAvailableStudents)
-	mux.HandleFunc("/api/v1/students/", r.handleStudentByID)
 	mux.HandleFunc("/api/v1/students/{id}/history", r.handleStudentHistory)
+	// PERBAIKAN: Gunakan pattern /{id}/documents/{docId} untuk menghindari konflik dengan rute statis
+	mux.HandleFunc("/api/v1/students/{id}/documents/{docId}", r.handleStudentDocumentDelete)
+	mux.HandleFunc("/api/v1/students/", r.handleStudentByID) // Fallback untuk /{id} dan /{id}/documents
 }
 
 func (r *Router) handleStudents(w http.ResponseWriter, req *http.Request) {
@@ -102,6 +104,45 @@ func (r *Router) handleStudentByID(w http.ResponseWriter, req *http.Request) {
 	}
 	studentID := parts[0]
 
+	// Handle dokumen GET/POST (path: /{id}/documents)
+	if len(parts) > 1 && parts[1] == "documents" {
+		if req.Method == http.MethodGet {
+			docs, err := r.studentService.GetStudentDocuments(ctx, studentID)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"data": docs})
+			return
+		}
+		if req.Method == http.MethodPost {
+			// Max 5MB
+			if err := req.ParseMultipartForm(5 << 20); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "File terlalu besar atau format salah"})
+				return
+			}
+			file, header, err := req.FormFile("file")
+			if err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "File tidak ditemukan"})
+				return
+			}
+			defer file.Close()
+
+			jenisBerkas := req.FormValue("jenis_berkas")
+			if jenisBerkas == "" {
+				jenisBerkas = "lainnya"
+			}
+
+			doc, err := r.studentService.UploadStudentDocument(ctx, studentID, jenisBerkas, file, header)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusCreated, doc)
+			return
+		}
+	}
+
 	opCtx := middleware.GetOperationalContext(ctx)
 
 	switch req.Method {
@@ -114,7 +155,6 @@ func (r *Router) handleStudentByID(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusOK, student)
 
 	case http.MethodPut:
-		// PERBAIKAN: Sesuaikan dengan payload JSON dari Frontend (camelCase)
 		var reqBody struct {
 			Name        string `json:"name"`
 			NIS         string `json:"nis"`
@@ -175,4 +215,28 @@ func (r *Router) handleAvailableStudents(w http.ResponseWriter, req *http.Reques
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// handleStudentDocumentDelete menangani DELETE /api/v1/students/{id}/documents/{docId}
+func (r *Router) handleStudentDocumentDelete(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodDelete {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	// Extract docId from path
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/students/")
+	parts := splitPath(path)
+	if len(parts) < 3 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid document path"})
+		return
+	}
+	// parts[0] = studentID, parts[1] = "documents", parts[2] = docId
+	docID := parts[2]
+
+	if err := r.studentService.DeleteStudentDocument(req.Context(), docID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "deleted"})
 }

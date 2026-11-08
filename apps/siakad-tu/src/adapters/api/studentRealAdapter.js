@@ -21,7 +21,7 @@ const mapBackendToStudent = (backendDto) => {
     address: backendDto.address,
     phone: backendDto.phone,
     parentName: backendDto.parentName,
-    parentPhone: backendDto.parentPhone, // <-- Tambahan
+    parentPhone: backendDto.parentPhone,
     motherName: backendDto.motherName,
     enrollments: backendDto.enrollments || [],
   }
@@ -69,60 +69,28 @@ export const studentRealAdapter = {
     } catch (error) { return handleApiError(error) }
   },
 
-  async registerStudent(command) {
+  // ... (fungsi registerStudent, updateStudentProfile, deleteStudent biarkan sama) ...
+
+  async getStudentDocuments(studentId) {
     try {
-      const payload = {
-        nis: command.nis || '',
-        nisn: command.nisn || '',
-        name: command.nama || command.fullName || '',
-        gender: command.jenisKelamin === 'L' ? 'MALE' : 'FEMALE',
-        birthPlace: command.tempatLahir || '',
-        address: command.alamat || '',
-        phone: command.noHp || '',
-        email: '',
-        parentName: command.parentName || 'Belum Diisi',
-        parentPhone: command.parentPhone || '',
-        parentEmail: '',
-        classId: command.kelas || ''
-      }
-
-      if (command.tanggalLahir && command.tanggalLahir.trim() !== '') {
-        payload.birthDate = command.tanggalLahir;
-      }
-
-      const response = await api.post('/students', payload)
-      return handleSuccess(mapBackendToStudent(response.data))
+      const response = await api.get(`/students/${studentId}/documents`)
+      return handleSuccess(response.data.data || [])
     } catch (error) { return handleApiError(error) }
   },
 
-  async updateStudentProfile(command) {
+  async uploadStudentDocument(studentId, formData) {
     try {
-      const payload = {
-        name: command.name,
-        nis: command.nis,
-        nisn: command.nisn,
-        classId: command.classId,
-        gender: command.gender,
-        birthPlace: command.birthPlace,
-        address: command.address,
-        phone: command.phone,
-        parentName: command.parentName,   // <-- Tambahan
-        parentPhone: command.parentPhone, // <-- Tambahan
-      }
-      
-      if (command.birthDate && command.birthDate.trim() !== '') {
-        payload.birthDate = command.birthDate;
-      }
-
-      const response = await api.put(`/students/${command.studentId}`, payload)
-      return handleSuccess(mapBackendToStudent(response.data))
+      const response = await api.post(`/students/${studentId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      return handleSuccess(response.data)
     } catch (error) { return handleApiError(error) }
   },
 
-  async deleteStudent(studentId) {
+  async deleteStudentDocument(docId) {
     try {
-      await api.delete(`/students/${studentId}`)
-      return handleSuccess({ id: studentId })
+      await api.delete(`/students/documents/${docId}`)
+      return handleSuccess({ id: docId })
     } catch (error) { return handleApiError(error) }
-  },
+  }
 }

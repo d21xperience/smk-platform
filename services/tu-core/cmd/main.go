@@ -107,7 +107,7 @@ func main() {
 	jurusanRepo := repository.NewJurusanRepository(db) // <-- TAMBAHAN
 	logisticRepo := repository.NewLogisticRepository(db)
 	kirItemRepo := repository.NewInventoryItemRepository(db)
-
+	studentDocRepo := repository.NewStudentDocumentRepository(db)
 	// ENGINES
 	studentEngine := studentEngine.NewStudentEngine()
 	mutEngine := mutationEngine.NewMutationEngine()
@@ -121,7 +121,7 @@ func main() {
 	eventPublisher := &natsEventPublisher{nc: nc, js: js}
 
 	// SERVICES
-	studentService := service.NewStudentService(studentRepo, studentEngine, eventPublisher)
+	studentService := service.NewStudentService(studentRepo, studentDocRepo, minioClient, studentEngine, eventPublisher)
 	mutationService := service.NewMutationService(mutationRepository, studentRepo, mutEngine, eventPublisher)
 	registrationService := service.NewRegistrationService(registrationRepo, studentRepo, regEngine, eventPublisher)
 	attendanceService := service.NewAttendanceService(attendanceRepo, studentRepo, attEngine, eventPublisher)

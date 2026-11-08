@@ -39,6 +39,7 @@
           <q-tab name="profil" icon="badge" label="Profil Siswa" />
           <q-tab name="orangtua" icon="family_restroom" label="Data Orang Tua" />
           <q-tab name="alamat" icon="home" label="Alamat & Kontak" />
+          <q-tab name="dokumen" icon="folder" label="Berkas Dokumen" />
         </q-tabs>
 
         <q-separator />
@@ -93,6 +94,83 @@
               </div>
             </div>
           </q-tab-panel>
+
+          <!-- TAB DOKUMEN -->
+          <q-tab-panel name="dokumen">
+            <div v-if="isUploading" class="flex flex-center q-pa-md">
+              <q-spinner color="primary" size="2em" />
+              <span class="q-ml-sm text-primary">Sedang mengunggah berkas...</span>
+            </div>
+            <div class="row q-col-gutter-md q-mt-sm">
+              <!-- Form Upload Foto -->
+              <div class="col-12 col-md-6">
+                <q-card flat bordered>
+                  <q-card-section class="q-pb-none">
+                    <div class="text-subtitle1 text-weight-bold">Foto Siswa (3x4)</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <q-file v-model="files.foto" label="Pilih File Foto" outlined dense @update:model-value="handleUpload('foto')" :disable="isUploading">
+                      <template v-slot:prepend><q-icon name="cloud_upload" /></template>
+                    </q-file>
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn flat label="Buka" color="primary" :disable="!getDocUrl('foto')" @click="openUrl(getDocUrl('foto'))" />
+                  </q-card-actions>
+                </q-card>
+              </div>
+
+              <!-- Form Upload KK -->
+              <div class="col-12 col-md-6">
+                <q-card flat bordered>
+                  <q-card-section class="q-pb-none">
+                    <div class="text-subtitle1 text-weight-bold">Kartu Keluarga (KK)</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <q-file v-model="files.kk" label="Pilih File KK" outlined dense @update:model-value="handleUpload('kk')" :disable="isUploading">
+                      <template v-slot:prepend><q-icon name="cloud_upload" /></template>
+                    </q-file>
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn flat label="Buka" color="primary" :disable="!getDocUrl('kk')" @click="openUrl(getDocUrl('kk'))" />
+                  </q-card-actions>
+                </q-card>
+              </div>
+
+              <!-- Form Upload Ijazah -->
+              <div class="col-12 col-md-6">
+                <q-card flat bordered>
+                  <q-card-section class="q-pb-none">
+                    <div class="text-subtitle1 text-weight-bold">Ijazah Sekolah Asal</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <q-file v-model="files.ijazah" label="Pilih File Ijazah" outlined dense @update:model-value="handleUpload('ijazah')" :disable="isUploading">
+                      <template v-slot:prepend><q-icon name="cloud_upload" /></template>
+                    </q-file>
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn flat label="Buka" color="primary" :disable="!getDocUrl('ijazah')" @click="openUrl(getDocUrl('ijazah'))" />
+                  </q-card-actions>
+                </q-card>
+              </div>
+
+              <!-- Form Upload KTP Ortu -->
+              <div class="col-12 col-md-6">
+                <q-card flat bordered>
+                  <q-card-section class="q-pb-none">
+                    <div class="text-subtitle1 text-weight-bold">KTP Orang Tua</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <q-file v-model="files.ktp" label="Pilih File KTP" outlined dense @update:model-value="handleUpload('ktp')" :disable="isUploading">
+                      <template v-slot:prepend><q-icon name="cloud_upload" /></template>
+                    </q-file>
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn flat label="Buka" color="primary" :disable="!getDocUrl('ktp')" @click="openUrl(getDocUrl('ktp'))" />
+                  </q-card-actions>
+                </q-card>
+              </div>
+            </div>
+          </q-tab-panel>
         </q-tab-panels>
       </q-card>
     </div>
@@ -111,20 +189,46 @@ import { onMounted, ref } from 'vue'
 import { useStudentDetail } from '@/composables/student/useStudentDetail'
 
 const tab = ref('profil')
+const files = ref({
+  foto: null,
+  kk: null,
+  ijazah: null,
+  ktp: null,
+})
 
 const {
   student,
   isLoading,
+  documents,
+  isUploading,
   formatDate,
   getStatusColor,
   editStudent,
   goBack,
   loadData,
+  uploadDocument,
 } = useStudentDetail()
 
 onMounted(() => {
   loadData()
 })
+
+function handleUpload(jenis) {
+  const file = files.value[jenis]
+  if (file) {
+    uploadDocument(file, jenis)
+    files.value[jenis] = null
+  }
+}
+
+function getDocUrl(jenis) {
+  const doc = documents.value.find(d => d.jenisBerkas === jenis)
+  return doc ? doc.urlFile : null
+}
+
+function openUrl(url) {
+  if (url) window.open(url, '_blank')
+}
 </script>
 
 <style scoped>

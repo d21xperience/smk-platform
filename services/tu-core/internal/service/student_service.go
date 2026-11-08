@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"mime/multipart"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,11 +16,14 @@ import (
 	"sekolah-platform/services/tu-core/internal/domain/student/models"
 	"sekolah-platform/services/tu-core/internal/middleware"
 	"sekolah-platform/services/tu-core/internal/repository"
+	"sekolah-platform/services/tu-core/internal/storage"
 )
 
 type StudentService struct {
-	repo   repository.StudentRepository
-	engine interface {
+	repo      repository.StudentRepository
+	docRepo   repository.StudentDocumentRepository
+	minio     *storage.MinioClient
+	engine    interface {
 		EnrollStudent(cmd commands.EnrollStudentCommand, opCtx *platformcontext.OperationalContext, student *models.Student) engine.Result
 		GraduateStudent(opCtx *platformcontext.OperationalContext, student *models.Student) engine.Result
 	}
@@ -27,6 +32,8 @@ type StudentService struct {
 
 func NewStudentService(
 	repo repository.StudentRepository,
+	docRepo repository.StudentDocumentRepository,
+	minio *storage.MinioClient,
 	engine interface {
 		EnrollStudent(cmd commands.EnrollStudentCommand, opCtx *platformcontext.OperationalContext, student *models.Student) engine.Result
 		GraduateStudent(opCtx *platformcontext.OperationalContext, student *models.Student) engine.Result
@@ -38,6 +45,8 @@ func NewStudentService(
 	}
 	return &StudentService{
 		repo:      repo,
+		docRepo:   docRepo,
+		minio:     minio,
 		engine:    engine,
 		publisher: publisher,
 	}
@@ -304,7 +313,7 @@ func contains(s, substr string) bool {
 }
 
 // =====================================================================
-// AREA BARU: Service Khusus UI
+// AREA UI & DOKUMEN
 // =====================================================================
 
 type StudentUIResponse struct {
@@ -375,4 +384,47 @@ func (s *StudentService) ListAvailableStudentsForUI(ctx context.Context, schoolI
 		Data: students, Total: total, Page: page, Limit: filter.Limit,
 		TotalPages: (total + filter.Limit - 1) / filter.Limit,
 	}, nil
+}
+
+// === FUNGSI DOKUMEN ===
+func (s *StudentService) UploadStudentDocument(ctx context.Context, studentID, jenisBerkas string, file multipart.File, fileHeader *multipart.FileHeader) (*repository.StudentDocument, error) {
+	opCtx := middleware.GetOperationalContext(ctx)
+	if opCtx == nil {
+		return nil, ErrMissingOperationalContext
+	}
+
+	student, err := s.repo.GetByID(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID, studentID)
+	if err != nil {
+		return nil, NewServiceError("UploadStudentDocument", "Student", studentID, "gagal ambil data siswa", err)
+	}
+
+	ext := filepath.Ext(fileHeader.Filename)
+	objectName := fmt.Sprintf("%s-%s%s", student.NIS, strings.ToLower(jenisBerkas), ext)
+	
+	url, err := s.minio.UploadFile(ctx, "documents", objectName, file, fileHeader)
+	if err != nil {
+		return nil, NewServiceError("UploadStudentDocument", "Student", studentID, "gagal upload ke minio", err)
+	}
+
+	doc := &repository.StudentDocument{
+		ID:          uuid.New().String(),
+		StudentID:   studentID,
+		JenisBerkas: jenisBerkas,
+		NamaFile:    fileHeader.Filename,
+		URLFile:     url,
+	}
+
+	if err := s.docRepo.Create(ctx, doc); err != nil {
+		return nil, NewServiceError("UploadStudentDocument", "Student", studentID, "gagal simpan metadata berkas", err)
+	}
+
+	return doc, nil
+}
+
+func (s *StudentService) GetStudentDocuments(ctx context.Context, studentID string) ([]repository.StudentDocument, error) {
+	return s.docRepo.GetByStudentID(ctx, studentID)
+}
+
+func (s *StudentService) DeleteStudentDocument(ctx context.Context, docID string) error {
+	return s.docRepo.Delete(ctx, docID)
 }
