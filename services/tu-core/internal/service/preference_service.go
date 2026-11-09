@@ -85,15 +85,33 @@ func (s *PreferenceService) GetUserPreference(ctx context.Context, userID, schoo
 }
 
 func (s *PreferenceService) SaveUserPreference(ctx context.Context, userID, schoolID, semesterID string) error {
-	query := `
-		INSERT INTO user_period_preference (user_id, school_id, semester_id, updated_at)
-		VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-		ON CONFLICT (user_id, school_id) DO UPDATE SET
-			semester_id = EXCLUDED.semester_id,
-			updated_at = CURRENT_TIMESTAMP
+	// 1. Coba lakukan UPDATE terlebih dahulu
+	queryUpdate := `
+		UPDATE user_period_preference 
+		SET semester_id = $1, updated_at = CURRENT_TIMESTAMP 
+		WHERE user_id = $2 AND school_id = $3
 	`
-	_, err := s.db.ExecContext(ctx, query, userID, schoolID, semesterID)
-	return err
+	res, err := s.db.ExecContext(ctx, queryUpdate, semesterID, userID, schoolID)
+	if err == nil {
+		rows, errRows := res.RowsAffected()
+		if errRows == nil && rows > 0 {
+			return nil // Berhasil update, selesai
+		}
+	} else {
+		// Jika error karena kolom school_id tidak ada, kita coba fallback atau laporkan error
+		return fmt.Errorf("gagal update preference: %w", err)
+	}
+
+	// 2. Jika 0 baris terpengaruh (berarti belum ada data), lakukan INSERT
+	queryInsert := `
+		INSERT INTO user_period_preference (user_id, school_id, semester_id, updated_at) 
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+	`
+	_, err = s.db.ExecContext(ctx, queryInsert, userID, schoolID, semesterID)
+	if err != nil {
+		return fmt.Errorf("gagal insert preference: %w", err)
+	}
+	return nil
 }
 
 func (s *PreferenceService) CreateAcademicYear(ctx context.Context, year string) error {
@@ -150,7 +168,6 @@ func (s *PreferenceService) ActivatePeriod(ctx context.Context, semesterID strin
 	return tx.Commit()
 }
 
-// DeletePeriod menghapus periode, dengan validasi tidak boleh menghapus yang aktif
 func (s *PreferenceService) DeletePeriod(ctx context.Context, semesterID string) error {
 	var isActive bool
 	queryCheck := `SELECT is_active FROM semesters WHERE id = $1`
