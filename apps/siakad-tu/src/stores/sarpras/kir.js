@@ -7,13 +7,14 @@ export const useKirStore = defineStore('sarpras-kir', () => {
   const categories = ref([])
   const catalogs = ref([])
   const items = ref([])
+  const history = ref([])
   const isLoading = ref(false)
 
-  // KIR Items
   const fetchRooms = async () => {
     const res = await api.get('/sarpras/kir/rooms')
     rooms.value = res.data.data || []
   }
+
   const fetchItemsByRoom = async (roomId) => {
     isLoading.value = true
     try {
@@ -23,6 +24,7 @@ export const useKirStore = defineStore('sarpras-kir', () => {
       isLoading.value = false
     }
   }
+
   const fetchAllItems = async () => {
     isLoading.value = true
     try {
@@ -32,53 +34,37 @@ export const useKirStore = defineStore('sarpras-kir', () => {
       isLoading.value = false
     }
   }
+
+  const fetchMasterData = async () => {
+    const resCat = await api.get('/sarpras/master/categories')
+    categories.value = resCat.data.data || []
+    const resCata = await api.get('/sarpras/master/catalogs')
+    catalogs.value = resCata.data.data || []
+  }
+
   const createItem = async (payload) => await api.post('/sarpras/kir/items', payload)
   const updateItem = async (id, payload) => await api.put(`/sarpras/kir/items/${id}`, payload)
   const deleteItem = async (id) => await api.delete(`/sarpras/kir/items/${id}`)
 
-  const printQR = async (itemIds) => {
-    const response = await api.post(
-      '/sarpras/kir/print-qr',
-      { item_ids: itemIds },
-      { responseType: 'blob' },
-    )
-    const url = window.URL.createObjectURL(new Blob([response.data]))
+  const mutateItem = async (id, payload) => {
+    const res = await api.post(`/sarpras/inventory/${id}/mutate`, payload)
+    return res.data
+  }
+
+  const fetchHistory = async (id) => {
+    const res = await api.get(`/sarpras/inventory/${id}/history`)
+    history.value = res.data.data || []
+  }
+
+  const downloadReport = async () => {
+    const res = await api.get('/sarpras/inventory/report', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', 'Stiker_QR_Aset.pdf')
+    link.setAttribute('download', 'Buku_Induk_Inventaris.pdf')
     document.body.appendChild(link)
     link.click()
-  }
-
-  // Master Data
-  const fetchMasterCategories = async () => {
-    const res = await api.get('/sarpras/master/categories')
-    categories.value = res.data.data || []
-  }
-  const fetchMasterCatalogs = async () => {
-    const res = await api.get('/sarpras/master/catalogs')
-    catalogs.value = res.data.data || []
-  }
-  const fetchMasterData = async () => {
-    await Promise.all([fetchMasterCategories(), fetchMasterCatalogs()])
-  }
-
-  const createCategory = async (payload) => await api.post('/sarpras/master/categories', payload)
-  const updateCategory = async (id, payload) =>
-    await api.put(`/sarpras/master/categories/${id}`, payload)
-  const deleteCategory = async (id) => await api.delete(`/sarpras/master/categories/${id}`)
-
-  const createCatalog = async (payload) => await api.post('/sarpras/master/catalogs', payload)
-  const updateCatalog = async (id, payload) =>
-    await api.put(`/sarpras/master/catalogs/${id}`, payload)
-  const deleteCatalog = async (id) => await api.delete(`/sarpras/master/catalogs/${id}`)
-
-  // Upload Image
-  const uploadCatalogImage = async (formData) => {
-    const res = await api.post('/sarpras/master/catalogs/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    return res.data.url
+    link.remove()
   }
 
   return {
@@ -86,21 +72,17 @@ export const useKirStore = defineStore('sarpras-kir', () => {
     categories,
     catalogs,
     items,
+    history,
     isLoading,
     fetchRooms,
     fetchItemsByRoom,
     fetchAllItems,
+    fetchMasterData,
     createItem,
     updateItem,
     deleteItem,
-    printQR,
-    fetchMasterData,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    createCatalog,
-    updateCatalog,
-    deleteCatalog,
-    uploadCatalogImage,
+    mutateItem,
+    fetchHistory,
+    downloadReport,
   }
 })

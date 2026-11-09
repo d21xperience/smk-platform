@@ -106,6 +106,7 @@ const itemSarpras = [
     title: 'Mutasi', icon: 'delete_sweep', children: [
       { title: 'Log', to: '/sarpras/mutasi/log' },
       { title: 'Hapus', to: '/sarpras/mutasi/hapus' },
+      { title: 'Buku Induk', to: '/sarpras/laporan/buku-induk' },
     ]
   },
 ]

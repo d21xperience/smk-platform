@@ -30,6 +30,10 @@ const sarpras = {
       component: () => import('@/pages/sarpras/SarPrasPenerimaanBarang.vue'),
     },
     {
+      path: 'laporan/buku-induk',
+      component: () => import('@/pages/sarpras/SarPrasLaporanBukuInduk.vue'),
+    },
+    {
       path: 'master-data',
       component: () => import('@/pages/sarpras/SarPrasMasterData.vue'),
     },

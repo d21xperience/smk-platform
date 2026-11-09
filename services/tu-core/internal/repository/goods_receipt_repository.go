@@ -167,28 +167,31 @@ func (r *pgxGoodsReceiptRepository) Verify(ctx context.Context, receiptID string
 	if err != nil { return err }
 	defer tx.Rollback(ctx)
 
-	// 1. Get Receipt
 	var sourceType string
 	var reqID *string
 	var status string
-	err = tx.QueryRow(ctx, `SELECT source_type, procurement_request_id, status FROM goods_receipts WHERE id = $1 FOR UPDATE`, receiptID).Scan(&sourceType, &reqID, &status)
+	var receiptDate time.Time
+	err = tx.QueryRow(ctx, `SELECT source_type, procurement_request_id, status, receipt_date FROM goods_receipts WHERE id = $1 FOR UPDATE`, receiptID).Scan(&sourceType, &reqID, &status, &receiptDate)
 	if err != nil { return err }
 	if status != "DRAFT" { return errors.New("hanya status DRAFT yang dapat diverifikasi") }
 
-	// 2. Update Header Status
 	_, err = tx.Exec(ctx, `UPDATE goods_receipts SET status = 'VERIFIED', verified_by = $1, updated_at = NOW() WHERE id = $2`, verifierID, receiptID)
 	if err != nil { return err }
 
-	// 3. Integrasi Pengajuan
 	if sourceType == "PROCUREMENT" && reqID != nil {
 		_, err = tx.Exec(ctx, `UPDATE procurement_requests SET status = 'PROCURED', updated_at = NOW() WHERE id = $1`, *reqID)
 		if err != nil { return err }
 	}
 
-	// 4. Integrasi Items
 	rows, err := tx.Query(ctx, `SELECT catalog_id::text, quantity, is_inventory, unit_price, condition, item_name FROM goods_receipt_items WHERE goods_receipt_id = $1`, receiptID)
 	if err != nil { return err }
 	defer rows.Close()
+
+	var schCode string
+	tx.QueryRow(ctx, `SELECT COALESCE(kode_sekolah, 'SMKPasja') FROM tabel_sekolah LIMIT 1`).Scan(&schCode)
+
+	romanMonths := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+	monthRoman := romanMonths[int(receiptDate.Month())]
 
 	for rows.Next() {
 		var catalogID, condition, itemName string
@@ -198,40 +201,60 @@ func (r *pgxGoodsReceiptRepository) Verify(ctx context.Context, receiptID string
 		rows.Scan(&catalogID, &quantity, &isInventory, &unitPrice, &condition, &itemName)
 
 		if isInventory {
-			// Generate Aset Tetap
 			for i := 1; i <= quantity; i++ {
-				// Generate ID logic (replicated from repo to keep it simple within tx)
 				var catCode string
 				tx.QueryRow(ctx, `SELECT code FROM master_categories WHERE id = (SELECT category_id FROM master_catalogs WHERE id = $1)`, catalogID).Scan(&catCode)
-				var count int
-				tx.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE id LIKE $1`, "%/"+catCode+"/%/").Scan(&count)
-				var schCode string
-				tx.QueryRow(ctx, `SELECT COALESCE(kode_sekolah, 'SMKPasja') FROM tabel_sekolah LIMIT 1`).Scan(&schCode)
-				year := time.Now().Year()
-				assetCode := fmt.Sprintf("%s/%s/%d/%03d", schCode, catCode, year, count+i)
+				
+				var countAset int
+				tx.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE id LIKE $1`, "%/"+catCode+"/%/").Scan(&countAset)
+				assetCode := fmt.Sprintf("%s/%s/%d/%03d", schCode, catCode, receiptDate.Year(), countAset+i)
 
-				_, err = tx.Exec(ctx, `INSERT INTO inventory_items (id, catalog_id, condition, purchase_date, goods_receipt_id) VALUES ($1, $2, $3, NOW(), $4)`, assetCode, catalogID, condition, receiptID)
+				var countReg int
+				tx.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE nomor_registrasi IS NOT NULL AND EXTRACT(YEAR FROM tanggal_pencatatan) = $1`, receiptDate.Year()).Scan(&countReg)
+				regNumber := fmt.Sprintf("%03d/INV/%s/%s/%d", countReg+i, schCode, monthRoman, receiptDate.Year())
+
+				_, err = tx.Exec(ctx, `INSERT INTO inventory_items (id, nomor_registrasi, catalog_id, condition, purchase_date, goods_receipt_id, sumber_perolehan, nilai_buku, status_aset, tanggal_pencatatan) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'AKTIF', $9)`, 
+					assetCode, regNumber, catalogID, condition, receiptDate, receiptID, sourceType, unitPrice, receiptDate)
+				if err != nil { return err }
+
+				_, err = tx.Exec(ctx, `INSERT INTO inventory_item_history (inventory_item_id, action, description, changed_by) VALUES ($1, 'CREATED', 'Dicatat otomatis dari BAST', $2)`, assetCode, verifierID)
 				if err != nil { return err }
 			}
 		} else {
-			// Tambah Stok Logistik (Habis Pakai)
-			// Cari di sarpras_logistics berdasarkan nama (karena tidak ada catalog_id disana saat ini)
 			var logisticID string
 			err = tx.QueryRow(ctx, `SELECT id::text FROM sarpras_logistics WHERE nama = $1 LIMIT 1`, itemName).Scan(&logisticID)
 			if err != nil {
-				// Jika belum ada, buat baru
 				err = tx.QueryRow(ctx, `INSERT INTO sarpras_logistics (kode, nama, kategori, satuan, stok) VALUES ($1, $2, 'Penerimaan', 'Unit', $3) RETURNING id::text`, "LOG-"+time.Now().Format("0601021504"), itemName, quantity).Scan(&logisticID)
 				if err != nil { return err }
 			} else {
-				// Update stok
 				_, err = tx.Exec(ctx, `UPDATE sarpras_logistics SET stok = stok + $1, updated_at = NOW() WHERE id = $2`, quantity, logisticID)
 				if err != nil { return err }
 			}
-			// Catat Mutasi
 			_, err = tx.Exec(ctx, `INSERT INTO sarpras_logistic_mutations (logistic_id, tipe, jumlah, keterangan) VALUES ($1, 'IN', $2, 'Penerimaan BAST')`, logisticID, quantity)
 			if err != nil { return err }
 		}
 	}
+
+	docRows, err := tx.Query(ctx, `SELECT document_id::text FROM sarpras_inventory_document_links WHERE entity_type = 'GOODS_RECEIPT' AND entity_id = $1`, receiptID)
+	if err == nil {
+		var docIDs []string
+		for docRows.Next() { var did string; docRows.Scan(&did); docIDs = append(docIDs, did) }
+		docRows.Close()
+
+		assetRows, err := tx.Query(ctx, `SELECT id FROM inventory_items WHERE goods_receipt_id = $1`, receiptID)
+		if err == nil {
+			var assetIDs []string
+			for assetRows.Next() { var aid string; assetRows.Scan(&aid); assetIDs = append(assetIDs, aid) }
+			assetRows.Close()
+
+			for _, did := range docIDs {
+				for _, aid := range assetIDs {
+					tx.Exec(ctx, `INSERT INTO sarpras_inventory_document_links (document_id, entity_type, entity_id, relation_type, created_by) VALUES ($1, 'INVENTORY_ITEM', $2, 'SUPPORTING', $3)`, did, aid, verifierID)
+				}
+			}
+		}
+	}
+
 	return tx.Commit(ctx)
 }
 
