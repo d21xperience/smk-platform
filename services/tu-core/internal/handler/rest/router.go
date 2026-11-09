@@ -49,6 +49,7 @@ type Router struct {
 	minioClient           *storage.MinioClient
 	letterTypeService     *service.LetterTypeService
 	procurementService    *service.ProcurementService
+	goodsReceiptService  *service.GoodsReceiptService
 }
 
 func NewRouter(
@@ -84,6 +85,7 @@ func NewRouter(
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
 	procurementService *service.ProcurementService,
+	goodsReceiptService *service.GoodsReceiptService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -122,6 +124,7 @@ func NewRouter(
 		minioClient:           minioClient,
 		letterTypeService:     letterTypeService,
 		procurementService:    procurementService,
+		goodsReceiptService:   goodsReceiptService,
 	}
 
 	mux := http.NewServeMux()
@@ -133,6 +136,7 @@ func NewRouter(
 	r.registerSystemRoutes(mux)
 	r.registerSarprasRoutes(mux)
 	r.registerProcurementRoutes(mux)
+	r.registerGoodsReceiptRoutes(mux)
 	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
 	r.registerLetterTypeRoutes(mux)
 	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan)

@@ -57,6 +57,7 @@ type AppServices struct {
 	KIR            *service.KIRService
 	LetterType     *service.LetterTypeService
 	Procurement    *service.ProcurementService // <-- NEW
+	GoodsReceipt   *service.GoodsReceiptService
 }
 
 func initEngines() *AppEngines {
@@ -108,5 +109,6 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		KIR:            service.NewKIRService(db, repos.KirItem),
 		LetterType:     service.NewLetterTypeService(repos.LetterType),
 		Procurement:    service.NewProcurementService(repos.Procurement), // <-- NEW
+		GoodsReceipt:   service.NewGoodsReceiptService(repos.GoodsReceipt),
 	}
 }

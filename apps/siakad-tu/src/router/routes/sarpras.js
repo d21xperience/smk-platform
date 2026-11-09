@@ -26,6 +26,10 @@ const sarpras = {
       component: () => import('@/pages/sarpras/SarPrasCetakQrAset.vue'),
     },
     {
+      path: 'inventaris/penerimaan',
+      component: () => import('@/pages/sarpras/SarPrasPenerimaanBarang.vue'),
+    },
+    {
       path: 'master-data',
       component: () => import('@/pages/sarpras/SarPrasMasterData.vue'),
     },

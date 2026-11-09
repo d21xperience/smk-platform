@@ -86,6 +86,7 @@ const itemSarpras = [
       { title: 'Logistik', to: '/sarpras/inventaris/logistik' },
       { title: 'Ruangan', to: '/sarpras/inventaris/ruangan' },
       { title: 'Cetak QR', to: '/sarpras/inventaris/cetak-qr' },
+      { title: 'Penerimaan Barang', to: '/sarpras/inventaris/penerimaan' },
     ]
   },
   {

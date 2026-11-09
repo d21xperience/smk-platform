@@ -42,6 +42,7 @@ type AppRepositories struct {
 	Notification   notifHandlers.InvoiceRepository
 	LetterType     repository.LetterTypeRepository
 	Procurement    repository.ProcurementRepository // <-- NEW
+	GoodsReceipt   repository.GoodsReceiptRepository
 }
 
 func initRepositories(db *pgxpool.Pool) *AppRepositories {
@@ -79,5 +80,6 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Notification:   notification.NewNotificationRepositoryImpl(db),
 		LetterType:     repository.NewLetterTypeRepository(db),
 		Procurement:    repository.NewProcurementRepository(db), // <-- NEW
+		GoodsReceipt:   repository.NewGoodsReceiptRepository(db),
 	}
 }
