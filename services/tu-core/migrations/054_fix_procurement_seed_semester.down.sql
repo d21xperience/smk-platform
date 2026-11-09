@@ -1,0 +1,1 @@
+-- Rollback tidak perlu aksi spesifik

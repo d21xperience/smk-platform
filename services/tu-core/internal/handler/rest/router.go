@@ -33,7 +33,7 @@ type Router struct {
 	ptkDashboardService   *service.PtkDashboardService
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
-	jurusanService        *service.JurusanService // <-- TAMBAHAN
+	jurusanService        *service.JurusanService
 	logisticService       *service.LogisticService
 	kirService            *service.KIRService
 	contextHandler        *ContextHandler
@@ -47,6 +47,8 @@ type Router struct {
 	dispositionHandler    *DispositionHandler
 	signatureHandler      *SignatureHandler
 	minioClient           *storage.MinioClient
+	letterTypeService     *service.LetterTypeService
+	procurementService    *service.ProcurementService
 }
 
 func NewRouter(
@@ -63,7 +65,7 @@ func NewRouter(
 	teacherService *service.TeacherService,
 	kurikulumService *service.KurikulumService,
 	scheduleService service.ScheduleService,
-	jurusanService *service.JurusanService, // <-- TAMBAHAN
+	jurusanService *service.JurusanService,
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
 	publicService *service.PublicService,
@@ -80,6 +82,8 @@ func NewRouter(
 	ptkDashboardService *service.PtkDashboardService,
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
+	letterTypeService *service.LetterTypeService,
+	procurementService *service.ProcurementService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -102,7 +106,7 @@ func NewRouter(
 		ptkDashboardService:   ptkDashboardService,
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
-		jurusanService:        jurusanService, // <-- TAMBAHAN
+		jurusanService:        jurusanService,
 		logisticService:       logisticService,
 		kirService:            kirService,
 		contextHandler:        NewContextHandler(prefService),
@@ -116,6 +120,8 @@ func NewRouter(
 		dispositionHandler:    NewDispositionHandler(dispositionService),
 		signatureHandler:      NewSignatureHandler(signatureService),
 		minioClient:           minioClient,
+		letterTypeService:     letterTypeService,
+		procurementService:    procurementService,
 	}
 
 	mux := http.NewServeMux()
@@ -126,9 +132,10 @@ func NewRouter(
 	r.registerCorrespondenceRoutes(mux)
 	r.registerSystemRoutes(mux)
 	r.registerSarprasRoutes(mux)
-	
-	// Daftarkan Rute Jurusan
-	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan) // <-- TAMBAHAN
+	r.registerProcurementRoutes(mux)
+	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
+	r.registerLetterTypeRoutes(mux)
+	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan)
 
 	return mux
 }

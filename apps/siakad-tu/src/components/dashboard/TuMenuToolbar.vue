@@ -1,6 +1,5 @@
 <template>
   <q-toolbar v-if="visible" class="gt-xs row items-center no-wrap text-weight-medium dashboard-header">
-    <!-- Melakukan looping untuk setiap item menu yang dikirim lewat props -->
     <DropDownMenu v-for="(menu, index) in menus" :key="index" :label="menu.label" :items="menu.items"
       class="text-grey-4" @update:item="handleItemClick(menu.label, $event)" />
   </q-toolbar>
@@ -27,6 +26,7 @@ const itemPengaturan = [
 ]
 const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
+  { title: 'Master Surat', to: '/persuratan/master-jenis-surat' },
   { title: 'Surat Keluar', to: '/persuratan/surat-keluar' },
   { title: 'Surat Masuk', to: '/persuratan/surat-masuk' },
   { title: 'Disposisi', to: '/persuratan/disposisi' },
@@ -41,15 +41,12 @@ const itemKepegawaian = [
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },
 ]
 
-// --- MENU KURIKULUM BARU ---
 const itemKurikulum = [
-  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' }, // Sementara mengarah ke preview
+  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' },
   { title: 'Mata Pelajaran', to: '/kurikulum/mapel' },
   { title: 'Penugasan Mengajar', to: '/kurikulum/pembelajaran' },
   { title: 'Kelas', to: '/kurikulum/kelas' },
   { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal-pelajaran' },
-  // { title: 'Pembelajaran', to: '/kurikulum/pembelajaran' },
-  // { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal' },
 ]
 
 const itemHubin = [
@@ -72,7 +69,6 @@ const itemPsb = [
 
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
-
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
   { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
@@ -102,7 +98,7 @@ const itemSarpras = [
   {
     title: 'Sirkulasi', icon: 'sync', children: [
       { title: 'Pinjam', to: '/sarpras/sirkulasi/pinjam' },
-      { title: 'Jadwal', to: '/sarpras/sirkulasi/minta-atk' },
+      { title: 'Pengajuan ATK', to: '/sarpras/sirkulasi/minta-atk' }, // <-- PERBAIKAN TYPO
     ]
   },
   {
@@ -115,7 +111,7 @@ const itemSarpras = [
 
 const menus = computed(() => [
   { label: 'Ur. Kesiswaan', items: itemKesiswaan },
-  { label: 'Ur. Kurikulum', items: itemKurikulum }, // <-- Menu Baru Ditambahkan
+  { label: 'Ur. Kurikulum', items: itemKurikulum },
   { label: 'Ur. Kepegawaian', items: itemKepegawaian },
   { label: 'Ur. Sarpras', items: itemSarpras },
   { label: 'Ur. Hubin', items: itemHubin },
