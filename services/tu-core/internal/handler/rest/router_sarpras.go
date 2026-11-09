@@ -22,6 +22,7 @@ func (r *Router) registerSarprasRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/sarpras/kir/items", r.wrapWithContext(r.handleKIRItems))
 	mux.HandleFunc("/api/v1/sarpras/kir/items/", r.wrapWithContext(r.handleKIRItemByID))
 	mux.HandleFunc("/api/v1/sarpras/kir/print-qr", r.wrapWithContext(r.handlePrintQR))
+	mux.HandleFunc("/api/v1/sarpras/kir/report/", r.wrapWithContext(r.handleKIRReport))
 
 	// Master Data
 	mux.HandleFunc("/api/v1/sarpras/master/categories", r.wrapWithContext(r.handleMasterCategories))
@@ -299,6 +300,21 @@ func (r *Router) handleBukuIndukReport(w http.ResponseWriter, req *http.Request)
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"Buku_Induk_Inventaris.pdf\"")
+	w.WriteHeader(http.StatusOK)
+	w.Write(pdfBuf.Bytes())
+}
+
+func (r *Router) handleKIRReport(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"}); return }
+	
+	roomID := strings.TrimPrefix(req.URL.Path, "/api/v1/sarpras/kir/report/")
+	if roomID == "" { writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Room ID required"}); return }
+
+	pdfBuf, err := r.kirService.GenerateKIRReportPDF(req.Context(), roomID)
+	if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"KIR_Report.pdf\"")
 	w.WriteHeader(http.StatusOK)
 	w.Write(pdfBuf.Bytes())
 }

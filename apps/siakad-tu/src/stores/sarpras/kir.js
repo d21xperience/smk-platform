@@ -67,6 +67,17 @@ export const useKirStore = defineStore('sarpras-kir', () => {
     link.remove()
   }
 
+  const downloadKIRReport = async (roomId) => {
+    const res = await api.get(`/sarpras/kir/report/${roomId}`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `KIR_${roomId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
   return {
     rooms,
     categories,
@@ -84,5 +95,6 @@ export const useKirStore = defineStore('sarpras-kir', () => {
     mutateItem,
     fetchHistory,
     downloadReport,
+    downloadKIRReport,
   }
 })

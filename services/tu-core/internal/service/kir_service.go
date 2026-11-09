@@ -254,3 +254,106 @@ func (s *KIRService) GenerateBukuIndukPDF(ctx context.Context) (*bytes.Buffer, e
 	err = pdf.Output(&buf)
 	return &buf, err
 }
+
+// ==========================================
+// FITUR CETAK KIR (KARTU INVENTARIS RUANG)
+// ==========================================
+
+func (s *KIRService) GenerateKIRReportPDF(ctx context.Context, roomID string) (*bytes.Buffer, error) {
+	// 1. Ambil Info Ruangan
+	var roomName, pjrName string
+	query := `
+		SELECT k.nm_kelas, COALESCE(tp.nama, 'Belum Ditunjuk') 
+		FROM tabel_kelas k 
+		LEFT JOIN tabel_ptk tp ON k.ptk_id = tp.ptk_id 
+		WHERE k.rombongan_belajar_id = $1
+	`
+	err := s.db.QueryRow(ctx, query, roomID).Scan(&roomName, &pjrName)
+	if err != nil {
+		return nil, errors.New("ruangan tidak ditemukan")
+	}
+
+	// 2. Ambil Item di Ruangan
+	items, err := s.itemRepo.FindByRoomID(ctx, roomID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Hitung Rekapitulasi
+	var totalNilai float64
+	var countBaik, countRR, countRB int
+	for _, item := range items {
+		totalNilai += item.NilaiBuku
+		switch item.Condition {
+		case "Bagus": countBaik++
+		case "Rusak Ringan": countRR++
+		case "Rusak Berat": countRB++
+		}
+	}
+
+	// 4. Generate PDF
+	pdf := gofpdf.New("L", "mm", "A4", "") // Landscape
+	pdf.AddPage()
+
+	pdf.SetFont("Arial", "B", 14)
+	pdf.CellFormat(0, 10, "KARTU INVENTARIS RUANG (KIR)", "", 1, "C", false, 0, "")
+	pdf.SetFont("Arial", "", 10)
+	pdf.CellFormat(0, 5, "SMK Pasundan Jatinangor", "", 1, "C", false, 0, "")
+	pdf.Ln(5)
+
+	// Info Header
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(40, 6, "Nama Ruangan", "", 0, "L", false, 0, "")
+	pdf.CellFormat(0, 6, ": "+roomName, "", 1, "L", false, 0, "")
+	pdf.CellFormat(40, 6, "Penanggung Jawab", "", 0, "L", false, 0, "")
+	pdf.CellFormat(0, 6, ": "+pjrName, "", 1, "L", false, 0, "")
+	pdf.Ln(5)
+
+	// Rekapitulasi
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(0, 7, "REKAPITULASI", "", 1, "L", false, 0, "")
+	pdf.SetFont("Arial", "", 9)
+	pdf.CellFormat(40, 6, "Total Aset", "", 0, "L", false, 0, "")
+	pdf.CellFormat(0, 6, fmt.Sprintf(": %d Unit", len(items)), "", 1, "L", false, 0, "")
+	pdf.CellFormat(40, 6, "Total Nilai Buku", "", 0, "L", false, 0, "")
+	pdf.CellFormat(0, 6, fmt.Sprintf(": Rp %.2f", totalNilai), "", 1, "L", false, 0, "")
+	pdf.CellFormat(40, 6, "Kondisi", "", 0, "L", false, 0, "")
+	pdf.CellFormat(0, 6, fmt.Sprintf(": %d Baik | %d Rusak Ringan | %d Rusak Berat", countBaik, countRR, countRB), "", 1, "L", false, 0, "")
+	pdf.Ln(5)
+
+	// Tabel Header
+	pdf.SetFont("Arial", "B", 8)
+	pdf.CellFormat(10, 7, "No", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 7, "Kode Aset", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(60, 7, "Nama Barang", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(30, 7, "Merk", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(25, 7, "Tahun", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(30, 7, "Nilai Buku", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(30, 7, "Kondisi", "1", 1, "C", false, 0, "")
+
+	// Tabel Body
+	pdf.SetFont("Arial", "", 8)
+	for i, item := range items {
+		pdf.CellFormat(10, 6, fmt.Sprint(i+1), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(40, 6, item.ID, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(60, 6, item.Name, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 6, item.Brand, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(25, 6, fmt.Sprint(item.PurchaseDate.Year()), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(30, 6, fmt.Sprintf("Rp %.0f", item.NilaiBuku), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(30, 6, item.Condition, "1", 1, "C", false, 0, "")
+	}
+
+	// Tanda Tangan
+	pdf.Ln(10)
+	pdf.SetFont("Arial", "", 9)
+	pdf.CellFormat(130, 6, "Mengetahui,", "", 0, "C", false, 0, "")
+	pdf.CellFormat(0, 6, "Penanggung Jawab Ruang,", "", 1, "C", false, 0, "")
+	pdf.Ln(15)
+	pdf.CellFormat(130, 6, "(...........................)", "", 0, "C", false, 0, "")
+	pdf.CellFormat(0, 6, "("+pjrName+")", "", 1, "C", false, 0, "")
+
+	var buf bytes.Buffer
+	err = pdf.Output(&buf)
+	if err != nil { return nil, err }
+	return &buf, nil
+}

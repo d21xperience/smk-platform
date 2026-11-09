@@ -11,13 +11,49 @@
         </div>
         <q-space />
         <div class="col-12 col-sm-auto">
-          <q-btn color="secondary" icon="print" label="Cetak Lembar KIR Pintu" :disabled="!ruanganTerpilih" @click="cetakKIR" />
+          <q-btn color="secondary" icon="print" label="Cetak Lembar KIR" :disabled="!ruanganTerpilih" @click="cetakKIR" :loading="isDownloading" />
         </div>
       </q-card-section>
     </q-card>
 
     <!-- KONTEN DATA KIR -->
     <div v-if="ruanganTerpilih">
+      <!-- KARTU REKAPITULASI -->
+      <div class="row q-col-gutter-md q-mb-md">
+        <div class="col-12 col-md-3">
+          <q-card class="bg-primary text-white">
+            <q-card-section>
+              <div class="text-caption">Total Aset</div>
+              <div class="text-h5 text-weight-bold">{{ kirStore.items.length }} Unit</div>
+            </q-card-section>
+          </q-card>
+        </div>
+        <div class="col-12 col-md-3">
+          <q-card class="bg-green-7 text-white">
+            <q-card-section>
+              <div class="text-caption">Kondisi Baik</div>
+              <div class="text-h5 text-weight-bold">{{ countBaik }} Unit</div>
+            </q-card-section>
+          </q-card>
+        </div>
+        <div class="col-12 col-md-3">
+          <q-card class="bg-orange-7 text-white">
+            <q-card-section>
+              <div class="text-caption">Rusak Ringan</div>
+              <div class="text-h5 text-weight-bold">{{ countRR }} Unit</div>
+            </q-card-section>
+          </q-card>
+        </div>
+        <div class="col-12 col-md-3">
+          <q-card class="bg-red-7 text-white">
+            <q-card-section>
+              <div class="text-caption">Rusak Berat</div>
+              <div class="text-h5 text-weight-bold">{{ countRB }} Unit</div>
+            </q-card-section>
+          </q-card>
+        </div>
+      </div>
+
       <q-card flat bordered class="q-mb-md border-primary shadow-1">
         <q-card-section class="row items-center justify-between q-py-md">
           <div class="row items-center">
@@ -29,8 +65,8 @@
           </div>
           <q-separator vertical class="gt-xs q-mx-md" />
           <div>
-            <div class="text-caption text-grey-7 text-right-gt-xs">Total Inventaris Ruang</div>
-            <div class="text-subtitle1 text-weight-bold text-primary text-right-gt-xs">{{ kirStore.items.length }} Unit Barang</div>
+            <div class="text-caption text-grey-7 text-right-gt-xs">Total Nilai Buku</div>
+            <div class="text-subtitle1 text-weight-bold text-primary text-right-gt-xs">Rp {{ totalNilai.toLocaleString('id-ID') }}</div>
           </div>
         </q-card-section>
       </q-card>
@@ -117,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useKirStore } from '@/stores/sarpras/kir'
 import AssetDocumentManager from '@/components/sarpras/AssetDocumentManager.vue'
@@ -125,6 +161,7 @@ import AssetDocumentManager from '@/components/sarpras/AssetDocumentManager.vue'
 const $q = useQuasar()
 const kirStore = useKirStore()
 const ruanganTerpilih = ref(null)
+const isDownloading = ref(false)
 
 const showDialog = ref(false)
 const showDokumenDialog = ref(false)
@@ -137,9 +174,16 @@ const columns = [
   { name: 'name', label: 'Nama Barang', align: 'left', field: 'name', sortable: true },
   { name: 'brand', label: 'Merk/Brand', align: 'left', field: 'brand' },
   { name: 'category_name', label: 'Kategori', align: 'center', field: 'category_name' },
+  { name: 'nilai_buku', label: 'Nilai Buku', align: 'right', field: 'nilai_buku', format: val => `Rp ${val.toLocaleString('id-ID')}` },
   { name: 'condition', label: 'Kondisi Fisik', align: 'center', field: 'condition', sortable: true },
   { name: 'actions', label: 'Aksi', align: 'center', field: 'id' }
 ]
+
+// Computed untuk Rekapitulasi
+const countBaik = computed(() => kirStore.items.filter(i => i.condition === 'Bagus').length)
+const countRR = computed(() => kirStore.items.filter(i => i.condition === 'Rusak Ringan').length)
+const countRB = computed(() => kirStore.items.filter(i => i.condition === 'Rusak Berat').length)
+const totalNilai = computed(() => kirStore.items.reduce((sum, item) => sum + (item.nilai_buku || 0), 0))
 
 onMounted(() => { 
   kirStore.fetchRooms()
@@ -191,8 +235,16 @@ function konfirmasiHapus(item) {
     })
 }
 
-function cetakKIR() {
-  $q.notify({ message: `Menyiapkan cetakan lembar KIR untuk ${ruanganTerpilih.value.nama}...`, color: 'secondary', icon: 'local_printshop' })
+async function cetakKIR() {
+  isDownloading.value = true
+  try {
+    await kirStore.downloadKIRReport(ruanganTerpilih.value.id)
+    $q.notify({ type: 'positive', message: 'Laporan KIR berhasil diunduh' })
+  } catch (error) {
+    $q.notify({ type: 'negative', message: 'Gagal mengunduh laporan KIR' })
+  } finally {
+    isDownloading.value = false
+  }
 }
 </script>
 
