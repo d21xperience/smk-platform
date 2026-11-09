@@ -50,6 +50,7 @@ type Router struct {
 	letterTypeService     *service.LetterTypeService
 	procurementService    *service.ProcurementService
 	goodsReceiptService  *service.GoodsReceiptService
+	documentService      *service.DocumentService
 }
 
 func NewRouter(
@@ -86,6 +87,7 @@ func NewRouter(
 	letterTypeService *service.LetterTypeService,
 	procurementService *service.ProcurementService,
 	goodsReceiptService *service.GoodsReceiptService,
+	documentService *service.DocumentService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -125,6 +127,7 @@ func NewRouter(
 		letterTypeService:     letterTypeService,
 		procurementService:    procurementService,
 		goodsReceiptService:   goodsReceiptService,
+		documentService:       documentService,
 	}
 
 	mux := http.NewServeMux()
@@ -137,6 +140,7 @@ func NewRouter(
 	r.registerSarprasRoutes(mux)
 	r.registerProcurementRoutes(mux)
 	r.registerGoodsReceiptRoutes(mux)
+	r.registerDocumentRoutes(mux)
 	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
 	r.registerLetterTypeRoutes(mux)
 	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan)

@@ -58,6 +58,7 @@ type AppServices struct {
 	LetterType     *service.LetterTypeService
 	Procurement    *service.ProcurementService // <-- NEW
 	GoodsReceipt   *service.GoodsReceiptService
+	Document       *service.DocumentService
 }
 
 func initEngines() *AppEngines {
@@ -110,5 +111,6 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		LetterType:     service.NewLetterTypeService(repos.LetterType),
 		Procurement:    service.NewProcurementService(repos.Procurement), // <-- NEW
 		GoodsReceipt:   service.NewGoodsReceiptService(repos.GoodsReceipt),
+		Document:       service.NewDocumentService(repos.Document, minioClient),
 	}
 }

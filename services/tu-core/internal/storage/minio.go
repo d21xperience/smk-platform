@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"os"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -16,48 +17,29 @@ type MinioClient struct {
 
 func NewMinioClient() (*MinioClient, error) {
 	endpoint := os.Getenv("MINIO_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "localhost:9000"
-	}
-
+	if endpoint == "" { endpoint = "localhost:9000" }
 	accessKey := os.Getenv("MINIO_ACCESS_KEY")
-	if accessKey == "" {
-		accessKey = "minioadmin"
-	}
-
+	if accessKey == "" { accessKey = "minioadmin" }
 	secretKey := os.Getenv("MINIO_SECRET_KEY")
-	if secretKey == "" {
-		secretKey = "minioadmin"
-	}
-
+	if secretKey == "" { secretKey = "minioadmin" }
 	useSSL := os.Getenv("MINIO_USE_SSL") == "true"
 
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("gagal inisialisasi minio: %w", err)
-	}
-
+	if err != nil { return nil, fmt.Errorf("gagal inisialisasi minio: %w", err) }
 	return &MinioClient{client: client}, nil
 }
 
 func (m *MinioClient) UploadFile(ctx context.Context, bucketName, objectName string, file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
-	// Pastikan bucket ada
 	exists, err := m.client.BucketExists(ctx, bucketName)
-	if err != nil {
-		return "", err
-	}
-	
+	if err != nil { return "", err }
 	if !exists {
-		err = m.client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
-		if err != nil {
-			return "", err
-		}
+		if err := m.client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{}); err != nil { return "", err }
 	}
 
-	// FIX: Set bucket policy menjadi public read agar browser bisa mengakses foto
+	// Set policy public read (default untuk backward compatibility)
 	policyJSON := fmt.Sprintf(`{
 		"Version": "2012-10-17",
 		"Statement": [
@@ -69,17 +51,22 @@ func (m *MinioClient) UploadFile(ctx context.Context, bucketName, objectName str
 			}
 		]
 	}`, bucketName)
-	_ = m.client.SetBucketPolicy(ctx, bucketName, policyJSON) // Abaikan error jika policy sudah ada
+	_ = m.client.SetBucketPolicy(ctx, bucketName, policyJSON)
 
 	contentType := fileHeader.Header.Get("Content-Type")
 	_, err = m.client.PutObject(ctx, bucketName, objectName, file, fileHeader.Size, minio.PutObjectOptions{ContentType: contentType})
+	if err != nil { return "", err }
+
+	endpoint := os.Getenv("MINIO_ENDPOINT")
+	if endpoint == "" { endpoint = "localhost:9000" }
+	return fmt.Sprintf("http://%s/%s/%s", endpoint, bucketName, objectName), nil
+}
+
+// GetPresignedURL menghasilkan URL sementara untuk akses file terbatas
+func (m *MinioClient) GetPresignedURL(ctx context.Context, bucketName, objectName string, expiry time.Duration) (string, error) {
+	presignedURL, err := m.client.PresignedGetObject(ctx, bucketName, objectName, expiry, nil)
 	if err != nil {
 		return "", err
 	}
-
-	endpoint := os.Getenv("MINIO_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "localhost:9000"
-	}
-	return fmt.Sprintf("http://%s/%s/%s", endpoint, bucketName, objectName), nil
+	return presignedURL.String(), nil
 }

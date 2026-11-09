@@ -56,22 +56,41 @@
 
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
-            <q-btn flat round dense color="primary" icon="edit" @click="bukaDialogEdit(props.row)" />
-            <q-btn flat round dense color="negative" icon="delete" @click="konfirmasiHapus(props.row)" />
+            <q-btn flat round dense color="primary" icon="edit" @click="bukaDialogEdit(props.row)">
+              <q-tooltip>Edit Data</q-tooltip>
+            </q-btn>
+            <q-btn flat round dense color="secondary" icon="folder_open" @click="bukaDokumen(props.row)">
+              <q-tooltip>Dokumen & Detail</q-tooltip>
+            </q-btn>
+            <q-btn flat round dense color="negative" icon="delete" @click="konfirmasiHapus(props.row)">
+              <q-tooltip>Hapus</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
     </div>
+
+    <!-- DIALOG DETAIL & DOKUMEN ASET -->
+    <q-dialog v-model="showDokumenDialog" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="column no-wrap">
+        <q-card-section class="row items-center q-pb-none bg-primary text-white">
+          <div class="text-h6">Detail Aset & Dokumen</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+        <q-card-section class="col scroll q-pt-md">
+          <AssetDocumentManager v-if="selectedAsset" :assetId="selectedAsset.id" :assetCode="selectedAsset.id" />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
     <!-- DIALOG FORM CRUD -->
     <q-dialog v-model="showDialog" persistent>
       <q-card style="min-width: 450px">
         <q-card-section class="text-h6">{{ isEdit ? 'Edit Barang Inventaris' : 'Tambah Barang Inventaris' }}</q-card-section>
         <q-card-section class="q-gutter-y-md">
-          <!-- Jika Edit, ID tidak bisa diubah -->
           <q-input v-if="isEdit" v-model="formData.id" label="Kode Unik Aset" outlined dense disable />
           
-          <!-- Jika Tambah, Pilih Katalog Barang -->
           <q-select v-if="!isEdit" v-model="formData.catalog_id" :options="kirStore.catalogs" option-value="id" option-label="name"
             label="Pilih Katalog Barang" outlined dense emit-value map-options>
             <template v-slot:option="scope">
@@ -101,13 +120,16 @@
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useKirStore } from '@/stores/sarpras/kir'
+import AssetDocumentManager from '@/components/sarpras/AssetDocumentManager.vue'
 
 const $q = useQuasar()
 const kirStore = useKirStore()
 const ruanganTerpilih = ref(null)
 
 const showDialog = ref(false)
+const showDokumenDialog = ref(false)
 const isEdit = ref(false)
+const selectedAsset = ref(null)
 const formData = ref({ id: '', catalog_id: '', purchase_date: new Date().toISOString().split('T')[0], condition: 'Bagus' })
 
 const columns = [
@@ -125,6 +147,11 @@ onMounted(() => {
 })
 
 function onRuanganChange(val) { if (val) kirStore.fetchItemsByRoom(val.id) }
+
+function bukaDokumen(item) {
+  selectedAsset.value = item
+  showDokumenDialog.value = true
+}
 
 function bukaDialogTambah() {
   isEdit.value = false
@@ -168,3 +195,9 @@ function cetakKIR() {
   $q.notify({ message: `Menyiapkan cetakan lembar KIR untuk ${ruanganTerpilih.value.nama}...`, color: 'secondary', icon: 'local_printshop' })
 }
 </script>
+
+<style scoped>
+.border-primary { border-left: 5px solid var(--q-primary); }
+.text-monospace { font-family: 'Courier New', Courier, monospace; }
+@media gt-xs { .text-right-gt-xs { text-align: right; } }
+</style>
