@@ -38,6 +38,8 @@ type StudentFilter struct {
 	SchoolID         string
 	AcademicPeriodID string
 	ClassID          string
+	Grade            int    // <-- TAMBAHAN
+	Major            string // <-- TAMBAHAN
 	Status           string
 	Keyword          string
 	Limit            int
@@ -273,8 +275,25 @@ func (r *pgxStudentRepository) List(ctx context.Context, filter StudentFilter) (
 	args := []any{filter.AcademicPeriodID, filter.SchoolID}
 	argIndex := 3
 
+	// Filter Tambahan
+	if filter.ClassID != "" {
+		whereClause += fmt.Sprintf(" AND tak.rombongan_belajar_id::text = $%d", argIndex)
+		args = append(args, filter.ClassID)
+		argIndex++
+	}
+	if filter.Grade > 0 {
+		whereClause += fmt.Sprintf(" AND tk.tingkat_pendidikan_id = $%d", argIndex)
+		args = append(args, filter.Grade)
+		argIndex++
+	}
+	if filter.Major != "" {
+		whereClause += fmt.Sprintf(" AND tk.nama_jurusan_sp ILIKE $%d", argIndex)
+		args = append(args, "%"+filter.Major+"%")
+		argIndex++
+	}
+	// Pencarian (Nama, NIS, NISN)
 	if filter.Keyword != "" {
-		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d OR ts.nisn ILIKE $%d)", argIndex, argIndex, argIndex)
 		args = append(args, "%"+filter.Keyword+"%")
 		argIndex++
 	}
@@ -432,8 +451,18 @@ func (r *pgxStudentRepository) ListForUI(ctx context.Context, filter StudentFilt
 		args = append(args, filter.ClassID)
 		argIndex++
 	}
+	if filter.Grade > 0 {
+		whereClause += fmt.Sprintf(" AND tk.tingkat_pendidikan_id = $%d", argIndex)
+		args = append(args, filter.Grade)
+		argIndex++
+	}
+	if filter.Major != "" {
+		whereClause += fmt.Sprintf(" AND tk.nama_jurusan_sp ILIKE $%d", argIndex)
+		args = append(args, "%"+filter.Major+"%")
+		argIndex++
+	}
 	if filter.Keyword != "" {
-		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d OR ts.nisn ILIKE $%d)", argIndex, argIndex, argIndex)
 		args = append(args, "%"+filter.Keyword+"%")
 		argIndex++
 	}
@@ -525,7 +554,6 @@ func (r *pgxStudentRepository) UpdateForUI(ctx context.Context, schoolID, academ
 	}
 	defer tx.Rollback(ctx)
 
-	// Parsing BirthDate dari string (YYYY-MM-DD) ke time.Time
 	var birthDate interface{} = nil
 	if birthDateStr != "" {
 		if t, errParse := time.Parse("2006-01-02", birthDateStr); errParse == nil {
@@ -616,7 +644,7 @@ func (r *pgxStudentRepository) ListAvailableForUI(ctx context.Context, filter St
 	argIndex := 3
 
 	if filter.Keyword != "" {
-		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (ts.nm_siswa ILIKE $%d OR ts.nis ILIKE $%d OR ts.nisn ILIKE $%d)", argIndex, argIndex, argIndex)
 		args = append(args, "%"+filter.Keyword+"%")
 		argIndex++
 	}

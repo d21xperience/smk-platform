@@ -25,20 +25,26 @@
             </q-input>
           </div>
 
-          <!-- Filter Jurusan (Tingkat & Jurusan dinonaktifkan sementara karena backend baru support filter Kelas/ClassID) -->
+          <!-- Filter Tingkat (Mengirim Nilai Integer) -->
           <div class="col-6 col-md-2">
-            <q-select v-model="localFilters.tingkat" :options="['X', 'XI', 'XII']" label="Tingkat" dense outlined
-              clearable @update:model-value="applyFilters" />
+            <q-select v-model="localFilters.tingkat" 
+              :options="[{label: 'Kelas X', value: 10}, {label: 'Kelas XI', value: 11}, {label: 'Kelas XII', value: 12}]" 
+              label="Tingkat" dense outlined emit-value map-options clearable @update:model-value="applyFilters" />
           </div>
+          
+          <!-- Filter Jurusan -->
           <div class="col-6 col-md-2">
-            <q-select v-model="localFilters.jurusan" :options="['RPL', 'TKJ', 'AKL', 'OTKP']" label="Jurusan" dense
-              outlined clearable @update:model-value="applyFilters" />
+            <q-select v-model="localFilters.jurusan" 
+              :options="['RPL', 'TKJ', 'AKL', 'OTKP', 'TKRO']" 
+              label="Jurusan" dense outlined clearable @update:model-value="applyFilters" />
           </div>
 
-          <!-- Filter Kelas -->
+          <!-- Filter Kelas (Dinamis dari API) -->
           <div class="col-6 col-md-2">
-            <q-select v-model="localFilters.kelas" :options="['X TKJ 1', 'X RPL 1', 'XI TKJ 1']" label="Kelas" dense
-              outlined clearable @update:model-value="applyFilters" />
+            <q-select v-model="localFilters.kelas" 
+              :options="classOptions" 
+              label="Kelas" dense outlined emit-value map-options clearable 
+              :loading="loadingClasses" @update:model-value="applyFilters" />
           </div>
 
           <!-- Tombol Reset Filter -->
@@ -161,6 +167,7 @@ const isImporting = ref(false)
 
 const {
   students, isLoading, localFilters,
+  classOptions, loadingClasses,
   showDeleteDialog, showNotification, notificationMessage, notificationType,
   selectedStudent, getStatusColor, getStatusLabel,
   onRequest, viewDetail, openDeleteDialog, confirmDelete,
@@ -169,7 +176,7 @@ const {
 
 const goToPage = (path) => router.push(path)
 
-// Kolom Tabel Disesuaikan dengan Data Adapter
+// Kolom Tabel
 const columns = [
   { name: 'nis', align: 'left', label: 'NIS', field: 'nis', sortable: true },
   { name: 'nisn', align: 'left', label: 'NISN', field: 'nisn', sortable: true },
@@ -186,7 +193,6 @@ onMounted(() => {
   loadData()
 })
 
-// Fungsi Interaksi Aksi Tombol
 const editSiswa = (siswa) => {
   router.push(`/kesiswaan/siswa/edit/${siswa.id}`)
 }
@@ -195,10 +201,7 @@ const exportToExcel = () => {
   $q.notify({ color: 'green-8', message: 'Mengekspor data ke format .xlsx...', icon: 'file_download' })
 }
 
-// ==========================================
-// LOGIKA IMPORT EXCEL (XLSX)
-// ==========================================
-
+// LOGIKA IMPORT EXCEL
 const downloadTemplate = () => {
   const templateData = [
     { NISN: '0088779136', NIS: '20251788779136', Nama: 'Ahmad Fauzi', 'L/P': 'L', Kelas: 'X RPL 1' }
@@ -261,7 +264,7 @@ const processImport = (file) => {
         caption: 'Tabel akan diperbarui otomatis.'
       })
 
-      loadData() // Refresh tabel
+      loadData()
 
     } catch (err) {
       isImporting.value = false

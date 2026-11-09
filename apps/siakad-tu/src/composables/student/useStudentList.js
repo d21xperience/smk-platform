@@ -1,16 +1,20 @@
 // apps/siakad-tu/src/composables/student/useStudentList.js
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStudentListStore } from '@/stores/student/studentListStore'
 import { useStudentDetailStore } from '@/stores/student/studentDetailStore'
 import { useContextStore } from '@/stores/contextStore.js'
+import { api } from '@/boot/axios.js'
 
 export function useStudentList() {
   const router = useRouter()
   const studentListStore = useStudentListStore()
   const studentDetailStore = useStudentDetailStore()
   const contextStore = useContextStore()
+
+  const classOptions = ref([])
+  const loadingClasses = ref(false)
 
   const localFilters = ref({
     status: null,
@@ -38,6 +42,28 @@ export function useStudentList() {
     rowsNumber: studentListStore.pagination.total,
   }))
 
+  async function fetchClasses() {
+    loadingClasses.value = true
+    try {
+      const response = await api.get('/classes', { params: { limit: 100 } })
+      const responseData = response.data
+      let items = []
+      if (Array.isArray(responseData)) items = responseData
+      else if (responseData && Array.isArray(responseData.items)) items = responseData.items
+      else if (responseData && Array.isArray(responseData.data)) items = responseData.data
+      else if (responseData && responseData.data && Array.isArray(responseData.data.data)) items = responseData.data.data
+
+      classOptions.value = items.map(c => ({
+        label: c.name || c.nm_kelas || 'Tanpa Nama',
+        value: c.id || c.rombongan_belajar_id,
+      }))
+    } catch (err) {
+      console.error('Gagal memuat kelas:', err)
+    } finally {
+      loadingClasses.value = false
+    }
+  }
+
   watch(
     () => contextStore.selectedSemesterId,
     (newSemesterId, oldSemesterId) => {
@@ -60,7 +86,15 @@ export function useStudentList() {
   }
 
   function applyFilters() {
-    studentListStore.updateFilters(localFilters.value)
+    // Bersihkan filter yang kosong agar tidak dikirim ke backend
+    const cleanFilters = {}
+    if (localFilters.value.status) cleanFilters.status = localFilters.value.status
+    if (localFilters.value.search) cleanFilters.search = localFilters.value.search
+    if (localFilters.value.tingkat) cleanFilters.tingkat = localFilters.value.tingkat
+    if (localFilters.value.jurusan) cleanFilters.jurusan = localFilters.value.jurusan
+    if (localFilters.value.kelas) cleanFilters.kelas = localFilters.value.kelas
+
+    studentListStore.updateFilters(cleanFilters)
     studentListStore.fetchStudents({ page: 1 })
   }
 
@@ -82,7 +116,6 @@ export function useStudentList() {
     studentListStore.fetchStudents({ page, limit: rowsPerPage })
   }
 
-  // PERBAIKAN: Sesuaikan nama route dengan yang ada di kesiswaan-routes.js
   function viewDetail(studentId) {
     router.push({ name: 'kesiswaan-siswa-detail', params: { id: studentId } })
   }
@@ -122,10 +155,16 @@ export function useStudentList() {
     applyFilters()
   }
 
+  onMounted(() => {
+    fetchClasses()
+  })
+
   return {
     students: computed(() => studentListStore.students),
     isLoading: computed(() => studentListStore.isLoading),
     localFilters, 
+    classOptions,
+    loadingClasses,
     showDeleteDialog,
     showNotification,
     notificationMessage,

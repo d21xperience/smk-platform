@@ -16,7 +16,7 @@ func (r *Router) registerStudentRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/students", r.handleStudents)
 	mux.HandleFunc("/api/v1/students/available", r.handleAvailableStudents)
 	mux.HandleFunc("/api/v1/students/{id}/history", r.handleStudentHistory)
-	// PERBAIKAN: Gunakan pattern /{id}/documents/{docId} untuk menghindari konflik dengan rute statis
+	// Gunakan pattern /{id}/documents/{docId} untuk menghindari konflik dengan rute statis
 	mux.HandleFunc("/api/v1/students/{id}/documents/{docId}", r.handleStudentDocumentDelete)
 	mux.HandleFunc("/api/v1/students/", r.handleStudentByID) // Fallback untuk /{id} dan /{id}/documents
 }
@@ -72,12 +72,19 @@ func (r *Router) listStudents(w http.ResponseWriter, req *http.Request) {
 	searchStr := req.URL.Query().Get("search")
 	statusStr := req.URL.Query().Get("status")
 	classID := req.URL.Query().Get("class_id")
+	
+	// PERBAIKAN: Tangkap parameter grade dan major
+	gradeStr := req.URL.Query().Get("grade")
+	majorStr := req.URL.Query().Get("major")
+	grade, _ := strconv.Atoi(gradeStr)
 
 	if limit <= 0 { limit = 20 }
 	if offset < 0 { offset = 0 }
 
 	filter := repository.StudentFilter{
 		Limit: limit, Offset: offset, Keyword: searchStr, Status: statusStr, ClassID: classID,
+		Grade: grade,       // <-- Masukkan ke filter
+		Major: majorStr,    // <-- Masukkan ke filter
 	}
 
 	students, err := r.studentService.ListStudentsForUI(req.Context(), opCtx.SchoolID, opCtx.AcademicPeriodID, filter)
@@ -224,14 +231,12 @@ func (r *Router) handleStudentDocumentDelete(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	// Extract docId from path
 	path := strings.TrimPrefix(req.URL.Path, "/api/v1/students/")
 	parts := splitPath(path)
 	if len(parts) < 3 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid document path"})
 		return
 	}
-	// parts[0] = studentID, parts[1] = "documents", parts[2] = docId
 	docID := parts[2]
 
 	if err := r.studentService.DeleteStudentDocument(req.Context(), docID); err != nil {
