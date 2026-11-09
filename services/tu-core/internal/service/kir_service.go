@@ -61,7 +61,7 @@ func (s *KIRService) CreateItem(ctx context.Context, item *repository.InventoryI
 		return errors.New("Katalog Barang wajib dipilih")
 	}
 
-	newID, err := s.itemRepo.GenerateID(ctx, item.CatalogID, item.PurchaseDate.Year())
+	newID, err := s.itemRepo.GenerateID(ctx, item.CatalogID, item.PurchaseDate.Year(), item.SumberPerolehan)
 	if err != nil {
 		return err
 	}

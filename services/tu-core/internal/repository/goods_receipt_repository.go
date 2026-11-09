@@ -205,9 +205,24 @@ func (r *pgxGoodsReceiptRepository) Verify(ctx context.Context, receiptID string
 				var catCode string
 				tx.QueryRow(ctx, `SELECT code FROM master_categories WHERE id = (SELECT category_id FROM master_catalogs WHERE id = $1)`, catalogID).Scan(&catCode)
 				
+				// Generate ID dengan Prefix Sumber
+				prefix := ""
+				switch sourceType {
+				case "PROCUREMENT", "PEMBELIAN": prefix = "P"
+				case "HIBAH": prefix = "H"
+				case "DONASI": prefix = "D"
+				case "MUTASI": prefix = "M"
+				}
+				
 				var countAset int
-				tx.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE id LIKE $1`, "%/"+catCode+"/%/").Scan(&countAset)
-				assetCode := fmt.Sprintf("%s/%s/%d/%03d", schCode, catCode, receiptDate.Year(), countAset+i)
+				tx.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE sumber_perolehan = $1 AND EXTRACT(YEAR FROM purchase_date) = $2`, sourceType, receiptDate.Year()).Scan(&countAset)
+				
+				var assetCode string
+				if prefix != "" {
+					assetCode = fmt.Sprintf("%s/%s/%s/%d/%03d", schCode, prefix, catCode, receiptDate.Year(), countAset+i)
+				} else {
+					assetCode = fmt.Sprintf("%s/%s/%d/%03d", schCode, catCode, receiptDate.Year(), countAset+i)
+				}
 
 				var countReg int
 				tx.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE nomor_registrasi IS NOT NULL AND EXTRACT(YEAR FROM tanggal_pencatatan) = $1`, receiptDate.Year()).Scan(&countReg)

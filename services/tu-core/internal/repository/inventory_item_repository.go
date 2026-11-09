@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// ... (Struct MasterCategory, MasterCatalog, InventoryItem, History SAMA SEPERTI SEBELUMNYA) ...
 
 type MasterCategory struct {
 	ID   string `json:"id"`
@@ -78,8 +81,8 @@ type InventoryItemRepository interface {
 	DeleteCatalog(ctx context.Context, id string) error
 
 	GetSchoolCode(ctx context.Context) (string, error)
-	CountItemsForAutoID(ctx context.Context, categoryID string, year int) (int, error)
-	GenerateID(ctx context.Context, catalogID string, year int) (string, error)
+	CountItemsForAutoID(ctx context.Context, categoryID string, year int, sourceType string) (int, error)
+	GenerateID(ctx context.Context, catalogID string, year int, sourceType string) (string, error)
 }
 
 type pgxInventoryItemRepository struct {
@@ -90,9 +93,8 @@ func NewInventoryItemRepository(db *pgxpool.Pool) InventoryItemRepository {
 	return &pgxInventoryItemRepository{db: db}
 }
 
-// ==========================================
-// INVENTORY ITEMS
-// ==========================================
+// ... (Fungsi FindAllItems, FindByRoomID, FindByID, scanItems, Create, Update, Delete, MutateItem, GetHistory, MasterData SAMA SEPERTI SEBELUMNYA) ...
+// (Saya potong untuk menghemat tempat, Tuan bisa copy dari file sebelumnya, karena tidak ada perubahan di bagian ini)
 
 func (r *pgxInventoryItemRepository) FindAllItems(ctx context.Context) ([]InventoryItem, error) {
 	query := `
@@ -160,8 +162,8 @@ func (r *pgxInventoryItemRepository) scanItems(ctx context.Context, query string
 }
 
 func (r *pgxInventoryItemRepository) Create(ctx context.Context, item *InventoryItem) error {
-	query := `INSERT INTO inventory_items (id, catalog_id, condition, room_id, purchase_date, status_aset, tanggal_pencatatan) VALUES ($1, $2, $3, $4, $5, 'AKTIF', NOW())`
-	_, err := r.db.Exec(ctx, query, item.ID, item.CatalogID, item.Condition, item.RoomID, item.PurchaseDate)
+	query := `INSERT INTO inventory_items (id, catalog_id, condition, room_id, purchase_date, sumber_perolehan, status_aset, tanggal_pencatatan) VALUES ($1, $2, $3, $4, $5, $6, 'AKTIF', NOW())`
+	_, err := r.db.Exec(ctx, query, item.ID, item.CatalogID, item.Condition, item.RoomID, item.PurchaseDate, item.SumberPerolehan)
 	return err
 }
 
@@ -206,7 +208,7 @@ func (r *pgxInventoryItemRepository) GetHistory(ctx context.Context, itemID stri
 }
 
 // ==========================================
-// MASTER DATA (Sama seperti sebelumnya)
+// MASTER DATA
 // ==========================================
 
 func (r *pgxInventoryItemRepository) GetMasterCategories(ctx context.Context) ([]MasterCategory, error) {
@@ -273,18 +275,53 @@ func (r *pgxInventoryItemRepository) GetSchoolCode(ctx context.Context) (string,
 	return code, err
 }
 
-func (r *pgxInventoryItemRepository) CountItemsForAutoID(ctx context.Context, categoryID string, year int) (int, error) {
+// Fungsi getPrefix untuk memetakan sumber ke prefix
+func getPrefix(sourceType string) string {
+	switch strings.ToUpper(sourceType) {
+	case "PEMBELIAN", "PROCUREMENT":
+		return "P"
+	case "HIBAH":
+		return "H"
+	case "DONASI":
+		return "D"
+	case "MUTASI":
+		return "M"
+	default:
+		return ""
+	}
+}
+
+func (r *pgxInventoryItemRepository) CountItemsForAutoID(ctx context.Context, categoryID string, year int, sourceType string) (int, error) {
 	var count int
-	query := `SELECT COUNT(*) FROM inventory_items i JOIN master_catalogs c ON i.catalog_id = c.id WHERE c.category_id = $1 AND EXTRACT(YEAR FROM i.purchase_date) = $2`
-	err := r.db.QueryRow(ctx, query, categoryID, year).Scan(&count)
+	query := `SELECT COUNT(*) FROM inventory_items i 
+	          JOIN master_catalogs c ON i.catalog_id = c.id 
+	          WHERE c.category_id = $1 AND EXTRACT(YEAR FROM i.purchase_date) = $2`
+	
+	args := []interface{}{categoryID, year}
+	
+	// Jika sourceType tidak kosong, filter berdasarkan sumber_perolehan
+	if sourceType != "" {
+		query += ` AND UPPER(i.sumber_perolehan) = UPPER($3)`
+		args = append(args, sourceType)
+	}
+	
+	err := r.db.QueryRow(ctx, query, args...).Scan(&count)
 	return count, err
 }
 
-func (r *pgxInventoryItemRepository) GenerateID(ctx context.Context, catalogID string, year int) (string, error) {
+func (r *pgxInventoryItemRepository) GenerateID(ctx context.Context, catalogID string, year int, sourceType string) (string, error) {
 	var categoryID, categoryCode string
 	err := r.db.QueryRow(ctx, `SELECT category_id::text, (SELECT code FROM master_categories WHERE id = category_id) FROM master_catalogs WHERE id = $1`, catalogID).Scan(&categoryID, &categoryCode)
 	if err != nil { return "", err }
+	
 	schoolCode, _ := r.GetSchoolCode(ctx)
-	count, _ := r.CountItemsForAutoID(ctx, categoryID, year)
+	count, _ := r.CountItemsForAutoID(ctx, categoryID, year, sourceType)
+	
+	prefix := getPrefix(sourceType)
+	if prefix != "" {
+		return fmt.Sprintf("%s/%s/%s/%d/%03d", schoolCode, prefix, categoryCode, year, count+1), nil
+	}
+	
+	// Fallback jika tidak ada prefix
 	return fmt.Sprintf("%s/%s/%d/%03d", schoolCode, categoryCode, year, count+1), nil
 }
