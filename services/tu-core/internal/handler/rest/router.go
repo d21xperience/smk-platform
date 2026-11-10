@@ -13,51 +13,51 @@ import (
 )
 
 type Router struct {
-	studentService          *service.StudentService
-	mutationService         *service.MutationService
-	registrationService     *service.RegistrationService
-	attendanceService       *service.AttendanceService
-	assessmentService       *service.AssessmentService
-	financeService          *service.FinanceService
-	correspondenceService   *service.CorrespondenceService
-	dispositionService      *service.DispositionService
-	signatureService        *service.SignatureService
-	classService            *service.ClassService
-	enrollmentService       *service.EnrollmentService
-	statisticsService       *service.StatisticsService
-	teacherService          *service.TeacherService
-	teacherHistoryService   *service.TeacherHistoryService
-	ptkLeaveService         *service.PtkLeaveService
-	ptkPerformanceService   *service.PtkPerformanceService
-	ptkArchiveService       *service.PtkArchiveService
-	ptkDashboardService     *service.PtkDashboardService
-	bukuIndukService        *service.BukuIndukService
+	studentService        *service.StudentService
+	mutationService       *service.MutationService
+	registrationService   *service.RegistrationService
+	attendanceService     *service.AttendanceService
+	assessmentService     *service.AssessmentService
+	financeService        *service.FinanceService
+	correspondenceService *service.CorrespondenceService
+	dispositionService    *service.DispositionService
+	signatureService      *service.SignatureService
+	classService          *service.ClassService
+	enrollmentService     *service.EnrollmentService
+	statisticsService     *service.StatisticsService
+	teacherService        *service.TeacherService
+	teacherHistoryService *service.TeacherHistoryService
+	ptkLeaveService       *service.PtkLeaveService
+	ptkArchiveService     *service.PtkArchiveService
+	ptkDashboardService   *service.PtkDashboardService
+	bukuIndukService      *service.BukuIndukService
 	skPembagianTugasService *service.SKPembagianTugasService
 	statistikService        *service.StatistikService
-	kurikulumService        *service.KurikulumService
-	scheduleService         service.ScheduleService
-	jurusanService          *service.JurusanService
-	logisticService         *service.LogisticService
-	kirService              *service.KIRService
-	contextHandler          *ContextHandler
-	authHandler             *AuthHandler
-	publicHandler           *PublicHandler
-	userHandler             *UserHandler
-	schoolHandler           *SchoolHandler
-	attendanceHandler       *AttendanceHandler
-	scheduleHandler         *ScheduleHandler
-	correspondenceHandler   *CorrespondenceHandler
-	dispositionHandler      *DispositionHandler
-	signatureHandler        *SignatureHandler
-	minioClient             *storage.MinioClient
-	letterTypeService       *service.LetterTypeService
-	procurementService      *service.ProcurementService
-	goodsReceiptService     *service.GoodsReceiptService
-	documentService         *service.DocumentService
-	disposalService         *service.DisposalService
-	borrowingService        *service.BorrowingService
-	maintenanceService      *service.MaintenanceService
-	sarprasReportService    *service.SarprasReportService
+	skpService              *service.SKPService
+	kurikulumService      *service.KurikulumService
+	scheduleService       service.ScheduleService
+	jurusanService        *service.JurusanService
+	contextHandler        *ContextHandler
+	authHandler           *AuthHandler
+	publicHandler         *PublicHandler
+	userHandler           *UserHandler
+	schoolHandler         *SchoolHandler
+	attendanceHandler     *AttendanceHandler
+	scheduleHandler       *ScheduleHandler
+	correspondenceHandler *CorrespondenceHandler
+	dispositionHandler    *DispositionHandler
+	signatureHandler      *SignatureHandler
+	minioClient           *storage.MinioClient
+	logisticService       *service.LogisticService
+	kirService            *service.KIRService
+	letterTypeService     *service.LetterTypeService
+	procurementService    *service.ProcurementService
+	goodsReceiptService   *service.GoodsReceiptService
+	documentService       *service.DocumentService
+	disposalService       *service.DisposalService
+	borrowingService      *service.BorrowingService
+	maintenanceService    *service.MaintenanceService
+	sarprasReportService  *service.SarprasReportService // <-- RESTORED
 }
 
 func NewRouter(
@@ -86,12 +86,12 @@ func NewRouter(
 	minioClient *storage.MinioClient,
 	teacherHistoryService *service.TeacherHistoryService,
 	ptkLeaveService *service.PtkLeaveService,
-	ptkPerformanceService *service.PtkPerformanceService,
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
 	bukuIndukService *service.BukuIndukService,
 	skPembagianTugasService *service.SKPembagianTugasService,
-	statistikService        *service.StatistikService,
+	statistikService *service.StatistikService,
+	skpService *service.SKPService,
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
@@ -101,54 +101,54 @@ func NewRouter(
 	disposalService *service.DisposalService,
 	borrowingService *service.BorrowingService,
 	maintenanceService *service.MaintenanceService,
-	sarprasReportService *service.SarprasReportService,
+	sarprasReportService *service.SarprasReportService, // <-- RESTORED
 ) http.Handler {
 	r := &Router{
-		studentService:          studentService,
-		mutationService:         mutationService,
-		registrationService:     registrationService,
-		attendanceService:       attendanceService,
-		assessmentService:       assessmentService,
-		financeService:          financeService,
-		correspondenceService:   correspondenceService,
-		dispositionService:      dispositionService,
-		signatureService:        signatureService,
-		classService:            classService,
-		enrollmentService:       enrollmentService,
-		statisticsService:       statisticsService,
-		teacherService:          teacherService,
-		teacherHistoryService:   teacherHistoryService,
-		ptkLeaveService:         ptkLeaveService,
-		ptkPerformanceService:   ptkPerformanceService,
-		ptkArchiveService:       ptkArchiveService,
-		ptkDashboardService:     ptkDashboardService,
-		bukuIndukService:        bukuIndukService,
+		studentService:        studentService,
+		mutationService:       mutationService,
+		registrationService:   registrationService,
+		attendanceService:     attendanceService,
+		assessmentService:     assessmentService,
+		financeService:        financeService,
+		correspondenceService: correspondenceService,
+		dispositionService:    dispositionService,
+		signatureService:      signatureService,
+		classService:          classService,
+		enrollmentService:     enrollmentService,
+		statisticsService:     statisticsService,
+		teacherService:        teacherService,
+		teacherHistoryService: teacherHistoryService,
+		ptkLeaveService:       ptkLeaveService,
+		ptkArchiveService:     ptkArchiveService,
+		ptkDashboardService:   ptkDashboardService,
+		bukuIndukService:      bukuIndukService,
 		skPembagianTugasService: skPembagianTugasService,
 		statistikService:        statistikService,
-		kurikulumService:        kurikulumService,
-		scheduleService:         scheduleService,
-		jurusanService:          jurusanService,
-		logisticService:         logisticService,
-		kirService:              kirService,
-		contextHandler:          NewContextHandler(prefService),
-		authHandler:             NewAuthHandler(authService),
-		publicHandler:           NewPublicHandler(publicService),
-		userHandler:             NewUserHandler(userService),
-		schoolHandler:           NewSchoolHandler(schoolService),
-		attendanceHandler:       NewAttendanceHandler(attendanceService),
-		scheduleHandler:         scheduleHandler,
-		correspondenceHandler:   NewCorrespondenceHandler(correspondenceService),
-		dispositionHandler:      NewDispositionHandler(dispositionService),
-		signatureHandler:        NewSignatureHandler(signatureService),
-		minioClient:             minioClient,
-		letterTypeService:       letterTypeService,
-		procurementService:      procurementService,
-		goodsReceiptService:     goodsReceiptService,
-		documentService:         documentService,
-		disposalService:         disposalService,
-		borrowingService:        borrowingService,
-		maintenanceService:      maintenanceService,
-		sarprasReportService:    sarprasReportService,
+		skpService:              skpService,
+		kurikulumService:      kurikulumService,
+		scheduleService:       scheduleService,
+		jurusanService:        jurusanService,
+		contextHandler:        NewContextHandler(prefService),
+		authHandler:           NewAuthHandler(authService),
+		publicHandler:         NewPublicHandler(publicService),
+		userHandler:           NewUserHandler(userService),
+		schoolHandler:         NewSchoolHandler(schoolService),
+		attendanceHandler:     NewAttendanceHandler(attendanceService),
+		scheduleHandler:       scheduleHandler,
+		correspondenceHandler: NewCorrespondenceHandler(correspondenceService),
+		dispositionHandler:    NewDispositionHandler(dispositionService),
+		signatureHandler:      NewSignatureHandler(signatureService),
+		minioClient:           minioClient,
+		logisticService:       logisticService,
+		kirService:            kirService,
+		letterTypeService:     letterTypeService,
+		procurementService:    procurementService,
+		goodsReceiptService:   goodsReceiptService,
+		documentService:       documentService,
+		disposalService:       disposalService,
+		borrowingService:      borrowingService,
+		maintenanceService:    maintenanceService,
+		sarprasReportService:  sarprasReportService,
 	}
 
 	mux := http.NewServeMux()
@@ -158,17 +158,8 @@ func NewRouter(
 	r.registerAcademicRoutes(mux)
 	r.registerCorrespondenceRoutes(mux)
 	r.registerSystemRoutes(mux)
+	r.registerSKPRoutes(mux)
 	r.registerSarprasRoutes(mux)
-	r.registerProcurementRoutes(mux)
-	r.registerGoodsReceiptRoutes(mux)
-	r.registerDocumentRoutes(mux)
-	r.registerDisposalRoutes(mux)
-	r.registerBorrowingRoutes(mux)
-	r.registerMaintenanceRoutes(mux)
-	r.registerReportRoutes(mux)
-	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
-	r.registerLetterTypeRoutes(mux)
-	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan)
 
 	return mux
 }

@@ -52,8 +52,14 @@ func (r *pgxStatistikRepository) GetDashboardStats(ctx context.Context) (*Statis
 			(SELECT COUNT(*) FROM ptk_attendance WHERE status = 'HADIR' AND date >= DATE_TRUNC('month', CURRENT_DATE)) AS total_hadir,
 			(SELECT COUNT(*) FROM ptk_leaves WHERE status = 'disetujui' AND tanggal_mulai >= DATE_TRUNC('month', CURRENT_DATE)) AS total_cuti,
 			(SELECT COUNT(*) FROM ptk_attendance WHERE status = 'ALPHA' AND date >= DATE_TRUNC('month', CURRENT_DATE)) AS total_alpha,
-			(SELECT COALESCE(AVG(nilai_skp), 0) FROM ptk_performances) AS avg_skp,
-			(SELECT COUNT(*) FROM (SELECT ptk_id, SUM(jam_per_minggu) as total FROM sk_pembagian_tugas_kelas JOIN sk_pembagian_tugas_detail ON sk_pembagian_tugas_kelas.detail_id = sk_pembagian_tugas_detail.id GROUP BY ptk_id HAVING SUM(jam_per_minggu) < 24) sub) AS guru_beban_kurang
+			(SELECT COALESCE(AVG(nilai_akhir), 0) FROM penilaian_hasil) AS avg_skp,
+			(SELECT COUNT(*) FROM (
+				SELECT ptk_id, SUM(jam_per_minggu) as total 
+				FROM sk_pembagian_tugas_kelas 
+				JOIN sk_pembagian_tugas_detail ON sk_pembagian_tugas_kelas.detail_id = sk_pembagian_tugas_detail.id 
+				GROUP BY ptk_id 
+				HAVING SUM(jam_per_minggu) < 24
+			) sub) AS guru_beban_kurang
 	`
 	err := r.db.QueryRow(ctx, kpiQuery).Scan(
 		&result.Kpi.TotalPegawai, &result.Kpi.TotalHadir, &result.Kpi.TotalCuti,
@@ -63,7 +69,7 @@ func (r *pgxStatistikRepository) GetDashboardStats(ctx context.Context) (*Statis
 		return nil, err
 	}
 
-	// 2. Query Chart Komposisi (Berdasarkan Status Pegawai)
+	// 2. Query Chart Komposisi
 	komposisiQuery := `
 		SELECT COALESCE(ext.status_pegawai, 'Honorer') AS label, COUNT(*) AS value
 		FROM tabel_ptk tp
@@ -82,7 +88,7 @@ func (r *pgxStatistikRepository) GetDashboardStats(ctx context.Context) (*Statis
 		}
 	}
 
-	// 3. Query Chart Distribusi (Berdasarkan Unit Kerja)
+	// 3. Query Chart Distribusi
 	distribusiQuery := `
 		SELECT COALESCE(ext.unit_kerja, 'Belum Diatur') AS label, COUNT(*) AS value
 		FROM tabel_ptk tp
@@ -90,7 +96,7 @@ func (r *pgxStatistikRepository) GetDashboardStats(ctx context.Context) (*Statis
 		WHERE tp.soft_delete = 0
 		GROUP BY ext.unit_kerja
 	`
-	rows2, err := r.db.Query(ctx, distribusiQuery)
+	rows2, err := dbQueryRows(ctx, r.db, distribusiQuery)
 	if err == nil {
 		defer rows2.Close()
 		for rows2.Next() {
@@ -102,4 +108,9 @@ func (r *pgxStatistikRepository) GetDashboardStats(ctx context.Context) (*Statis
 	}
 
 	return &result, nil
+}
+
+// Helper kecil agar query konsisten
+func dbQueryRows(ctx context.Context, db *pgxpool.Pool, query string) (interface{ Close(); Next() bool; Scan(dest ...interface{}) error }, error) {
+	return db.Query(ctx, query)
 }

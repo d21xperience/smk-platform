@@ -37,10 +37,21 @@ const kepegawaian = {
       name: 'sk-pembagian-tugas-create',
       component: () => import('@/pages/kepegawaian/SKWizardPage.vue'),
     },
+    // Rute SKP Baru (Akan dibuat di Fase 4)
     {
-      path: 'kinerja-gtk',
-      name: 'kinerja-gtk',
-      component: () => import('@/pages/kepegawaian/KinerjaGTK.vue'),
+      path: 'skp',
+      name: 'skp-periode',
+      component: () => import('@/pages/kepegawaian/SKPPeriodePage.vue'),
+    },
+    {
+      path: 'skp/periode/:id',
+      name: 'skp-penilaian',
+      component: () => import('@/pages/kepegawaian/SKPPenilaianPage.vue'),
+    },
+    {
+      path: 'skp/penilaian/:id',
+      name: 'skp-form',
+      component: () => import('@/pages/kepegawaian/SKPFormPage.vue'),
     },
     {
       path: 'beban-mengajar',

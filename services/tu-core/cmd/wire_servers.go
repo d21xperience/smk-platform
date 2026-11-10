@@ -42,8 +42,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 	)
 
 	scheduleHandler := rest.NewScheduleHandler(repos.Class, repos.Academic, infra.DB)
-
-	// PASTIKAN URUTAN PARAMETER DI SINI SAMA PERSIS DENGAN FUNGSI NewRouter DI router.go
+	
 	restHandler := rest.NewRouter(
 		services.Student, services.Mutation, services.Registration,
 		services.Attendance, services.Assessment, services.Finance,
@@ -53,9 +52,8 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Auth, services.Public, services.User, services.School,
 		scheduleHandler, services.Disposition, services.Signature,
 		infra.MinIO, services.TeacherHistory, services.PtkLeave,
-		services.PtkPerformance, services.PtkArchive, services.PtkDashboard,
-		services.BukuInduk,
-		services.SKPembagian, services.Statistik,
+		services.PtkArchive, services.PtkDashboard, services.BukuInduk,
+		services.SKPembagian, services.Statistik, services.SKP,
 		services.Logistic, services.KIR, services.LetterType,
 		services.Procurement, services.GoodsReceipt, services.Document, services.Disposal,
 		services.Borrowing, services.Maintenance, services.SarprasReport,

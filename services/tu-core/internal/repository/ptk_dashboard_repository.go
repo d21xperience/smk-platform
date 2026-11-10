@@ -30,7 +30,7 @@ func (r *pgxPtkDashboardRepository) GetDashboardStats(ctx context.Context) (*Das
 		SELECT
 			(SELECT COUNT(*) FROM tabel_ptk WHERE soft_delete = 0) AS total_teachers,
 			(SELECT COUNT(*) FROM ptk_leaves WHERE status = 'pending') AS pending_leaves,
-			(SELECT COALESCE(AVG(nilai_skp), 0) FROM ptk_performances) AS average_skp,
+			(SELECT COALESCE(AVG(nilai_akhir), 0) FROM penilaian_hasil) AS average_skp,
 			(SELECT COUNT(*) FROM ptk_archives WHERE tanggal_kadaluarsa IS NOT NULL AND tanggal_kadaluarsa <= NOW() + INTERVAL '30 days') AS expiring_archives
 	`
 	var stats DashboardStats

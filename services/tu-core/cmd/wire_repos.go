@@ -24,12 +24,12 @@ type AppRepositories struct {
 	Teacher        repository.TeacherRepository
 	TeacherHistory repository.TeacherHistoryRepository
 	PtkLeave       repository.PtkLeaveRepository
-	PtkPerformance repository.PtkPerformanceRepository
 	PtkArchive     repository.PtkArchiveRepository
 	PtkDashboard   repository.PtkDashboardRepository
 	BukuInduk      repository.BukuIndukRepository
 	SKPembagian    repository.SKPembagianTugasRepository
 	Statistik      repository.StatistikRepository
+	SKP            repository.SKPRepository
 	Enrollment     repository.EnrollmentRepository
 	User           repository.UserRepository
 	Public         repository.PublicRepository
@@ -69,12 +69,12 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Teacher:        repository.NewTeacherRepository(db),
 		TeacherHistory: repository.NewTeacherHistoryRepository(db),
 		PtkLeave:       repository.NewPtkLeaveRepository(db),
-		PtkPerformance: repository.NewPtkPerformanceRepository(db),
 		PtkArchive:     repository.NewPtkArchiveRepository(db),
 		PtkDashboard:   repository.NewPtkDashboardRepository(db),
 		BukuInduk:      repository.NewBukuIndukRepository(db),
 		SKPembagian:    repository.NewSKPembagianTugasRepository(db),
 		Statistik:      repository.NewStatistikRepository(db),
+		SKP:            repository.NewSKPRepository(db),
 		Enrollment:     repository.NewEnrollmentRepository(db),
 		User:           repository.NewUserRepository(db),
 		Public:         repository.NewPublicRepository(db),

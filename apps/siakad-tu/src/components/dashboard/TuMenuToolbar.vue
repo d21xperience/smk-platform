@@ -1,5 +1,6 @@
 <template>
   <q-toolbar v-if="visible" class="gt-xs row items-center no-wrap text-weight-medium dashboard-header">
+    <!-- Melakukan looping untuk setiap item menu yang dikirim lewat props -->
     <DropDownMenu v-for="(menu, index) in menus" :key="index" :label="menu.label" :items="menu.items"
       class="text-grey-4" @update:item="handleItemClick(menu.label, $event)" />
   </q-toolbar>
@@ -26,7 +27,6 @@ const itemPengaturan = [
 ]
 const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
-  { title: 'Master Surat', to: '/persuratan/master-jenis-surat' },
   { title: 'Surat Keluar', to: '/persuratan/surat-keluar' },
   { title: 'Surat Masuk', to: '/persuratan/surat-masuk' },
   { title: 'Disposisi', to: '/persuratan/disposisi' },
@@ -38,18 +38,19 @@ const itemKepegawaian = [
   { title: 'Buku Induk Pegawai', to: { name: 'buku-induk' } },
   { title: 'Statistik Keberadaan', to: { name: 'statistik-keberadaan' } },
   { title: 'SK Pembagian Tugas', to: { name: 'sk-pembagian-tugas' } },
-  { title: 'Kinerja GTK', to: { name: 'kinerja-gtk' } },
+  { title: 'Penilaian SKP', to: { name: 'skp-periode' } }, // <-- MENU BARU SKP
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },
 ]
 
+// --- MENU KURIKULUM BARU ---
 const itemKurikulum = [
-  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' },
+  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' }, // Sementara mengarah ke preview
   { title: 'Mata Pelajaran', to: '/kurikulum/mapel' },
   { title: 'Penugasan Mengajar', to: '/kurikulum/pembelajaran' },
-  { title: 'Kelas', to: '/kurikulum/kelas' },
-  { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal-pelajaran' },
+  // { title: 'Pembelajaran', to: '/kurikulum/pembelajaran' },
+  // { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal' },
 ]
 
 const itemHubin = [
@@ -72,6 +73,8 @@ const itemPsb = [
 
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
+  { title: 'Kelas', to: '/kesiswaan/kelas' },
+  { title: 'Jadwal Pelajaran', to: '/kesiswaan/jadwal-pelajaran' },
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
   { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
@@ -83,13 +86,11 @@ const itemKesiswaan = [
 ]
 const itemSarpras = [
   { title: 'Dashboard', to: '/sarpras/dashboard' },
-  { title: 'Master Data', to: '/sarpras/master-data' },
   {
     title: 'Inventaris', icon: 'wallet', children: [
       { title: 'Logistik', to: '/sarpras/inventaris/logistik' },
       { title: 'Ruangan', to: '/sarpras/inventaris/ruangan' },
       { title: 'Cetak QR', to: '/sarpras/inventaris/cetak-qr' },
-      { title: 'Penerimaan Barang', to: '/sarpras/inventaris/penerimaan' },
     ]
   },
   {
@@ -102,16 +103,13 @@ const itemSarpras = [
   {
     title: 'Sirkulasi', icon: 'sync', children: [
       { title: 'Pinjam', to: '/sarpras/sirkulasi/pinjam' },
-      { title: 'Pengajuan ATK', to: '/sarpras/sirkulasi/minta-atk' }, // <-- PERBAIKAN TYPO
+      { title: 'Jadwal', to: '/sarpras/sirkulasi/minta-atk' },
     ]
   },
   {
     title: 'Mutasi', icon: 'delete_sweep', children: [
       { title: 'Log', to: '/sarpras/mutasi/log' },
       { title: 'Hapus', to: '/sarpras/mutasi/hapus' },
-      { title: 'Buku Induk', to: '/sarpras/laporan/buku-induk' },
-      { title: 'Buku Perawatan', to: '/sarpras/laporan/buku-perawatan' },
-      { title: 'Buku Keadaan', to: '/sarpras/laporan/buku-keadaan' },
     ]
   },
 ]

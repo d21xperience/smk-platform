@@ -42,12 +42,12 @@ type AppServices struct {
 	Teacher        *service.TeacherService
 	TeacherHistory *service.TeacherHistoryService
 	PtkLeave       *service.PtkLeaveService
-	PtkPerformance *service.PtkPerformanceService
 	PtkArchive     *service.PtkArchiveService
 	PtkDashboard   *service.PtkDashboardService
 	BukuInduk      *service.BukuIndukService
 	SKPembagian    *service.SKPembagianTugasService
 	Statistik      *service.StatistikService
+	SKP            *service.SKPService
 	Kurikulum      *service.KurikulumService
 	Schedule       service.ScheduleService
 	Jurusan        *service.JurusanService
@@ -102,12 +102,12 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Teacher:        service.NewTeacherService(repos.Teacher),
 		TeacherHistory: service.NewTeacherHistoryService(repos.TeacherHistory),
 		PtkLeave:       service.NewPtkLeaveService(repos.PtkLeave),
-		PtkPerformance: service.NewPtkPerformanceService(repos.PtkPerformance),
 		PtkArchive:     service.NewPtkArchiveService(repos.PtkArchive),
 		PtkDashboard:   service.NewPtkDashboardService(repos.PtkDashboard),
 		BukuInduk:      service.NewBukuIndukService(repos.BukuInduk),
 		SKPembagian:    service.NewSKPembagianTugasService(repos.SKPembagian, repos.School, minioClient),
 		Statistik:      service.NewStatistikService(repos.Statistik),
+		SKP:            service.NewSKPService(repos.SKP, repos.School, minioClient),
 		Kurikulum:      service.NewKurikulumService(repos.Subject, repos.Pembelajaran, repos.KurikulumStat),
 		Schedule:       service.NewScheduleService(repos.Schedule, db),
 		Jurusan:        service.NewJurusanService(repos.Jurusan),

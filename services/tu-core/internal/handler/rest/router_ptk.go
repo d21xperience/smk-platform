@@ -14,30 +14,79 @@ import (
 
 func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
+	// RUTE YANG HILANG (Dikembalikan)
 	mux.HandleFunc("/api/v1/teachers/dashboard", r.wrapWithContext(r.handleTeacherDashboard))
 	mux.HandleFunc("/api/v1/teachers/buku-induk", r.wrapWithContext(r.handleBukuIndukList))
 	mux.HandleFunc("/api/v1/teachers/buku-induk/", r.wrapWithContext(r.handleBukuIndukDetail))
-	mux.HandleFunc("/api/v1/kepegawaian/statistik", r.wrapWithContext(r.handleStatistikDashboard))
-	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas", r.wrapWithContext(r.handleSKPembagianTugas))
-	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/export/", r.wrapWithContext(r.handleSKExportExcel))
-	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/", r.wrapWithContext(r.handleSKPembagianTugasByID))
+	
 	mux.HandleFunc("/api/v1/teachers/workload", r.wrapWithContext(r.handleTeacherWorkload))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
 	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
 	mux.HandleFunc("/api/v1/teachers/history/", r.wrapWithContext(r.handleTeacherHistory))
-	
-	// Rute Cuti, Kinerja, & Arsip
+
 	mux.HandleFunc("/api/v1/teachers/leaves", r.wrapWithContext(r.handleTeacherLeaves))
 	mux.HandleFunc("/api/v1/teachers/leaves/", r.wrapWithContext(r.handleTeacherLeaveByID))
-	mux.HandleFunc("/api/v1/teachers/performances", r.wrapWithContext(r.handleTeacherPerformances))
-	mux.HandleFunc("/api/v1/teachers/performances/", r.wrapWithContext(r.handleTeacherPerformanceByID))
-	
+
 	mux.HandleFunc("/api/v1/teachers/archives/upload", r.wrapWithContext(r.handleArchiveUpload))
 	mux.HandleFunc("/api/v1/teachers/archives", r.wrapWithContext(r.handleTeacherArchives))
 	mux.HandleFunc("/api/v1/teachers/archives/", r.wrapWithContext(r.handleTeacherArchiveByID))
 
+	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/export/", r.wrapWithContext(r.handleSKExportExcel))
+	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas", r.wrapWithContext(r.handleSKPembagianTugas))
+	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/", r.wrapWithContext(r.handleSKPembagianTugasByID))
+
+	mux.HandleFunc("/api/v1/kepegawaian/statistik", r.wrapWithContext(r.handleStatistikDashboard))
+
 	mux.HandleFunc("/api/v1/teachers/", r.wrapWithContext(r.handleTeacherByID))
 }
+
+// --- Handler yang dikembalikan ---
+
+func (r *Router) handleTeacherDashboard(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	stats, err := r.ptkDashboardService.GetDashboardStats(req.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, stats)
+}
+
+func (r *Router) handleBukuIndukList(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	list, err := r.bukuIndukService.ListBukuInduk(req.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+func (r *Router) handleBukuIndukDetail(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/buku-induk/")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+	detail, err := r.bukuIndukService.GetBukuIndukDetail(req.Context(), id)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Data tidak ditemukan"})
+		return
+	}
+	writeJSON(w, http.StatusOK, detail)
+}
+
+// --- Handler Lama (Tidak Diubah) ---
 
 func (r *Router) handleArchiveUpload(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
@@ -125,9 +174,6 @@ func (r *Router) handleTeacherArchiveByID(w http.ResponseWriter, req *http.Reque
 	}
 }
 
-// -------------------------------------------------------------------------
-// HANDLER SEBELUMNYA (Workload, Photo, History, Teachers, dll) - TETAP SAMA
-// -------------------------------------------------------------------------
 func (r *Router) handleTeacherWorkload(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
@@ -380,99 +426,12 @@ func (r *Router) handleTeacherLeaveByID(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (r *Router) handleTeacherPerformances(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		list, err := r.ptkPerformanceService.ListPerformances(req.Context())
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		writeJSON(w, http.StatusOK, list)
-	case http.MethodPost:
-		var body repository.Performance
-		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
-			return
-		}
-		if err := r.ptkPerformanceService.CreatePerformance(req.Context(), body); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		writeJSON(w, http.StatusCreated, map[string]string{"message": "Penilaian kinerja berhasil ditambahkan"})
-	default:
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-	}
-}
-
-func (r *Router) handleTeacherPerformanceByID(w http.ResponseWriter, req *http.Request) {
-	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/performances/")
-	if id == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
-		return
-	}
-	if req.Method == http.MethodDelete {
-		if err := r.ptkPerformanceService.DeletePerformance(req.Context(), id); err != nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]string{"message": "Penilaian kinerja dihapus"})
-		return
-	}
-	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-}
-
-func (r *Router) handleTeacherDashboard(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-		return
-	}
-	stats, err := r.ptkDashboardService.GetDashboardStats(req.Context())
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	writeJSON(w, http.StatusOK, stats)
-}
-
-func (r *Router) handleBukuIndukList(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-		return
-	}
-	list, err := r.bukuIndukService.ListBukuInduk(req.Context())
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	writeJSON(w, http.StatusOK, list)
-}
-
-func (r *Router) handleBukuIndukDetail(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
-		return
-	}
-	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/buku-induk/")
-	if id == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
-		return
-	}
-	detail, err := r.bukuIndukService.GetBukuIndukDetail(req.Context(), id)
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Data tidak ditemukan"})
-		return
-	}
-	writeJSON(w, http.StatusOK, detail)
-}
-
 func (r *Router) handleSKPembagianTugas(w http.ResponseWriter, req *http.Request) {
 	opCtx := middleware.GetOperationalContext(req.Context())
 	if opCtx == nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
 		return
 	}
-
 	switch req.Method {
 	case http.MethodGet:
 		list, err := r.skPembagianTugasService.ListSK(req.Context())
@@ -481,7 +440,6 @@ func (r *Router) handleSKPembagianTugas(w http.ResponseWriter, req *http.Request
 			return
 		}
 		writeJSON(w, http.StatusOK, list)
-
 	case http.MethodPost:
 		var body repository.SKCreateRequest
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
@@ -494,7 +452,6 @@ func (r *Router) handleSKPembagianTugas(w http.ResponseWriter, req *http.Request
 			return
 		}
 		writeJSON(w, http.StatusCreated, map[string]string{"message": "Draft SK berhasil dibuat", "sk_id": skID, "nomor_sk": nomorSK})
-
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 	}
@@ -506,7 +463,6 @@ func (r *Router) handleSKPembagianTugasByID(w http.ResponseWriter, req *http.Req
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
 		return
 	}
-
 	path := strings.TrimPrefix(req.URL.Path, "/api/v1/kepegawaian/sk-pembagian-tugas/")
 	parts := splitPath(path)
 	if len(parts) < 2 {
@@ -515,12 +471,10 @@ func (r *Router) handleSKPembagianTugasByID(w http.ResponseWriter, req *http.Req
 	}
 	id := parts[0]
 	action := parts[1]
-
 	if req.Method != http.MethodPut {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 		return
 	}
-
 	var body struct {
 		Reason string `json:"reason"`
 		Notes  string `json:"notes"`
@@ -528,7 +482,6 @@ func (r *Router) handleSKPembagianTugasByID(w http.ResponseWriter, req *http.Req
 	if req.Body != http.NoBody {
 		_ = json.NewDecoder(req.Body).Decode(&body)
 	}
-
 	var err error
 	switch action {
 	case "submit":
@@ -543,12 +496,10 @@ func (r *Router) handleSKPembagianTugasByID(w http.ResponseWriter, req *http.Req
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Unknown action"})
 		return
 	}
-
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Aksi " + action + " berhasil"})
 }
 
@@ -557,19 +508,16 @@ func (r *Router) handleSKExportExcel(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 		return
 	}
-
 	id := strings.TrimPrefix(req.URL.Path, "/api/v1/kepegawaian/sk-pembagian-tugas/export/")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
 		return
 	}
-
 	url, err := r.skPembagianTugasService.ExportExcel(req.Context(), id)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Excel berhasil dibuat", "url": url})
 }
 
@@ -578,12 +526,10 @@ func (r *Router) handleStatistikDashboard(w http.ResponseWriter, req *http.Reque
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 		return
 	}
-
 	stats, err := r.statistikService.GetDashboardStats(req.Context())
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-
 	writeJSON(w, http.StatusOK, stats)
 }
