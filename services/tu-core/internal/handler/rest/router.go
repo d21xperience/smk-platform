@@ -35,7 +35,8 @@ type Router struct {
 	statistikService        *service.StatistikService
 	skpService              *service.SKPService
 	bukuKontrolService      *service.BukuKontrolService
-	usulanKenaikanService   *service.UsulanKenaikanService // <-- NEW
+	usulanKenaikanService   *service.UsulanKenaikanService
+	kehadiranService        *service.KehadiranService // <-- NEW
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
 	jurusanService        *service.JurusanService
@@ -95,7 +96,8 @@ func NewRouter(
 	statistikService *service.StatistikService,
 	skpService *service.SKPService,
 	bukuKontrolService *service.BukuKontrolService,
-	usulanKenaikanService *service.UsulanKenaikanService, // <-- NEW
+	usulanKenaikanService *service.UsulanKenaikanService,
+	kehadiranService *service.KehadiranService, // <-- NEW
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
@@ -130,7 +132,8 @@ func NewRouter(
 		statistikService:        statistikService,
 		skpService:              skpService,
 		bukuKontrolService:      bukuKontrolService,
-		usulanKenaikanService:   usulanKenaikanService, // <-- NEW
+		usulanKenaikanService:   usulanKenaikanService,
+		kehadiranService:        kehadiranService, // <-- NEW
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
 		jurusanService:        jurusanService,
@@ -166,7 +169,8 @@ func NewRouter(
 	r.registerSystemRoutes(mux)
 	r.registerSKPRoutes(mux)
 	r.registerBukuKontrolRoutes(mux)
-	r.registerUsulanKenaikanRoutes(mux) // <-- NEW
+	r.registerUsulanKenaikanRoutes(mux)
+	r.registerKehadiranRoutes(mux) // <-- NEW
 	r.registerSarprasRoutes(mux)
 
 	return mux

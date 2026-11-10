@@ -77,6 +77,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.SKP,
 		services.BukuKontrol,
 		services.UsulanKenaikan,
+		services.Kehadiran,
 		services.Logistic,
 		services.KIR,
 		services.LetterType,
