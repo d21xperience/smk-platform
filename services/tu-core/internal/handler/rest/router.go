@@ -54,6 +54,7 @@ type Router struct {
 	documentService       *service.DocumentService
 	disposalService       *service.DisposalService
 	borrowingService      *service.BorrowingService
+	maintenanceService    *service.MaintenanceService
 	sarprasReportService  *service.SarprasReportService
 }
 
@@ -95,6 +96,7 @@ func NewRouter(
 	documentService *service.DocumentService,
 	disposalService *service.DisposalService,
 	borrowingService *service.BorrowingService,
+	maintenanceService *service.MaintenanceService,
 	sarprasReportService *service.SarprasReportService,
 ) http.Handler {
 	r := &Router{
@@ -139,6 +141,7 @@ func NewRouter(
 		documentService:       documentService,
 		disposalService:       disposalService,
 		borrowingService:      borrowingService,
+		maintenanceService:    maintenanceService,
 		sarprasReportService:  sarprasReportService,
 	}
 
@@ -155,6 +158,7 @@ func NewRouter(
 	r.registerDocumentRoutes(mux)
 	r.registerDisposalRoutes(mux)
 	r.registerBorrowingRoutes(mux)
+	r.registerMaintenanceRoutes(mux)
 	r.registerReportRoutes(mux)
 	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
 	r.registerLetterTypeRoutes(mux)

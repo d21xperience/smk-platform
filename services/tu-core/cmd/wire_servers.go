@@ -59,6 +59,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Document,
 		services.Disposal,
 		services.Borrowing,
+		services.Maintenance,
 		services.SarprasReport,
 	)
 	restServer := server.NewRESTServer(
