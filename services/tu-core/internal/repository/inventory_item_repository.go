@@ -162,8 +162,19 @@ func (r *pgxInventoryItemRepository) scanItems(ctx context.Context, query string
 }
 
 func (r *pgxInventoryItemRepository) Create(ctx context.Context, item *InventoryItem) error {
-	query := `INSERT INTO inventory_items (id, catalog_id, condition, room_id, purchase_date, sumber_perolehan, status_aset, tanggal_pencatatan) VALUES ($1, $2, $3, $4, $5, $6, 'AKTIF', NOW())`
-	_, err := r.db.Exec(ctx, query, item.ID, item.CatalogID, item.Condition, item.RoomID, item.PurchaseDate, item.SumberPerolehan)
+	// Generate Nomor Registrasi
+	year := item.PurchaseDate.Year()
+	var countReg int
+	r.db.QueryRow(ctx, `SELECT COUNT(*) FROM inventory_items WHERE nomor_registrasi IS NOT NULL AND nomor_registrasi != '' AND EXTRACT(YEAR FROM purchase_date) = $1`, year).Scan(&countReg)
+	
+	romanMonths := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+	monthRoman := romanMonths[int(item.PurchaseDate.Month())]
+	
+	schoolCode, _ := r.GetSchoolCode(ctx)
+	regNumber := fmt.Sprintf("%03d/INV/%s/%s/%d", countReg+1, schoolCode, monthRoman, year)
+
+	query := `INSERT INTO inventory_items (id, nomor_registrasi, catalog_id, condition, room_id, purchase_date, sumber_perolehan, status_aset, tanggal_pencatatan) VALUES ($1, $2, $3, $4, $5, $6, $7, 'AKTIF', NOW())`
+	_, err := r.db.Exec(ctx, query, item.ID, regNumber, item.CatalogID, item.Condition, item.RoomID, item.PurchaseDate, item.SumberPerolehan)
 	return err
 }
 

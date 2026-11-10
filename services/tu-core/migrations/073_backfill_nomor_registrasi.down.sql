@@ -1,0 +1,1 @@
+-- No-op, data yang sudah diisi tidak dihapus

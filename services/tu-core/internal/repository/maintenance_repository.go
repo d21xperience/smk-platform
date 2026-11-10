@@ -29,12 +29,12 @@ type DamageReport struct {
 }
 
 type MaintenanceSchedule struct {
-	ID              string    `json:"id"`
-	ScheduleCode    string    `json:"schedule_code"`
-	AssetName       string    `json:"asset_name"`
-	InventoryItemID string    `json:"inventory_item_id"`
-	ScopeLocation   string    `json:"scope_location"`
-	Frequency       string    `json:"frequency"`
+	ID              string     `json:"id"`
+	ScheduleCode    string     `json:"schedule_code"`
+	AssetName       string     `json:"asset_name"`
+	InventoryItemID string     `json:"inventory_item_id"`
+	ScopeLocation   string     `json:"scope_location"`
+	Frequency       string     `json:"frequency"`
 	LastServiceDate *time.Time `json:"last_service_date"`
 	NextServiceDate time.Time  `json:"next_service_date"`
 	IsActive        bool       `json:"is_active"`
@@ -42,30 +42,35 @@ type MaintenanceSchedule struct {
 }
 
 type MaintenanceLog struct {
-	ID             string    `json:"id"`
-	ScheduleID     string    `json:"schedule_id"`
-	DamageReportID string    `json:"damage_report_id"`
-	InventoryItemID string   `json:"inventory_item_id"`
-	ServiceDate    time.Time `json:"service_date"`
-	Technician     string    `json:"technician"`
-	Vendor         string    `json:"vendor"`
-	Cost           float64   `json:"cost"`
-	Notes          string    `json:"notes"`
-	PerformedBy    string    `json:"performed_by"`
+	ID              string    `json:"id"`
+	ScheduleID      string    `json:"schedule_id"`
+	DamageReportID  string    `json:"damage_report_id"`
+	InventoryItemID string    `json:"inventory_item_id"`
+	ServiceDate     time.Time `json:"service_date"`
+	Technician      string    `json:"technician"`
+	Vendor          string    `json:"vendor"`
+	Cost            float64   `json:"cost"`
+	Notes           string    `json:"notes"`
+	PerformedBy     string    `json:"performed_by"`
+	CreatedAt       time.Time `json:"created_at"`
+	
+	// Joined Fields
+	AssetCode string `json:"asset_code"`
+	AssetName string `json:"asset_name"`
 }
 
 type MaintenanceRepository interface {
-	// Damage Reports
 	GetAllDamageReports(ctx context.Context, semesterID string) ([]*DamageReport, error)
 	CreateDamageReport(ctx context.Context, d *DamageReport) error
 	UpdateDamageReport(ctx context.Context, id string, status, vendor string, cost float64, notes string) error
 	GenerateDamageNumber(ctx context.Context) (string, error)
 
-	// Maintenance Schedules
 	GetAllSchedules(ctx context.Context, semesterID string) ([]*MaintenanceSchedule, error)
 	CreateSchedule(ctx context.Context, s *MaintenanceSchedule) error
 	CompleteSchedule(ctx context.Context, id string, serviceDate time.Time, cost float64, notes string, performedBy string) error
 	GenerateScheduleCode(ctx context.Context) (string, error)
+
+	GetMaintenanceLogs(ctx context.Context, startDate, endDate string) ([]*MaintenanceLog, error)
 }
 
 type pgxMaintenanceRepository struct {
@@ -128,16 +133,13 @@ func (r *pgxMaintenanceRepository) UpdateDamageReport(ctx context.Context, id st
 	if err != nil { return err }
 	defer tx.Rollback(ctx)
 
-	// Ambil data report dulu
 	var itemID, assetName string
 	err = tx.QueryRow(ctx, `SELECT COALESCE(inventory_item_id, ''), asset_name FROM damage_reports WHERE id = $1`, id).Scan(&itemID, &assetName)
 	if err != nil { return err }
 
-	// Update status
 	_, err = tx.Exec(ctx, `UPDATE damage_reports SET status = $1, vendor_name = $2, cost = $3, resolution_notes = $4, updated_at = NOW() WHERE id = $5`, status, vendor, cost, notes, id)
 	if err != nil { return err }
 
-	// Integrasi status aset
 	if itemID != "" {
 		switch status {
 		case "Proses":
@@ -146,11 +148,9 @@ func (r *pgxMaintenanceRepository) UpdateDamageReport(ctx context.Context, id st
 		case "Selesai":
 			tx.Exec(ctx, `UPDATE inventory_items SET status_aset = 'AKTIF', updated_at = NOW() WHERE id = $1`, itemID)
 			tx.Exec(ctx, `INSERT INTO inventory_item_history (inventory_item_id, action, description, changed_by) VALUES ($1, 'SELESAI_PERBAIKAN', $2, 'system')`, itemID, "Servis selesai: "+assetName)
-			// Catat ke maintenance_logs
 			tx.Exec(ctx, `INSERT INTO maintenance_logs (damage_report_id, inventory_item_id, service_date, vendor, cost, notes, performed_by) VALUES ($1, $2, NOW(), $3, $4, $5, 'system')`, id, itemID, vendor, cost, notes)
 		}
 	}
-
 	return tx.Commit(ctx)
 }
 
@@ -191,12 +191,10 @@ func (r *pgxMaintenanceRepository) CompleteSchedule(ctx context.Context, id stri
 	if err != nil { return err }
 	defer tx.Rollback(ctx)
 
-	// Ambil data schedule
 	var frequency, assetName, itemID string
 	err = tx.QueryRow(ctx, `SELECT frequency, asset_name, COALESCE(inventory_item_id, '') FROM maintenance_schedules WHERE id = $1`, id).Scan(&frequency, &assetName, &itemID)
 	if err != nil { return err }
 
-	// Hitung next date
 	var nextDate time.Time
 	switch frequency {
 	case "Bulanan": nextDate = serviceDate.AddDate(0, 1, 0)
@@ -206,13 +204,38 @@ func (r *pgxMaintenanceRepository) CompleteSchedule(ctx context.Context, id stri
 	default: nextDate = serviceDate.AddDate(0, 1, 0)
 	}
 
-	// Update schedule
 	_, err = tx.Exec(ctx, `UPDATE maintenance_schedules SET last_service_date = $1, next_service_date = $2, updated_at = NOW() WHERE id = $3`, serviceDate, nextDate, id)
 	if err != nil { return err }
 
-	// Catat log
 	_, err = tx.Exec(ctx, `INSERT INTO maintenance_logs (schedule_id, inventory_item_id, service_date, cost, notes, performed_by) VALUES ($1, $2, $3, $4, $5, $6)`, id, itemID, serviceDate, cost, notes, performedBy)
 	if err != nil { return err }
 
 	return tx.Commit(ctx)
+}
+
+func (r *pgxMaintenanceRepository) GetMaintenanceLogs(ctx context.Context, startDate, endDate string) ([]*MaintenanceLog, error) {
+	query := `
+		SELECT ml.id::text, COALESCE(ml.schedule_id::text, ''), COALESCE(ml.damage_report_id::text, ''), 
+		       COALESCE(ml.inventory_item_id, ''), ml.service_date, COALESCE(ml.technician, ''), 
+		       COALESCE(ml.vendor, ''), COALESCE(ml.cost, 0), COALESCE(ml.notes, ''), ml.performed_by, ml.created_at,
+		       COALESCE(i.id, ''), COALESCE(c.name, '-')
+		FROM maintenance_logs ml
+		LEFT JOIN inventory_items i ON ml.inventory_item_id = i.id
+		LEFT JOIN master_catalogs c ON i.catalog_id = c.id
+		WHERE ($1 = '' OR ml.service_date >= $1::date)
+		  AND ($2 = '' OR ml.service_date <= $2::date)
+		ORDER BY ml.service_date DESC
+	`
+	rows, err := r.db.Query(ctx, query, startDate, endDate)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var list []*MaintenanceLog
+	for rows.Next() {
+		var l MaintenanceLog
+		err := rows.Scan(&l.ID, &l.ScheduleID, &l.DamageReportID, &l.InventoryItemID, &l.ServiceDate, &l.Technician, &l.Vendor, &l.Cost, &l.Notes, &l.PerformedBy, &l.CreatedAt, &l.AssetCode, &l.AssetName)
+		if err != nil { return nil, err }
+		list = append(list, &l)
+	}
+	return list, nil
 }

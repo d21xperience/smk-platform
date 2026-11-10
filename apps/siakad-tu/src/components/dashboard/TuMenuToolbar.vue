@@ -108,6 +108,7 @@ const itemSarpras = [
       { title: 'Log', to: '/sarpras/mutasi/log' },
       { title: 'Hapus', to: '/sarpras/mutasi/hapus' },
       { title: 'Buku Induk', to: '/sarpras/laporan/buku-induk' },
+      { title: 'Buku Perawatan', to: '/sarpras/laporan/buku-perawatan' },
     ]
   },
 ]
