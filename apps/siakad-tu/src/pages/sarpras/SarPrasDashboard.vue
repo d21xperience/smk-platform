@@ -1,102 +1,81 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- BARIS 1: METRIK UTAMA -->
-    <div class="row q-col-gutter-md q-mb-lg">
+    <div class="row q-mb-md items-center justify-between">
+      <div class="text-h6 text-weight-bold">Dashboard Sarpras</div>
+    </div>
+
+    <!-- METRIK CARDS -->
+    <div class="row q-col-gutter-md q-mb-md">
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card flat bordered class="bg-blue-1 text-blue-9">
-          <q-card-section class="row items-center no-wrap">
-            <div>
-              <div class="text-subtitle2 text-grey-7 text-uppercase">Nilai Aset Yayasan</div>
-              <div class="text-h5 text-weight-bold">Rp 1.2M</div>
+        <q-card class="bg-blue-9 text-white">
+          <q-card-section>
+            <div class="text-caption opacity-80">Total Aset Aktif</div>
+            <div class="text-h4 text-weight-bold">{{ stats.total_assets }} <span class="text-subtitle2">Unit</span>
             </div>
-            <q-space />
-            <q-icon name="account_balance_wallet" size="lg" />
           </q-card-section>
         </q-card>
       </div>
-
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card flat bordered class="bg-green-1 text-green-9">
-          <q-card-section class="row items-center no-wrap">
-            <div>
-              <div class="text-subtitle2 text-grey-7 text-uppercase">Aset Kondisi Baik</div>
-              <div class="text-h5 text-weight-bold">1,420 <span class="text-caption">Unit</span></div>
-            </div>
-            <q-space />
-            <q-icon name="check_circle" size="lg" />
+        <q-card class="bg-teal-8 text-white">
+          <q-card-section>
+            <div class="text-caption opacity-80">Total Nilai Aset</div>
+            <div class="text-h5 text-weight-bold">Rp {{ (stats.total_value / 1000000).toFixed(1) }} <span
+                class="text-subtitle2">Juta</span></div>
           </q-card-section>
         </q-card>
       </div>
-
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card flat bordered class="bg-amber-1 text-amber-9">
-          <q-card-section class="row items-center no-wrap">
-            <div>
-              <div class="text-subtitle2 text-grey-7 text-uppercase">Butuh Servis</div>
-              <div class="text-h5 text-weight-bold">12 <span class="text-caption">Barang</span></div>
-            </div>
-            <q-space />
-            <q-icon name="handyman" size="lg" />
+        <q-card class="bg-orange-8 text-white">
+          <q-card-section>
+            <div class="text-caption opacity-80">Peminjaman Aktif</div>
+            <div class="text-h4 text-weight-bold">{{ stats.active_borrowings }} <span
+                class="text-subtitle2">Transaksi</span></div>
           </q-card-section>
         </q-card>
       </div>
-
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card flat bordered class="bg-red-1 text-red-9">
-          <q-card-section class="row items-center no-wrap">
-            <div>
-              <div class="text-subtitle2 text-grey-7 text-uppercase">Stok ATK Kritis</div>
-              <div class="text-h5 text-weight-bold">4 <span class="text-caption">Item</span></div>
+        <q-card class="bg-red-8 text-white">
+          <q-card-section>
+            <div class="text-caption opacity-80">Usulan Dihapus</div>
+            <div class="text-h4 text-weight-bold">{{ stats.pending_disposals }} <span class="text-subtitle2">Aset</span>
             </div>
-            <q-space />
-            <q-icon name="warning" size="lg" />
           </q-card-section>
         </q-card>
       </div>
     </div>
 
-    <!-- BARIS 2: KONTEN UTAMA DAN TIMELINE -->
+    <!-- CHARTS & LAPORAN -->
     <div class="row q-col-gutter-md">
-      <!-- Sisi Kiri: Tiket Kerusakan & Logistik Kritis -->
-      <div class="col-12 col-md-8">
-        <!-- Komponen Tiket Laporan Guru -->
-        <q-card flat bordered class="q-mb-md">
-          <q-card-section class="row items-center q-pb-none">
-            <div class="text-h6 text-weight-bold text-grey-8">Tiket Laporan Kerusakan Terkini</div>
-            <q-space />
-            <q-btn flat color="primary" label="Lihat Semua" to="/sarpras/servis/tiket" />
-          </q-card-section>
-
+      <!-- KONDISI ASET (PIE CHART) -->
+      <div class="col-12 col-md-6">
+        <q-card flat bordered>
+          <q-card-section class="text-subtitle1 text-weight-bold">Kondisi Aset</q-card-section>
           <q-card-section>
-            <q-list separator>
-              <q-item v-for="tiket in tiketKerusakan" :key="tiket.id" class="q-py-md">
-                <q-item-section avatar>
-                  <q-avatar :icon="tiket.icon" :color="tiket.urgensiColor" text-color="white" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="text-weight-medium">{{ tiket.namaBarang }}</q-item-label>
-                  <q-item-label caption>Lokasi: {{ tiket.lokasi }} | Pelapor: {{ tiket.pelapor }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-badge :color="tiket.statusColor">{{ tiket.status }}</q-badge>
-                </q-item-section>
-              </q-item>
-            </q-list>
+            <!-- Perbaikan: Gunakan komponen VueApexCharts -->
+            <apexchart type="pie" height="300" :options="chartOptions" :series="chartSeries" />
           </q-card-section>
         </q-card>
       </div>
 
-      <!-- Sisi Kanan: Jadwal Kegiatan & Perawatan -->
-      <div class="col-12 col-md-4">
-        <q-card flat bordered class="fit">
-          <q-card-section>
-            <div class="text-h6 text-weight-bold text-grey-8 q-mb-md">Agenda Sarpras Hari Ini</div>
-            <q-timeline color="secondary">
-              <q-timeline-entry v-for="agenda in agendaHariIni" :key="agenda.id" :title="agenda.judul"
-                :subtitle="agenda.jam" :icon="agenda.icon" :color="agenda.color">
-                <div>{{ agenda.deskripsi }}</div>
-              </q-timeline-entry>
-            </q-timeline>
+      <!-- LAPORAN KOMPREHENSIF -->
+      <div class="col-12 col-md-6">
+        <q-card flat bordered class="column full-height">
+          <q-card-section class="text-subtitle1 text-weight-bold bg-grey-2">Generate Laporan</q-card-section>
+          <q-card-section class="col q-gutter-y-md">
+            <q-banner class="bg-blue-1 text-blue-9 rounded-borders">
+              Pilih rentang tanggal untuk mengunduh Laporan Komprehensif (Penerimaan, Peminjaman, Ringkasan Aset) dalam
+              format PDF.
+            </q-banner>
+            <div class="row q-col-gutter-sm">
+              <div class="col-6">
+                <q-input outlined dense v-model="reportForm.startDate" type="date" label="Dari Tanggal" />
+              </div>
+              <div class="col-6">
+                <q-input outlined dense v-model="reportForm.endDate" type="date" label="Sampai Tanggal" />
+              </div>
+            </div>
+            <q-btn color="primary" icon="picture_as_pdf" label="Unduh Laporan PDF" @click="unduhLaporan"
+              :loading="isDownloading" class="full-width" />
           </q-card-section>
         </q-card>
       </div>
@@ -105,19 +84,54 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useQuasar } from 'quasar'
+import { useSarprasDashboardStore } from '@/stores/sarpras/sarprasDashboard'
+import { useContextStore } from '@/stores/contextStore'
+// PERBAIKAN: Import dengan nama 'apexchart' agar cocok dengan tag <apexchart> di template
+import apexchart from 'vue3-apexcharts'
 
-// Mock Data Tiket Laporan Kerusakan
-const tiketKerusakan = ref([
-  { id: 1, namaBarang: 'AC Ruang Kelas 11-B Bocor Air', lokasi: 'Gedung A, Lt 2', pelapor: 'Bu Sri (Wali Kelas)', status: 'Pending', icon: 'ac_unit', urgensiColor: 'red', statusColor: 'grey-7' },
-  { id: 2, namaBarang: 'Proyektor BenQ Mati Total', lokasi: 'Lab Fisika', pelapor: 'Pak Bambang', status: 'Proses Servis', icon: 'videocam', urgensiColor: 'amber', statusColor: 'orange' },
-  { id: 3, namaBarang: 'Engsel Pintu Kamar Mandi Lepas', lokasi: 'Toilet Siswa Barat', pelapor: 'Pak Joko (Penjaga)', status: 'Selesai', icon: 'door_sliding', urgensiColor: 'green', statusColor: 'green' }
-])
+const $q = useQuasar()
+const store = useSarprasDashboardStore()
+const contextStore = useContextStore()
 
-// Mock Data Agenda Hari Ini
-const agendaHariIni = ref([
-  { id: 1, judul: 'Kunjungan Teknisi Internet', jam: '09:00 WIB', icon: 'wifi', color: 'primary', deskripsi: 'Pengecekan bandwidth area Lab Komputer untuk persiapan ujian.' },
-  { id: 2, judul: 'Batas Pengembalian Kamera', jam: '14:00 WIB', icon: 'photo_camera', color: 'amber', deskripsi: 'Kamera DSL-02 dipinjam OSIS untuk dokumentasi rapat yayasan.' },
-  { id: 3, judul: 'Stok Opname Bulanan', jam: '16:00 WIB', icon: 'inventory', color: 'purple', deskripsi: 'Pengecekan berkala sisa fisik kertas A4 dan spidol di gudang utama.' }
-])
+// ApexCharts setup
+const stats = computed(() => store.stats)
+const chartSeries = computed(() => [stats.value.condition_baik, stats.value.condition_rr, stats.value.condition_rb])
+const chartOptions = {
+  labels: ['Baik', 'Rusak Ringan', 'Rusak Berat'],
+  colors: ['#21ba45', '#f2c037', '#c10015'],
+  legend: { position: 'bottom' }
+}
+
+// Laporan Form
+const isDownloading = ref(false)
+const reportForm = ref({
+  startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+  endDate: new Date().toISOString().split('T')[0]
+})
+
+onMounted(() => {
+  store.fetchStats()
+})
+
+watch(() => contextStore.selectedSemesterId, (newVal) => {
+  if (newVal) store.fetchStats()
+})
+
+async function unduhLaporan() {
+  if (!reportForm.value.startDate || !reportForm.value.endDate) {
+    $q.notify({ type: 'negative', message: 'Tanggal wajib diisi' })
+    return
+  }
+  isDownloading.value = true
+  try {
+    await store.downloadComprehensiveReport(reportForm.value.startDate, reportForm.value.endDate)
+    $q.notify({ type: 'positive', message: 'Laporan berhasil diunduh' })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: `Gagal mengunduh laporan ${e}` })
+  } finally {
+    isDownloading.value = false
+  }
+}
 </script>

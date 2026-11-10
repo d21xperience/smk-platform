@@ -62,6 +62,7 @@ type AppServices struct {
 	Document       *service.DocumentService
 	Disposal       *service.DisposalService
 	Borrowing      *service.BorrowingService
+	SarprasReport  *service.SarprasReportService
 }
 
 func initEngines() *AppEngines {
@@ -118,5 +119,6 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Document:       service.NewDocumentService(repos.Document, minioClient),
 		Disposal:       service.NewDisposalService(repos.Disposal),
 		Borrowing:      service.NewBorrowingService(repos.Borrowing, repos.KirItem),
+		SarprasReport:  service.NewSarprasReportService(db),
 	}
 }

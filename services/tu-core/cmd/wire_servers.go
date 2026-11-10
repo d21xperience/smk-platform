@@ -59,6 +59,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Document,
 		services.Disposal,
 		services.Borrowing,
+		services.SarprasReport,
 	)
 	restServer := server.NewRESTServer(
 		server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)},

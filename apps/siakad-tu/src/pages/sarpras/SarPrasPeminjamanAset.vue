@@ -48,13 +48,12 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useQuasar } from 'quasar'
+// $q dihapus karena tidak digunakan
 import { useBorrowingStore } from '@/stores/sarpras/borrowing'
 import { useContextStore } from '@/stores/contextStore'
 import BorrowingFormDialog from '@/components/sarpras/BorrowingFormDialog.vue'
 import BorrowingActionDialog from '@/components/sarpras/BorrowingActionDialog.vue'
 
-const $q = useQuasar()
 const store = useBorrowingStore()
 const contextStore = useContextStore()
 
