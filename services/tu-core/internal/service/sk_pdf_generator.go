@@ -56,7 +56,7 @@ func (g *SKPDFGenerator) GenerateSKPDF(school *repository.School, sk *repository
 	pdf.CellFormat(0, 7, "TENTANG", "", 1, "C", false, 0, "")
 	pdf.CellFormat(0, 7, "PEMBAGIAN TUGAS GURU DAN KARYAWAN", "", 1, "C", false, 0, "")
 	pdf.SetFont("Arial", "", 12)
-	pdf.CellFormat(0, 7, fmt.Sprintf("SEMESTER %d TAHUN AJARAN %s", sk.Semester, sk.TahunAjaran), "", 1, "C", false, 0, "")
+	semesterLabel := fmt.Sprintf("SEMESTER %d", sk.Semester); if sk.Semester == 0 { semesterLabel = "SEMESTER GANJIL & GENAP" }; pdf.CellFormat(0, 7, fmt.Sprintf("%s TAHUN AJARAN %s", semesterLabel, sk.TahunAjaran), "", 1, "C", false, 0, "")
 	pdf.Ln(5)
 
 	// --- KONSIDERANS ---

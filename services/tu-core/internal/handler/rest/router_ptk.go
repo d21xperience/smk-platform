@@ -18,6 +18,7 @@ func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers/buku-induk", r.wrapWithContext(r.handleBukuIndukList))
 	mux.HandleFunc("/api/v1/teachers/buku-induk/", r.wrapWithContext(r.handleBukuIndukDetail))
 	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas", r.wrapWithContext(r.handleSKPembagianTugas))
+	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/export/", r.wrapWithContext(r.handleSKExportExcel))
 	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/", r.wrapWithContext(r.handleSKPembagianTugasByID))
 	mux.HandleFunc("/api/v1/teachers/workload", r.wrapWithContext(r.handleTeacherWorkload))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
@@ -548,4 +549,25 @@ func (r *Router) handleSKPembagianTugasByID(w http.ResponseWriter, req *http.Req
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Aksi " + action + " berhasil"})
+}
+
+func (r *Router) handleSKExportExcel(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	id := strings.TrimPrefix(req.URL.Path, "/api/v1/kepegawaian/sk-pembagian-tugas/export/")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+
+	url, err := r.skPembagianTugasService.ExportExcel(req.Context(), id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Excel berhasil dibuat", "url": url})
 }

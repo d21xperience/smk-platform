@@ -36,6 +36,7 @@ const itemKepegawaian = [
   { title: 'Dashboard', to: { name: 'dashboard-kepegawaian' } },
   { title: 'Direktori GTK', to: { name: 'direktori-gtk' } },
   { title: 'Buku Induk Pegawai', to: { name: 'buku-induk' } },
+  { title: 'SK Pembagian Tugas', to: { name: 'sk-pembagian-tugas' } },
   { title: 'Kinerja GTK', to: { name: 'kinerja-gtk' } },
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
@@ -109,6 +110,7 @@ const itemSarpras = [
       { title: 'Hapus', to: '/sarpras/mutasi/hapus' },
       { title: 'Buku Induk', to: '/sarpras/laporan/buku-induk' },
       { title: 'Buku Perawatan', to: '/sarpras/laporan/buku-perawatan' },
+      { title: 'Buku Keadaan', to: '/sarpras/laporan/buku-keadaan' },
     ]
   },
 ]

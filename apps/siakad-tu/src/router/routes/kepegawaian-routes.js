@@ -23,6 +23,16 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/BukuIndukDetailPage.vue'),
     },
     {
+      path: 'sk-pembagian-tugas',
+      name: 'sk-pembagian-tugas',
+      component: () => import('@/pages/kepegawaian/SKPembagianTugasPage.vue'),
+    },
+    {
+      path: 'sk-pembagian-tugas/create',
+      name: 'sk-pembagian-tugas-create',
+      component: () => import('@/pages/kepegawaian/SKWizardPage.vue'),
+    },
+    {
       path: 'kinerja-gtk',
       name: 'kinerja-gtk',
       component: () => import('@/pages/kepegawaian/KinerjaGTK.vue'),
