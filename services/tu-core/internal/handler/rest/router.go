@@ -53,6 +53,7 @@ type Router struct {
 	goodsReceiptService  *service.GoodsReceiptService
 	documentService      *service.DocumentService
 	disposalService      *service.DisposalService
+	borrowingService     *service.BorrowingService
 }
 
 func NewRouter(
@@ -92,6 +93,7 @@ func NewRouter(
 	goodsReceiptService *service.GoodsReceiptService,
 	documentService *service.DocumentService,
 	disposalService *service.DisposalService,
+	borrowingService *service.BorrowingService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -134,6 +136,7 @@ func NewRouter(
 		goodsReceiptService:   goodsReceiptService,
 		documentService:       documentService,
 		disposalService:       disposalService,
+		borrowingService:      borrowingService,
 	}
 
 	mux := http.NewServeMux()
@@ -148,6 +151,7 @@ func NewRouter(
 	r.registerGoodsReceiptRoutes(mux)
 	r.registerDocumentRoutes(mux)
 	r.registerDisposalRoutes(mux)
+	r.registerBorrowingRoutes(mux)
 	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
 	r.registerLetterTypeRoutes(mux)
 	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan)

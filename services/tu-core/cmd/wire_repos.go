@@ -46,6 +46,7 @@ type AppRepositories struct {
 	GoodsReceipt   repository.GoodsReceiptRepository
 	Document       repository.DocumentRepository
 	Disposal       repository.DisposalRepository
+	Borrowing      repository.BorrowingRepository
 }
 
 func initRepositories(db *pgxpool.Pool) *AppRepositories {
@@ -87,5 +88,6 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		GoodsReceipt:   repository.NewGoodsReceiptRepository(db),
 		Document:       repository.NewDocumentRepository(db),
 		Disposal:       repository.NewDisposalRepository(db),
+		Borrowing:      repository.NewBorrowingRepository(db),
 	}
 }
