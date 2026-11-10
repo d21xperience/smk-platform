@@ -31,6 +31,7 @@ type Router struct {
 	ptkPerformanceService *service.PtkPerformanceService
 	ptkArchiveService     *service.PtkArchiveService
 	ptkDashboardService   *service.PtkDashboardService
+	bukuIndukService      *service.BukuIndukService
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
 	jurusanService        *service.JurusanService
@@ -51,6 +52,7 @@ type Router struct {
 	procurementService    *service.ProcurementService
 	goodsReceiptService  *service.GoodsReceiptService
 	documentService      *service.DocumentService
+	disposalService      *service.DisposalService
 }
 
 func NewRouter(
@@ -82,12 +84,14 @@ func NewRouter(
 	ptkPerformanceService *service.PtkPerformanceService,
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
+	bukuIndukService *service.BukuIndukService,
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
 	procurementService *service.ProcurementService,
 	goodsReceiptService *service.GoodsReceiptService,
 	documentService *service.DocumentService,
+	disposalService *service.DisposalService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -108,6 +112,7 @@ func NewRouter(
 		ptkPerformanceService: ptkPerformanceService,
 		ptkArchiveService:     ptkArchiveService,
 		ptkDashboardService:   ptkDashboardService,
+		bukuIndukService:      bukuIndukService,
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
 		jurusanService:        jurusanService,
@@ -128,6 +133,7 @@ func NewRouter(
 		procurementService:    procurementService,
 		goodsReceiptService:   goodsReceiptService,
 		documentService:       documentService,
+		disposalService:       disposalService,
 	}
 
 	mux := http.NewServeMux()
@@ -141,6 +147,7 @@ func NewRouter(
 	r.registerProcurementRoutes(mux)
 	r.registerGoodsReceiptRoutes(mux)
 	r.registerDocumentRoutes(mux)
+	r.registerDisposalRoutes(mux)
 	r.registerAttendanceRoutes(mux) // <-- Rute Attendance Terdaftar
 	r.registerLetterTypeRoutes(mux)
 	mux.HandleFunc("/api/v1/jurusan", r.handleJurusan)

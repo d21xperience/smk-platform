@@ -56,6 +56,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Procurement,
 		services.GoodsReceipt,
 		services.Document,
+		services.Disposal,
 	)
 	restServer := server.NewRESTServer(
 		server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)},
