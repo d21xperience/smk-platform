@@ -8,61 +8,66 @@ import (
 
 	platformctx "sekolah-platform/platform/context"
 	"sekolah-platform/services/tu-core/internal/middleware"
+	"sekolah-platform/services/tu-core/internal/repository"
 	"sekolah-platform/services/tu-core/internal/service"
 	"sekolah-platform/services/tu-core/internal/storage"
 )
 
 type Router struct {
-	studentService        *service.StudentService
-	mutationService       *service.MutationService
-	registrationService   *service.RegistrationService
-	attendanceService     *service.AttendanceService
-	assessmentService     *service.AssessmentService
-	financeService        *service.FinanceService
-	correspondenceService *service.CorrespondenceService
-	dispositionService    *service.DispositionService
-	signatureService      *service.SignatureService
-	classService          *service.ClassService
-	enrollmentService     *service.EnrollmentService
-	statisticsService     *service.StatisticsService
-	teacherService        *service.TeacherService
-	teacherHistoryService *service.TeacherHistoryService
-	ptkLeaveService       *service.PtkLeaveService
-	ptkArchiveService     *service.PtkArchiveService
-	ptkDashboardService   *service.PtkDashboardService
-	bukuIndukService      *service.BukuIndukService
-	ptkStatisticService   *service.PtkStatisticService
-	skPembagianTugasService *service.SKPembagianTugasService
-	statistikService        *service.StatistikService
-	skpService              *service.SKPService
-	bukuKontrolService      *service.BukuKontrolService
-	usulanKenaikanService   *service.UsulanKenaikanService
-	kehadiranService        *service.KehadiranService
-	pelayananService        *service.PelayananService // <-- NEW
-	kurikulumService      *service.KurikulumService
-	scheduleService       service.ScheduleService
-	jurusanService        *service.JurusanService
-	contextHandler        *ContextHandler
-	authHandler           *AuthHandler
-	publicHandler         *PublicHandler
-	userHandler           *UserHandler
-	schoolHandler         *SchoolHandler
-	attendanceHandler     *AttendanceHandler
-	scheduleHandler       *ScheduleHandler
-	correspondenceHandler *CorrespondenceHandler
-	dispositionHandler    *DispositionHandler
-	signatureHandler      *SignatureHandler
-	minioClient           *storage.MinioClient
-	logisticService       *service.LogisticService
-	kirService            *service.KIRService
-	letterTypeService     *service.LetterTypeService
-	procurementService    *service.ProcurementService
-	goodsReceiptService   *service.GoodsReceiptService
-	documentService       *service.DocumentService
-	disposalService       *service.DisposalService
-	borrowingService      *service.BorrowingService
-	maintenanceService    *service.MaintenanceService
-	sarprasReportService  *service.SarprasReportService
+	studentService           *service.StudentService
+	mutationService          *service.MutationService
+	registrationService      *service.RegistrationService
+	attendanceService        *service.AttendanceService
+	assessmentService        *service.AssessmentService
+	financeService           *service.FinanceService
+	correspondenceService    *service.CorrespondenceService
+	dispositionService       *service.DispositionService
+	signatureService         *service.SignatureService
+	classService             *service.ClassService
+	enrollmentService        *service.EnrollmentService
+	statisticsService        *service.StatisticsService
+	teacherService           *service.TeacherService
+	kurikulumService         *service.KurikulumService
+	scheduleService          service.ScheduleService
+	jurusanService           *service.JurusanService // <-- TAMBAHAN
+	contextHandler           *ContextHandler
+	authHandler              *AuthHandler
+	publicHandler            *PublicHandler
+	userHandler              *UserHandler
+	schoolHandler            *SchoolHandler
+	attendanceHandler        *AttendanceHandler
+	scheduleHandler          *ScheduleHandler
+	correspondenceHandler    *CorrespondenceHandler
+	dispositionHandler       *DispositionHandler
+	signatureHandler         *SignatureHandler
+	minioClient              *storage.MinioClient
+	teacherHistoryService    *service.TeacherHistoryService
+	ptkLeaveService          *service.PtkLeaveService
+	ptkArchiveService        *service.PtkArchiveService
+	ptkDashboardService      *service.PtkDashboardService
+	bukuIndukService         *service.BukuIndukService
+	laporanBerkalaRepo       repository.LaporanBerkalaRepository
+	laporanAggregatorService *service.LaporanAggregatorService
+	laporanBerkalaService    *service.LaporanBerkalaService
+	laporanEmailService      *service.LaporanEmailService
+	ptkStatisticService      *service.PtkStatisticService
+	skPembagianTugasService  *service.SKPembagianTugasService
+	statistikService         *service.StatistikService
+	skpService               *service.SKPService
+	bukuKontrolService       *service.BukuKontrolService
+	usulanKenaikanService    *service.UsulanKenaikanService
+	kehadiranService         *service.KehadiranService
+	pelayananService         *service.PelayananService
+	logisticService          *service.LogisticService
+	kirService               *service.KIRService
+	letterTypeService        *service.LetterTypeService
+	procurementService       *service.ProcurementService
+	goodsReceiptService      *service.GoodsReceiptService
+	documentService          *service.DocumentService
+	disposalService          *service.DisposalService
+	borrowingService         *service.BorrowingService
+	maintenanceService       *service.MaintenanceService
+	sarprasReportService     *service.SarprasReportService
 }
 
 func NewRouter(
@@ -94,6 +99,10 @@ func NewRouter(
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
 	bukuIndukService *service.BukuIndukService,
+	laporanBerkalaRepo repository.LaporanBerkalaRepository,
+	laporanAggregatorService *service.LaporanAggregatorService,
+	laporanBerkalaService *service.LaporanBerkalaService,
+	laporanEmailService *service.LaporanEmailService,
 	ptkStatisticService *service.PtkStatisticService,
 	skPembagianTugasService *service.SKPembagianTugasService,
 	statistikService *service.StatistikService,
@@ -101,7 +110,7 @@ func NewRouter(
 	bukuKontrolService *service.BukuKontrolService,
 	usulanKenaikanService *service.UsulanKenaikanService,
 	kehadiranService *service.KehadiranService,
-	pelayananService *service.PelayananService, // <-- NEW
+	pelayananService *service.PelayananService,
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
@@ -114,72 +123,72 @@ func NewRouter(
 	sarprasReportService *service.SarprasReportService,
 ) http.Handler {
 	r := &Router{
-		studentService:        studentService,
-		mutationService:       mutationService,
-		registrationService:   registrationService,
-		attendanceService:     attendanceService,
-		assessmentService:     assessmentService,
-		financeService:        financeService,
-		correspondenceService: correspondenceService,
-		dispositionService:    dispositionService,
-		signatureService:      signatureService,
-		classService:          classService,
-		enrollmentService:     enrollmentService,
-		statisticsService:     statisticsService,
-		teacherService:        teacherService,
-		teacherHistoryService: teacherHistoryService,
-		ptkLeaveService:       ptkLeaveService,
-		ptkArchiveService:     ptkArchiveService,
-		ptkDashboardService:   ptkDashboardService,
-		bukuIndukService:      bukuIndukService,
-		ptkStatisticService:   ptkStatisticService,
-		skPembagianTugasService: skPembagianTugasService,
-		statistikService:        statistikService,
-		skpService:              skpService,
-		bukuKontrolService:      bukuKontrolService,
-		usulanKenaikanService:   usulanKenaikanService,
-		kehadiranService:        kehadiranService,
-		pelayananService:        pelayananService, // <-- NEW
-		kurikulumService:      kurikulumService,
-		scheduleService:       scheduleService,
-		jurusanService:        jurusanService,
-		contextHandler:        NewContextHandler(prefService),
-		authHandler:           NewAuthHandler(authService),
-		publicHandler:         NewPublicHandler(publicService),
-		userHandler:           NewUserHandler(userService),
-		schoolHandler:         NewSchoolHandler(schoolService),
-		attendanceHandler:     NewAttendanceHandler(attendanceService),
-		scheduleHandler:       scheduleHandler,
-		correspondenceHandler: NewCorrespondenceHandler(correspondenceService),
-		dispositionHandler:    NewDispositionHandler(dispositionService),
-		signatureHandler:      NewSignatureHandler(signatureService),
-		minioClient:           minioClient,
-		logisticService:       logisticService,
-		kirService:            kirService,
-		letterTypeService:     letterTypeService,
-		procurementService:    procurementService,
-		goodsReceiptService:   goodsReceiptService,
-		documentService:       documentService,
-		disposalService:       disposalService,
-		borrowingService:      borrowingService,
-		maintenanceService:    maintenanceService,
-		sarprasReportService:  sarprasReportService,
+		studentService:           studentService,
+		mutationService:          mutationService,
+		registrationService:      registrationService,
+		attendanceService:        attendanceService,
+		assessmentService:        assessmentService,
+		financeService:           financeService,
+		correspondenceService:    correspondenceService,
+		dispositionService:       dispositionService,
+		signatureService:         signatureService,
+		classService:             classService,
+		enrollmentService:        enrollmentService,
+		statisticsService:        statisticsService,
+		teacherService:           teacherService,
+		kurikulumService:         kurikulumService,
+		scheduleService:          scheduleService,
+		jurusanService:           jurusanService, // <-- TAMBAHAN
+		contextHandler:           NewContextHandler(prefService),
+		authHandler:              NewAuthHandler(authService),
+		publicHandler:            NewPublicHandler(publicService),
+		userHandler:              NewUserHandler(userService),
+		schoolHandler:            NewSchoolHandler(schoolService),
+		attendanceHandler:        NewAttendanceHandler(attendanceService),
+		scheduleHandler:          scheduleHandler,
+		correspondenceHandler:    NewCorrespondenceHandler(correspondenceService),
+		dispositionHandler:       NewDispositionHandler(dispositionService),
+		signatureHandler:         NewSignatureHandler(signatureService),
+		minioClient:              minioClient,
+		teacherHistoryService:    teacherHistoryService,
+		ptkLeaveService:          ptkLeaveService,
+		ptkArchiveService:        ptkArchiveService,
+		ptkDashboardService:      ptkDashboardService,
+		bukuIndukService:         bukuIndukService,
+		laporanBerkalaRepo:       laporanBerkalaRepo,
+		laporanAggregatorService: laporanAggregatorService,
+		laporanBerkalaService:    laporanBerkalaService,
+		laporanEmailService:      laporanEmailService,
+		ptkStatisticService:      ptkStatisticService,
+		skPembagianTugasService:  skPembagianTugasService,
+		statistikService:         statistikService,
+		skpService:               skpService,
+		bukuKontrolService:       bukuKontrolService,
+		usulanKenaikanService:    usulanKenaikanService,
+		kehadiranService:         kehadiranService,
+		pelayananService:         pelayananService,
+		logisticService:          logisticService,
+		kirService:               kirService,
+		letterTypeService:        letterTypeService,
+		procurementService:       procurementService,
+		goodsReceiptService:      goodsReceiptService,
+		documentService:          documentService,
+		disposalService:          disposalService,
+		borrowingService:         borrowingService,
+		maintenanceService:       maintenanceService,
+		sarprasReportService:     sarprasReportService,
 	}
 
 	mux := http.NewServeMux()
 
+	// Registrasi Rute Terpusat
 	r.registerPtkRoutes(mux)
-	r.registerStatisticRoutes(mux)
 	r.registerStudentRoutes(mux)
 	r.registerAcademicRoutes(mux)
 	r.registerCorrespondenceRoutes(mux)
 	r.registerSystemRoutes(mux)
-	r.registerSKPRoutes(mux)
-	r.registerBukuKontrolRoutes(mux)
-	r.registerUsulanKenaikanRoutes(mux)
-	r.registerKehadiranRoutes(mux)
-	r.registerPelayananRoutes(mux) // <-- NEW
-	r.registerSarprasRoutes(mux)
+	r.registerStatisticRoutes(mux)
+	r.registerLaporanRoutes(mux)
 
 	return mux
 }

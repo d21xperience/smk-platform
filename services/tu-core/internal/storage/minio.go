@@ -90,3 +90,15 @@ func (m *MinioClient) GetPresignedURL(ctx context.Context, bucketName, objectNam
 	}
 	return url.String(), nil
 }
+
+// DownloadFile mengunduh file dari MinIO dan menulisnya ke io.Writer
+func (m *MinioClient) DownloadFile(ctx context.Context, bucketName, objectName string, writer io.Writer) error {
+	object, err := m.client.GetObject(ctx, bucketName, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return err
+	}
+	defer object.Close()
+
+	_, err = io.Copy(writer, object)
+	return err
+}
