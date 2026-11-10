@@ -27,12 +27,14 @@ type AppRepositories struct {
 	PtkArchive     repository.PtkArchiveRepository
 	PtkDashboard   repository.PtkDashboardRepository
 	BukuInduk      repository.BukuIndukRepository
+	PtkStatistic   repository.PtkStatisticRepository
 	SKPembagian    repository.SKPembagianTugasRepository
 	Statistik      repository.StatistikRepository
 	SKP            repository.SKPRepository
 	BukuKontrol    repository.BukuKontrolRepository
 	UsulanKenaikan repository.UsulanKenaikanRepository
 	Kehadiran      repository.KehadiranRepository
+	Pelayanan      repository.PelayananRepository
 	Enrollment     repository.EnrollmentRepository
 	User           repository.UserRepository
 	Public         repository.PublicRepository
@@ -75,12 +77,14 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		PtkArchive:     repository.NewPtkArchiveRepository(db),
 		PtkDashboard:   repository.NewPtkDashboardRepository(db),
 		BukuInduk:      repository.NewBukuIndukRepository(db),
+		PtkStatistic:   repository.NewPtkStatisticRepository(db),
 		SKPembagian:    repository.NewSKPembagianTugasRepository(db),
 		Statistik:      repository.NewStatistikRepository(db),
 		SKP:            repository.NewSKPRepository(db),
 		BukuKontrol:    repository.NewBukuKontrolRepository(db),
 		UsulanKenaikan: repository.NewUsulanKenaikanRepository(db),
 		Kehadiran:      repository.NewKehadiranRepository(db),
+		Pelayanan:      repository.NewPelayananRepository(db),
 		Enrollment:     repository.NewEnrollmentRepository(db),
 		User:           repository.NewUserRepository(db),
 		Public:         repository.NewPublicRepository(db),

@@ -31,12 +31,14 @@ type Router struct {
 	ptkArchiveService     *service.PtkArchiveService
 	ptkDashboardService   *service.PtkDashboardService
 	bukuIndukService      *service.BukuIndukService
+	ptkStatisticService   *service.PtkStatisticService
 	skPembagianTugasService *service.SKPembagianTugasService
 	statistikService        *service.StatistikService
 	skpService              *service.SKPService
 	bukuKontrolService      *service.BukuKontrolService
 	usulanKenaikanService   *service.UsulanKenaikanService
-	kehadiranService        *service.KehadiranService // <-- NEW
+	kehadiranService        *service.KehadiranService
+	pelayananService        *service.PelayananService // <-- NEW
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
 	jurusanService        *service.JurusanService
@@ -92,12 +94,14 @@ func NewRouter(
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
 	bukuIndukService *service.BukuIndukService,
+	ptkStatisticService *service.PtkStatisticService,
 	skPembagianTugasService *service.SKPembagianTugasService,
 	statistikService *service.StatistikService,
 	skpService *service.SKPService,
 	bukuKontrolService *service.BukuKontrolService,
 	usulanKenaikanService *service.UsulanKenaikanService,
-	kehadiranService *service.KehadiranService, // <-- NEW
+	kehadiranService *service.KehadiranService,
+	pelayananService *service.PelayananService, // <-- NEW
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
@@ -128,12 +132,14 @@ func NewRouter(
 		ptkArchiveService:     ptkArchiveService,
 		ptkDashboardService:   ptkDashboardService,
 		bukuIndukService:      bukuIndukService,
+		ptkStatisticService:   ptkStatisticService,
 		skPembagianTugasService: skPembagianTugasService,
 		statistikService:        statistikService,
 		skpService:              skpService,
 		bukuKontrolService:      bukuKontrolService,
 		usulanKenaikanService:   usulanKenaikanService,
-		kehadiranService:        kehadiranService, // <-- NEW
+		kehadiranService:        kehadiranService,
+		pelayananService:        pelayananService, // <-- NEW
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
 		jurusanService:        jurusanService,
@@ -163,6 +169,7 @@ func NewRouter(
 	mux := http.NewServeMux()
 
 	r.registerPtkRoutes(mux)
+	r.registerStatisticRoutes(mux)
 	r.registerStudentRoutes(mux)
 	r.registerAcademicRoutes(mux)
 	r.registerCorrespondenceRoutes(mux)
@@ -170,7 +177,8 @@ func NewRouter(
 	r.registerSKPRoutes(mux)
 	r.registerBukuKontrolRoutes(mux)
 	r.registerUsulanKenaikanRoutes(mux)
-	r.registerKehadiranRoutes(mux) // <-- NEW
+	r.registerKehadiranRoutes(mux)
+	r.registerPelayananRoutes(mux) // <-- NEW
 	r.registerSarprasRoutes(mux)
 
 	return mux

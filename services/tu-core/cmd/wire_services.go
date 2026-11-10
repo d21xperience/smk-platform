@@ -45,12 +45,14 @@ type AppServices struct {
 	PtkArchive     *service.PtkArchiveService
 	PtkDashboard   *service.PtkDashboardService
 	BukuInduk      *service.BukuIndukService
+	PtkStatistic   *service.PtkStatisticService
 	SKPembagian    *service.SKPembagianTugasService
 	Statistik      *service.StatistikService
 	SKP            *service.SKPService
 	BukuKontrol    *service.BukuKontrolService
 	UsulanKenaikan *service.UsulanKenaikanService
 	Kehadiran      *service.KehadiranService
+	Pelayanan      *service.PelayananService
 	Kurikulum      *service.KurikulumService
 	Schedule       service.ScheduleService
 	Jurusan        *service.JurusanService
@@ -108,12 +110,14 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		PtkArchive:     service.NewPtkArchiveService(repos.PtkArchive),
 		PtkDashboard:   service.NewPtkDashboardService(repos.PtkDashboard),
 		BukuInduk:      service.NewBukuIndukService(repos.BukuInduk),
+		PtkStatistic:   service.NewPtkStatisticService(repos.PtkStatistic),
 		SKPembagian:    service.NewSKPembagianTugasService(repos.SKPembagian, repos.School, minioClient),
 		Statistik:      service.NewStatistikService(repos.Statistik),
 		SKP:            service.NewSKPService(repos.SKP, repos.School, minioClient),
 		BukuKontrol:    service.NewBukuKontrolService(repos.BukuKontrol),
 		UsulanKenaikan: service.NewUsulanKenaikanService(repos.UsulanKenaikan),
 		Kehadiran:      service.NewKehadiranService(repos.Kehadiran),
+		Pelayanan:      service.NewPelayananService(repos.Pelayanan, repos.School, minioClient),
 		Kurikulum:      service.NewKurikulumService(repos.Subject, repos.Pembelajaran, repos.KurikulumStat),
 		Schedule:       service.NewScheduleService(repos.Schedule, db),
 		Jurusan:        service.NewJurusanService(repos.Jurusan),
