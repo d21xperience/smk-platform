@@ -86,8 +86,8 @@ type DisposalApproval struct {
 }
 
 type DisposalRepository interface {
-	CreateDisposal(ctx context.Context, req *DisposalRequest, items []DisposalItem) error
-	GetAllDisposals(ctx context.Context) ([]*DisposalRequest, error)
+	CreateDisposal(ctx context.Context, req *DisposalRequest, items []DisposalItem, semesterID string) error
+	GetAllDisposals(ctx context.Context, semesterID string) ([]*DisposalRequest, error)
 	GetDisposalByID(ctx context.Context, id string) (*DisposalRequest, error)
 	VerifyDisposal(ctx context.Context, req *DisposalRequest, verif *DisposalVerification) error
 	ApproveDisposal(ctx context.Context, req *DisposalRequest, approval *DisposalApproval) error
@@ -117,7 +117,7 @@ func (r *pgxDisposalRepository) GenerateRequestNumber(ctx context.Context) (stri
 	return fmt.Sprintf("USUL-HPS/%s/%d/%03d", schCode, year, count+1), nil
 }
 
-func (r *pgxDisposalRepository) CreateDisposal(ctx context.Context, req *DisposalRequest, items []DisposalItem) error {
+func (r *pgxDisposalRepository) CreateDisposal(ctx context.Context, req *DisposalRequest, items []DisposalItem, semesterID string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (r *pgxDisposalRepository) CreateDisposal(ctx context.Context, req *Disposa
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'DRAFT', 0)
 		RETURNING id, created_at, updated_at
 	`
-	err = tx.QueryRow(ctx, query, req.RequestNumber, req.ProposedBy, req.ProposalDate, req.ReasonCategory, req.ProposedMethod, req.TotalAssets, req.TotalValue, req.ApprovalLevel).Scan(&req.ID, &req.CreatedAt, &req.UpdatedAt)
+	err = tx.QueryRow(ctx, query, req.RequestNumber, req.ProposedBy, req.ProposalDate, req.ReasonCategory, req.ProposedMethod, req.TotalAssets, req.TotalValue, req.ApprovalLevel, semesterID).Scan(&req.ID, &req.CreatedAt, &req.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -157,9 +157,9 @@ func (r *pgxDisposalRepository) CreateDisposal(ctx context.Context, req *Disposa
 	return tx.Commit(ctx)
 }
 
-func (r *pgxDisposalRepository) GetAllDisposals(ctx context.Context) ([]*DisposalRequest, error) {
-	query := `SELECT id::text, request_number, proposed_by, proposal_date, reason_category, proposed_method, total_assets, total_value, approval_level, status, current_approval_step, COALESCE(rejection_reason, ''), execution_date, COALESCE(execution_method, ''), COALESCE(bast_number, '') FROM disposal_requests ORDER BY created_at DESC`
-	rows, err := r.db.Query(ctx, query)
+func (r *pgxDisposalRepository) GetAllDisposals(ctx context.Context, semesterID string) ([]*DisposalRequest, error) {
+	query := `SELECT id::text, request_number, proposed_by, proposal_date, reason_category, proposed_method, total_assets, total_value, approval_level, status, current_approval_step, COALESCE(rejection_reason, ''), execution_date, COALESCE(execution_method, ''), COALESCE(bast_number, '') FROM disposal_requests WHERE ($1 = '' OR semester_id = $1) ORDER BY created_at DESC`
+	rows, err := r.db.Query(ctx, query, semesterID)
 	if err != nil {
 		return nil, err
 	}

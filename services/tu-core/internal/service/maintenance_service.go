@@ -63,12 +63,12 @@ func (s *MaintenanceService) CompleteSchedule(ctx context.Context, id string, se
 	return s.repo.CompleteSchedule(ctx, id, serviceDate, cost, notes, performedBy)
 }
 
-func (s *MaintenanceService) GetMaintenanceLogs(ctx context.Context, startDate, endDate string) ([]*repository.MaintenanceLog, error) {
-	return s.repo.GetMaintenanceLogs(ctx, startDate, endDate)
+func (s *MaintenanceService) GetMaintenanceLogs(ctx context.Context, startDate, endDate string, semesterID string) ([]*repository.MaintenanceLog, error) {
+	return s.repo.GetMaintenanceLogs(ctx, startDate, endDate, semesterID)
 }
 
 func (s *MaintenanceService) GenerateMaintenanceBookPDF(ctx context.Context, startDate, endDate string) (*bytes.Buffer, error) {
-	logs, err := s.repo.GetMaintenanceLogs(ctx, startDate, endDate)
+	logs, err := s.repo.GetMaintenanceLogs(ctx, startDate, endDate, "")
 	if err != nil { return nil, err }
 
 	pdf := gofpdf.New("L", "mm", "A4", "")

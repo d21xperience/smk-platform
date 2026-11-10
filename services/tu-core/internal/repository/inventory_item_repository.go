@@ -49,6 +49,19 @@ type InventoryItem struct {
 	AlasanPenghapusan   string    `json:"alasan_penghapusan"`
 }
 
+
+type ConditionBookEntry struct {
+	ID             string     `json:"id"`
+	Name           string     `json:"name"`
+	Brand          string     `json:"brand"`
+	CategoryName   string     `json:"category_name"`
+	RoomName       string     `json:"room_name"`
+	Condition      string     `json:"condition"`
+	LastChangeDate *time.Time `json:"last_change_date"`
+	LastChangeNote string     `json:"last_change_note"`
+	Recommendation string     `json:"recommendation"`
+}
+
 type InventoryItemHistory struct {
 	ID              string    `json:"id"`
 	InventoryItemID string    `json:"inventory_item_id"`
@@ -64,11 +77,13 @@ type InventoryItemRepository interface {
 	FindAllItems(ctx context.Context) ([]InventoryItem, error)
 	FindByRoomID(ctx context.Context, roomID string) ([]InventoryItem, error)
 	FindByID(ctx context.Context, id string) (*InventoryItem, error)
-	Create(ctx context.Context, item *InventoryItem) error
+	Create(ctx context.Context, item *InventoryItem, semesterID string) error
 	Update(ctx context.Context, item *InventoryItem) error
 	Delete(ctx context.Context, id string) error
 	MutateItem(ctx context.Context, item *InventoryItem, action string, oldData string, newData string, userID string) error
 	GetHistory(ctx context.Context, itemID string) ([]InventoryItemHistory, error)
+	GetConditionBook(ctx context.Context, semesterID string) ([]*ConditionBookEntry, error)
+
 	
 	GetMasterCategories(ctx context.Context) ([]MasterCategory, error)
 	CreateCategory(ctx context.Context, cat *MasterCategory) error
@@ -161,7 +176,7 @@ func (r *pgxInventoryItemRepository) scanItems(ctx context.Context, query string
 	return list, nil
 }
 
-func (r *pgxInventoryItemRepository) Create(ctx context.Context, item *InventoryItem) error {
+func (r *pgxInventoryItemRepository) Create(ctx context.Context, item *InventoryItem, semesterID string) error {
 	// Generate Nomor Registrasi
 	year := item.PurchaseDate.Year()
 	var countReg int
@@ -335,4 +350,37 @@ func (r *pgxInventoryItemRepository) GenerateID(ctx context.Context, catalogID s
 	
 	// Fallback jika tidak ada prefix
 	return fmt.Sprintf("%s/%s/%d/%03d", schoolCode, categoryCode, year, count+1), nil
+}
+
+func (r *pgxInventoryItemRepository) GetConditionBook(ctx context.Context, semesterID string) ([]*ConditionBookEntry, error) {
+	query := `
+		SELECT i.id, c.name, COALESCE(c.brand,''), cat.name, COALESCE(k.nm_kelas,''), COALESCE(i.condition,''), 
+		       h.changed_at, COALESCE(h.description,'')
+		FROM inventory_items i
+		JOIN master_catalogs c ON i.catalog_id = c.id
+		JOIN master_categories cat ON c.category_id = cat.id
+		LEFT JOIN tabel_kelas k ON i.room_id = k.rombongan_belajar_id
+		LEFT JOIN LATERAL (
+			SELECT changed_at, description
+			FROM inventory_item_history
+			WHERE inventory_item_id = i.id AND action = 'UBAH_KONDISI'
+			ORDER BY changed_at DESC LIMIT 1
+		) h ON true
+		WHERE i.status_aset IN ('AKTIF', 'DIPINJAM', 'DALAM_PERBAIKAN', 'RUSAK_BERAT')
+		AND ($1 = '' OR i.semester_id = $1)
+		ORDER BY i.id
+	`
+	rows, err := r.db.Query(ctx, query, semesterID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var list []*ConditionBookEntry
+	for rows.Next() {
+		var e ConditionBookEntry
+		if err := rows.Scan(&e.ID, &e.Name, &e.Brand, &e.CategoryName, &e.RoomName, &e.Condition, &e.LastChangeDate, &e.LastChangeNote); err != nil {
+			return nil, err
+		}
+		list = append(list, &e)
+	}
+	return list, nil
 }

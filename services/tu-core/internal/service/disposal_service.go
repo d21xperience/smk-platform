@@ -21,7 +21,7 @@ func NewDisposalService(repo repository.DisposalRepository) *DisposalService {
 	return &DisposalService{repo: repo}
 }
 
-func (s *DisposalService) CreateRequest(ctx context.Context, req *repository.DisposalRequest, items []repository.DisposalItem, userID string) (*repository.DisposalRequest, error) {
+func (s *DisposalService) CreateRequest(ctx context.Context, req *repository.DisposalRequest, items []repository.DisposalItem, userID string, semesterID string) (*repository.DisposalRequest, error) {
 	if len(items) == 0 {
 		return nil, errors.New("minimal 1 aset harus diusulkan")
 	}
@@ -51,13 +51,13 @@ func (s *DisposalService) CreateRequest(ctx context.Context, req *repository.Dis
 		req.ApprovalLevel = 3
 	}
 
-	err = s.repo.CreateDisposal(ctx, req, items)
+	err = s.repo.CreateDisposal(ctx, req, items, semesterID)
 	if err != nil { return nil, err }
 	return req, nil
 }
 
-func (s *DisposalService) GetAll(ctx context.Context) ([]*repository.DisposalRequest, error) {
-	return s.repo.GetAllDisposals(ctx)
+func (s *DisposalService) GetAll(ctx context.Context, semesterID string) ([]*repository.DisposalRequest, error) {
+	return s.repo.GetAllDisposals(ctx, semesterID)
 }
 
 func (s *DisposalService) GetByID(ctx context.Context, id string) (*repository.DisposalRequest, error) {

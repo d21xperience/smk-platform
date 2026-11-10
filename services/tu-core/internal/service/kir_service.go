@@ -56,7 +56,7 @@ func (s *KIRService) GetAllItems(ctx context.Context) ([]repository.InventoryIte
 	return s.itemRepo.FindAllItems(ctx)
 }
 
-func (s *KIRService) CreateItem(ctx context.Context, item *repository.InventoryItem) error {
+func (s *KIRService) CreateItem(ctx context.Context, item *repository.InventoryItem, semesterID string) error {
 	if item.CatalogID == "" {
 		return errors.New("Katalog Barang wajib dipilih")
 	}
@@ -67,7 +67,7 @@ func (s *KIRService) CreateItem(ctx context.Context, item *repository.InventoryI
 	}
 	item.ID = newID
 
-	return s.itemRepo.Create(ctx, item)
+	return s.itemRepo.Create(ctx, item, semesterID)
 }
 
 func (s *KIRService) UpdateItem(ctx context.Context, item *repository.InventoryItem) error {
@@ -357,3 +357,81 @@ func (s *KIRService) GenerateKIRReportPDF(ctx context.Context, roomID string) (*
 	if err != nil { return nil, err }
 	return &buf, nil
 }
+
+// ==========================================
+// FITUR BUKU KEADAAN BARANG
+// ==========================================
+
+func (s *KIRService) GetConditionBook(ctx context.Context, semesterID string) ([]*repository.ConditionBookEntry, error) {
+	entries, err := s.itemRepo.GetConditionBook(ctx, semesterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Tambahkan rekomendasi berdasarkan kondisi
+	for _, e := range entries {
+		switch e.Condition {
+		case "Bagus":
+			e.Recommendation = "Pertahankan"
+		case "Rusak Ringan":
+			e.Recommendation = "Jadwalkan Perbaikan"
+		case "Rusak Berat":
+			e.Recommendation = "Usulkan Penghapusan"
+		default:
+			e.Recommendation = "-"
+		}
+	}
+	return entries, nil
+}
+
+func (s *KIRService) GenerateConditionBookPDF(ctx context.Context) (*bytes.Buffer, error) {
+	entries, err := s.GetConditionBook(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	pdf := gofpdf.New("L", "mm", "A4", "")
+	pdf.AddPage()
+
+	pdf.SetFont("Arial", "B", 14)
+	pdf.CellFormat(0, 10, "BUKU KEADAAN BARANG INVENTARIS", "", 1, "C", false, 0, "")
+	pdf.SetFont("Arial", "", 10)
+	pdf.CellFormat(0, 5, "SMK Pasundan Jatinangor", "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 5, "Dicetak pada: "+time.Now().Format("02 Januari 2006"), "", 1, "C", false, 0, "")
+	pdf.Ln(5)
+
+	pdf.SetFont("Arial", "B", 9)
+	pdf.CellFormat(10, 7, "No", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 7, "Kode Aset", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(60, 7, "Nama Barang", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(30, 7, "Kategori", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(30, 7, "Kondisi", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 7, "Tgl Perubahan Terakhir", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 7, "Rekomendasi", "1", 1, "C", false, 0, "")
+
+	pdf.SetFont("Arial", "", 8)
+	for i, e := range entries {
+		lastChange := "-"
+		if e.LastChangeDate != nil {
+			lastChange = e.LastChangeDate.Format("02/01/2006")
+		}
+		pdf.CellFormat(10, 6, fmt.Sprint(i+1), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(40, 6, e.ID, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(60, 6, e.Name, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 6, e.CategoryName, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 6, e.Condition, "1", 0, "C", false, 0, "")
+		pdf.CellFormat(40, 6, lastChange, "1", 0, "C", false, 0, "")
+		pdf.CellFormat(40, 6, e.Recommendation, "1", 1, "C", false, 0, "")
+	}
+
+	var buf bytes.Buffer
+	err = pdf.Output(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return &buf, nil
+}
+
+// ==========================================
+// FITUR BUKU KEADAAN BARANG
+// ==========================================

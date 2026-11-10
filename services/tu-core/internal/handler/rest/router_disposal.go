@@ -18,22 +18,27 @@ func (r *Router) registerDisposalRoutes(mux *http.ServeMux) {
 func (r *Router) handleDisposals(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		data, err := r.disposalService.GetAll(req.Context())
+		opCtx := middleware.GetOperationalContext(req.Context())
+		semesterID := "20261"
+		if opCtx != nil { semesterID = opCtx.AcademicPeriodID }
+		
+		data, err := r.disposalService.GetAll(req.Context(), semesterID)
 		if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
 		if data == nil { data = make([]*repository.DisposalRequest, 0) }
 		writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
 
 	case http.MethodPost:
 		var body struct {
-			ReasonCategory string    `json:"reason_category"`
-			ProposedMethod string    `json:"proposed_method"`
-			Items          []repository.DisposalItem `json:"items"`
+			ReasonCategory string                       `json:"reason_category"`
+			ProposedMethod string                       `json:"proposed_method"`
+			Items          []repository.DisposalItem    `json:"items"`
 		}
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"}); return }
 
 		opCtx := middleware.GetOperationalContext(req.Context())
 		userID := "system"
-		if opCtx != nil { userID = opCtx.UserID }
+		semesterID := "20261"
+		if opCtx != nil { userID = opCtx.UserID; semesterID = opCtx.AcademicPeriodID }
 
 		disposalReq := &repository.DisposalRequest{
 			ReasonCategory: body.ReasonCategory,
@@ -42,7 +47,7 @@ func (r *Router) handleDisposals(w http.ResponseWriter, req *http.Request) {
 			Status:         "DRAFT",
 		}
 
-		res, err := r.disposalService.CreateRequest(req.Context(), disposalReq, body.Items, userID)
+		res, err := r.disposalService.CreateRequest(req.Context(), disposalReq, body.Items, userID, semesterID)
 		if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
 		writeJSON(w, http.StatusCreated, map[string]interface{}{"message": "Usulan berhasil dibuat", "data": res})
 
@@ -67,7 +72,7 @@ func (r *Router) handleDisposalByID(w http.ResponseWriter, req *http.Request) {
 	if len(parts) == 2 {
 		action := parts[1]
 		var err error
-		
+
 		switch action {
 		case "verify":
 			if req.Method != http.MethodPost { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"}); return }
@@ -75,20 +80,20 @@ func (r *Router) handleDisposalByID(w http.ResponseWriter, req *http.Request) {
 			var body repository.DisposalVerification
 			json.NewDecoder(req.Body).Decode(&body)
 			err = r.disposalService.Verify(req.Context(), reqData, &body)
-			
+
 		case "approve":
 			if req.Method != http.MethodPost { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"}); return }
 			reqData, _ := r.disposalService.GetByID(req.Context(), id)
 			var body repository.DisposalApproval
 			json.NewDecoder(req.Body).Decode(&body)
 			err = r.disposalService.Approve(req.Context(), reqData, &body)
-			
+
 		case "execute":
 			if req.Method != http.MethodPost { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"}); return }
 			reqData, _ := r.disposalService.GetByID(req.Context(), id)
 			var body struct {
-				ExecutionDate    string `json:"execution_date"`
-				ExecutionMethod  string `json:"execution_method"`
+				ExecutionDate     string `json:"execution_date"`
+				ExecutionMethod   string `json:"execution_method"`
 				ExecutionLocation string `json:"execution_location"`
 			}
 			json.NewDecoder(req.Body).Decode(&body)

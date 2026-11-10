@@ -22,6 +22,7 @@ func (r *Router) registerSarprasRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/sarpras/kir/items", r.wrapWithContext(r.handleKIRItems))
 	mux.HandleFunc("/api/v1/sarpras/kir/items/", r.wrapWithContext(r.handleKIRItemByID))
 	mux.HandleFunc("/api/v1/sarpras/kir/print-qr", r.wrapWithContext(r.handlePrintQR))
+	mux.HandleFunc("/api/v1/sarpras/condition-book", r.wrapWithContext(r.handleConditionBook))
 	mux.HandleFunc("/api/v1/sarpras/kir/report/", r.wrapWithContext(r.handleKIRReport))
 
 	// Master Data
@@ -52,14 +53,20 @@ func (r *Router) registerSarprasRoutes(mux *http.ServeMux) {
 func (r *Router) handleLogistics(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		data, err := r.logisticService.ListLogistics(req.Context())
+		opCtx := middleware.GetOperationalContext(req.Context())
+		semesterID := "20261"
+		if opCtx != nil { semesterID = opCtx.AcademicPeriodID }
+		data, err := r.logisticService.ListLogistics(req.Context(), semesterID)
 		if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
 		if data == nil { data = make([]repository.Logistic, 0) }
 		writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
 	case http.MethodPost:
 		var body repository.Logistic
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"}); return }
-		if err := r.logisticService.CreateLogistic(req.Context(), &body); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+		opCtxPost := middleware.GetOperationalContext(req.Context())
+		semesterIDPost := "20261"
+		if opCtxPost != nil { semesterIDPost = opCtxPost.AcademicPeriodID }
+		if err := r.logisticService.CreateLogistic(req.Context(), &body, semesterIDPost); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
 		writeJSON(w, http.StatusCreated, map[string]string{"message": "Item logistik berhasil ditambahkan"})
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
@@ -125,8 +132,12 @@ func (r *Router) handleKIRItems(w http.ResponseWriter, req *http.Request) {
 		}
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"}); return }
 		pDate, _ := time.Parse("2006-01-02", body.PurchaseDate)
+		opCtx := middleware.GetOperationalContext(req.Context())
+		semesterID := "20261"
+		if opCtx != nil { semesterID = opCtx.AcademicPeriodID }
+		
 		item := repository.InventoryItem{ CatalogID: body.CatalogID, Condition: body.Condition, RoomID: body.RoomID, PurchaseDate: pDate }
-		if err := r.kirService.CreateItem(req.Context(), &item); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+		if err := r.kirService.CreateItem(req.Context(), &item, semesterID); err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
 		writeJSON(w, http.StatusCreated, map[string]string{"message": "Aset berhasil ditambahkan dengan ID: " + item.ID})
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
@@ -317,4 +328,29 @@ func (r *Router) handleKIRReport(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\"KIR_Report.pdf\"")
 	w.WriteHeader(http.StatusOK)
 	w.Write(pdfBuf.Bytes())
+}
+
+func (r *Router) handleConditionBook(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"}); return }
+	
+	isPDF := req.URL.Query().Get("format") == "pdf"
+	
+	if isPDF {
+		pdfBuf, err := r.kirService.GenerateConditionBookPDF(req.Context())
+		if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", "attachment; filename=\"Buku_Keadaan_Barang.pdf\"")
+		w.WriteHeader(http.StatusOK)
+		w.Write(pdfBuf.Bytes())
+		return
+	}
+
+	opCtx := middleware.GetOperationalContext(req.Context())
+	semesterID := "20261"
+	if opCtx != nil { semesterID = opCtx.AcademicPeriodID }
+
+	data, err := r.kirService.GetConditionBook(req.Context(), semesterID)
+	if err != nil { writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()}); return }
+	if data == nil { data = make([]*repository.ConditionBookEntry, 0) }
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
 }

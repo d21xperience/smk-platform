@@ -117,12 +117,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import { useLogisticStore } from '@/stores/sarpras/logistic';
+import { useLogisticStore } from '@/stores/sarpras/logistic'
+import { useContextStore } from '@/stores/contextStore';
 
 const $q = useQuasar();
-const store = useLogisticStore();
+const store = useLogisticStore()
+const contextStore = useContextStore();
 
 const search = ref('');
 const showAddDialog = ref(false);
@@ -165,6 +167,10 @@ const safeItems = computed(() => store.items.filter(i => i.stok > i.stok_minimum
 
 onMounted(() => {
   store.fetchItems();
+});
+
+watch(() => contextStore.selectedSemesterId, (newVal) => {
+  if (newVal) store.fetchItems()
 });
 
 const submitAdd = async () => {

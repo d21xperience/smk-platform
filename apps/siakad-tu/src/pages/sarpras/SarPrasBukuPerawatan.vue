@@ -53,12 +53,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useMaintenanceStore } from '@/stores/sarpras/maintenance'
+import { useContextStore } from '@/stores/contextStore'
 
 const $q = useQuasar()
 const store = useMaintenanceStore()
+const contextStore = useContextStore()
 
 const isDownloading = ref(false)
 const filter = ref({
@@ -77,6 +79,10 @@ const columns = [
 onMounted(() => {
   loadData()
 })
+
+watch(() => contextStore.selectedSemesterId, (newVal) => {
+  if (newVal) loadData()
+});
 
 function loadData() {
   store.fetchMaintenanceLogs(filter.value.startDate, filter.value.endDate)

@@ -70,7 +70,7 @@ type MaintenanceRepository interface {
 	CompleteSchedule(ctx context.Context, id string, serviceDate time.Time, cost float64, notes string, performedBy string) error
 	GenerateScheduleCode(ctx context.Context) (string, error)
 
-	GetMaintenanceLogs(ctx context.Context, startDate, endDate string) ([]*MaintenanceLog, error)
+	GetMaintenanceLogs(ctx context.Context, startDate, endDate string, semesterID string) ([]*MaintenanceLog, error)
 }
 
 type pgxMaintenanceRepository struct {
@@ -213,7 +213,7 @@ func (r *pgxMaintenanceRepository) CompleteSchedule(ctx context.Context, id stri
 	return tx.Commit(ctx)
 }
 
-func (r *pgxMaintenanceRepository) GetMaintenanceLogs(ctx context.Context, startDate, endDate string) ([]*MaintenanceLog, error) {
+func (r *pgxMaintenanceRepository) GetMaintenanceLogs(ctx context.Context, startDate, endDate string, semesterID string) ([]*MaintenanceLog, error) {
 	query := `
 		SELECT ml.id::text, COALESCE(ml.schedule_id::text, ''), COALESCE(ml.damage_report_id::text, ''), 
 		       COALESCE(ml.inventory_item_id, ''), ml.service_date, COALESCE(ml.technician, ''), 
@@ -224,9 +224,10 @@ func (r *pgxMaintenanceRepository) GetMaintenanceLogs(ctx context.Context, start
 		LEFT JOIN master_catalogs c ON i.catalog_id = c.id
 		WHERE ($1 = '' OR ml.service_date >= $1::date)
 		  AND ($2 = '' OR ml.service_date <= $2::date)
+		  AND ($3 = '' OR ml.semester_id = $3)
 		ORDER BY ml.service_date DESC
 	`
-	rows, err := r.db.Query(ctx, query, startDate, endDate)
+	rows, err := r.db.Query(ctx, query, startDate, endDate, semesterID)
 	if err != nil { return nil, err }
 	defer rows.Close()
 

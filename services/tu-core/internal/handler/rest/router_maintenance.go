@@ -184,7 +184,10 @@ func (r *Router) handleMaintenanceLogs(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	data, err := r.maintenanceService.GetMaintenanceLogs(req.Context(), startDate, endDate)
+	opCtx := middleware.GetOperationalContext(req.Context())
+	semesterID := "20261"
+	if opCtx != nil { semesterID = opCtx.AcademicPeriodID }
+	data, err := r.maintenanceService.GetMaintenanceLogs(req.Context(), startDate, endDate, semesterID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
