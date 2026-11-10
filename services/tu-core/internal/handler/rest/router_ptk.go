@@ -17,6 +17,7 @@ func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers/dashboard", r.wrapWithContext(r.handleTeacherDashboard))
 	mux.HandleFunc("/api/v1/teachers/buku-induk", r.wrapWithContext(r.handleBukuIndukList))
 	mux.HandleFunc("/api/v1/teachers/buku-induk/", r.wrapWithContext(r.handleBukuIndukDetail))
+	mux.HandleFunc("/api/v1/kepegawaian/statistik", r.wrapWithContext(r.handleStatistikDashboard))
 	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas", r.wrapWithContext(r.handleSKPembagianTugas))
 	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/export/", r.wrapWithContext(r.handleSKExportExcel))
 	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/", r.wrapWithContext(r.handleSKPembagianTugasByID))
@@ -570,4 +571,19 @@ func (r *Router) handleSKExportExcel(w http.ResponseWriter, req *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Excel berhasil dibuat", "url": url})
+}
+
+func (r *Router) handleStatistikDashboard(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	stats, err := r.statistikService.GetDashboardStats(req.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, stats)
 }

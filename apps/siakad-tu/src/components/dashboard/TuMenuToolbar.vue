@@ -36,6 +36,7 @@ const itemKepegawaian = [
   { title: 'Dashboard', to: { name: 'dashboard-kepegawaian' } },
   { title: 'Direktori GTK', to: { name: 'direktori-gtk' } },
   { title: 'Buku Induk Pegawai', to: { name: 'buku-induk' } },
+  { title: 'Statistik Keberadaan', to: { name: 'statistik-keberadaan' } },
   { title: 'SK Pembagian Tugas', to: { name: 'sk-pembagian-tugas' } },
   { title: 'Kinerja GTK', to: { name: 'kinerja-gtk' } },
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },

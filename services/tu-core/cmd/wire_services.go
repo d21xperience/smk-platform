@@ -47,6 +47,7 @@ type AppServices struct {
 	PtkDashboard   *service.PtkDashboardService
 	BukuInduk      *service.BukuIndukService
 	SKPembagian    *service.SKPembagianTugasService
+	Statistik      *service.StatistikService
 	Kurikulum      *service.KurikulumService
 	Schedule       service.ScheduleService
 	Jurusan        *service.JurusanService
@@ -106,6 +107,7 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		PtkDashboard:   service.NewPtkDashboardService(repos.PtkDashboard),
 		BukuInduk:      service.NewBukuIndukService(repos.BukuInduk),
 		SKPembagian:    service.NewSKPembagianTugasService(repos.SKPembagian, repos.School, minioClient),
+		Statistik:      service.NewStatistikService(repos.Statistik),
 		Kurikulum:      service.NewKurikulumService(repos.Subject, repos.Pembelajaran, repos.KurikulumStat),
 		Schedule:       service.NewScheduleService(repos.Schedule, db),
 		Jurusan:        service.NewJurusanService(repos.Jurusan),

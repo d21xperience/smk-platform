@@ -33,6 +33,7 @@ type Router struct {
 	ptkDashboardService     *service.PtkDashboardService
 	bukuIndukService        *service.BukuIndukService
 	skPembagianTugasService *service.SKPembagianTugasService
+	statistikService        *service.StatistikService
 	kurikulumService        *service.KurikulumService
 	scheduleService         service.ScheduleService
 	jurusanService          *service.JurusanService
@@ -90,6 +91,7 @@ func NewRouter(
 	ptkDashboardService *service.PtkDashboardService,
 	bukuIndukService *service.BukuIndukService,
 	skPembagianTugasService *service.SKPembagianTugasService,
+	statistikService        *service.StatistikService,
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
@@ -122,6 +124,7 @@ func NewRouter(
 		ptkDashboardService:     ptkDashboardService,
 		bukuIndukService:        bukuIndukService,
 		skPembagianTugasService: skPembagianTugasService,
+		statistikService:        statistikService,
 		kurikulumService:        kurikulumService,
 		scheduleService:         scheduleService,
 		jurusanService:          jurusanService,

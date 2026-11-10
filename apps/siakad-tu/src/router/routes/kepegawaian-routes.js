@@ -8,6 +8,11 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/DashboardKepegawaian.vue'),
     },
     {
+      path: 'statistik',
+      name: 'statistik-keberadaan',
+      component: () => import('@/pages/kepegawaian/StatistikKeberadaanPage.vue'),
+    },
+    {
       path: 'direktori-gtk',
       name: 'direktori-gtk',
       component: () => import('@/pages/kepegawaian/DataGuru.vue'),
