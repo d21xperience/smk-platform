@@ -34,6 +34,7 @@ type Router struct {
 	skPembagianTugasService *service.SKPembagianTugasService
 	statistikService        *service.StatistikService
 	skpService              *service.SKPService
+	bukuKontrolService      *service.BukuKontrolService // <-- NEW
 	kurikulumService      *service.KurikulumService
 	scheduleService       service.ScheduleService
 	jurusanService        *service.JurusanService
@@ -57,7 +58,7 @@ type Router struct {
 	disposalService       *service.DisposalService
 	borrowingService      *service.BorrowingService
 	maintenanceService    *service.MaintenanceService
-	sarprasReportService  *service.SarprasReportService // <-- RESTORED
+	sarprasReportService  *service.SarprasReportService
 }
 
 func NewRouter(
@@ -92,6 +93,7 @@ func NewRouter(
 	skPembagianTugasService *service.SKPembagianTugasService,
 	statistikService *service.StatistikService,
 	skpService *service.SKPService,
+	bukuKontrolService *service.BukuKontrolService, // <-- NEW
 	logisticService *service.LogisticService,
 	kirService *service.KIRService,
 	letterTypeService *service.LetterTypeService,
@@ -101,7 +103,7 @@ func NewRouter(
 	disposalService *service.DisposalService,
 	borrowingService *service.BorrowingService,
 	maintenanceService *service.MaintenanceService,
-	sarprasReportService *service.SarprasReportService, // <-- RESTORED
+	sarprasReportService *service.SarprasReportService,
 ) http.Handler {
 	r := &Router{
 		studentService:        studentService,
@@ -125,6 +127,7 @@ func NewRouter(
 		skPembagianTugasService: skPembagianTugasService,
 		statistikService:        statistikService,
 		skpService:              skpService,
+		bukuKontrolService:      bukuKontrolService, // <-- NEW
 		kurikulumService:      kurikulumService,
 		scheduleService:       scheduleService,
 		jurusanService:        jurusanService,
@@ -159,6 +162,7 @@ func NewRouter(
 	r.registerCorrespondenceRoutes(mux)
 	r.registerSystemRoutes(mux)
 	r.registerSKPRoutes(mux)
+	r.registerBukuKontrolRoutes(mux) // <-- NEW
 	r.registerSarprasRoutes(mux)
 
 	return mux

@@ -1,6 +1,5 @@
 <template>
   <q-toolbar v-if="visible" class="gt-xs row items-center no-wrap text-weight-medium dashboard-header">
-    <!-- Melakukan looping untuk setiap item menu yang dikirim lewat props -->
     <DropDownMenu v-for="(menu, index) in menus" :key="index" :label="menu.label" :items="menu.items"
       class="text-grey-4" @update:item="handleItemClick(menu.label, $event)" />
   </q-toolbar>
@@ -10,10 +9,7 @@
 import { computed } from 'vue'
 import DropDownMenu from '@/components/DropDownMenu.vue'
 
-defineProps({
-  visible: { type: Boolean, default: true },
-})
-
+defineProps({ visible: { type: Boolean, default: true } })
 const emit = defineEmits(['menu-click'])
 
 const handleItemClick = (menuLabel, itemData) => {
@@ -38,19 +34,17 @@ const itemKepegawaian = [
   { title: 'Buku Induk Pegawai', to: { name: 'buku-induk' } },
   { title: 'Statistik Keberadaan', to: { name: 'statistik-keberadaan' } },
   { title: 'SK Pembagian Tugas', to: { name: 'sk-pembagian-tugas' } },
-  { title: 'Penilaian SKP', to: { name: 'skp-periode' } }, // <-- MENU BARU SKP
+  { title: 'Penilaian SKP', to: { name: 'skp-periode' } },
+  { title: 'Buku Kontrol Kenaikan', to: { name: 'buku-kontrol' } }, // <-- MENU BARU
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },
 ]
 
-// --- MENU KURIKULUM BARU ---
 const itemKurikulum = [
-  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' }, // Sementara mengarah ke preview
+  { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' },
   { title: 'Mata Pelajaran', to: '/kurikulum/mapel' },
   { title: 'Penugasan Mengajar', to: '/kurikulum/pembelajaran' },
-  // { title: 'Pembelajaran', to: '/kurikulum/pembelajaran' },
-  // { title: 'Jadwal Pelajaran', to: '/kurikulum/jadwal' },
 ]
 
 const itemHubin = [

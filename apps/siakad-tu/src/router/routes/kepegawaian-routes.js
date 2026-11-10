@@ -37,7 +37,6 @@ const kepegawaian = {
       name: 'sk-pembagian-tugas-create',
       component: () => import('@/pages/kepegawaian/SKWizardPage.vue'),
     },
-    // Rute SKP Baru (Akan dibuat di Fase 4)
     {
       path: 'skp',
       name: 'skp-periode',
@@ -52,6 +51,11 @@ const kepegawaian = {
       path: 'skp/penilaian/:id',
       name: 'skp-form',
       component: () => import('@/pages/kepegawaian/SKPFormPage.vue'),
+    },
+    {
+      path: 'buku-kontrol',
+      name: 'buku-kontrol',
+      component: () => import('@/pages/kepegawaian/BukuKontrolPage.vue'),
     },
     {
       path: 'beban-mengajar',
