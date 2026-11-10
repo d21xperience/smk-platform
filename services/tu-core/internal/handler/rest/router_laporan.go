@@ -11,8 +11,30 @@ import (
 )
 
 func (r *Router) registerLaporanRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/kepegawaian/laporan", r.wrapWithContext(r.handleLaporanList))
 	mux.HandleFunc("/api/v1/kepegawaian/laporan/generate", r.wrapWithContext(r.handleGenerateLaporan))
 	mux.HandleFunc("/api/v1/kepegawaian/laporan/", r.wrapWithContext(r.handleLaporanByID))
+}
+
+func (r *Router) handleLaporanList(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	opCtx := middleware.GetOperationalContext(req.Context())
+	if opCtx == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing context"})
+		return
+	}
+
+	list, err := r.laporanBerkalaRepo.List(req.Context(), opCtx.SchoolID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, list)
 }
 
 func (r *Router) handleGenerateLaporan(w http.ResponseWriter, req *http.Request) {
@@ -39,18 +61,10 @@ func (r *Router) handleGenerateLaporan(w http.ResponseWriter, req *http.Request)
 	var start, end time.Time
 	year := body.Tahun
 	switch body.Triwulan {
-	case 1:
-		start = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-		end = time.Date(year, 3, 31, 23, 59, 59, 0, time.UTC)
-	case 2:
-		start = time.Date(year, 4, 1, 0, 0, 0, 0, time.UTC)
-		end = time.Date(year, 6, 30, 23, 59, 59, 0, time.UTC)
-	case 3:
-		start = time.Date(year, 7, 1, 0, 0, 0, 0, time.UTC)
-		end = time.Date(year, 9, 30, 23, 59, 59, 0, time.UTC)
-	case 4:
-		start = time.Date(year, 10, 1, 0, 0, 0, 0, time.UTC)
-		end = time.Date(year, 12, 31, 23, 59, 59, 0, time.UTC)
+	case 1: start = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC); end = time.Date(year, 3, 31, 23, 59, 59, 0, time.UTC)
+	case 2: start = time.Date(year, 4, 1, 0, 0, 0, 0, time.UTC); end = time.Date(year, 6, 30, 23, 59, 59, 0, time.UTC)
+	case 3: start = time.Date(year, 7, 1, 0, 0, 0, 0, time.UTC); end = time.Date(year, 9, 30, 23, 59, 59, 0, time.UTC)
+	case 4: start = time.Date(year, 10, 1, 0, 0, 0, 0, time.UTC); end = time.Date(year, 12, 31, 23, 59, 59, 0, time.UTC)
 	default:
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Triwulan tidak valid"})
 		return

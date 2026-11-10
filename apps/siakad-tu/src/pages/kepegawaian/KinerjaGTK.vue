@@ -191,7 +191,7 @@ const confirmDelete = (id) => {
       $q.notify({ type: 'positive', message: 'Data berhasil dihapus' })
       await fetchPerformances()
     } catch (err) {
-      $q.notify({ type: 'negative', message: `Gagal menghapus data${err}` })
+      $q.notify({ type: 'negative', message: `Gagal menghapus data ${err}` })
     }
   })
 }

@@ -29,7 +29,7 @@ type Router struct {
 	teacherService           *service.TeacherService
 	kurikulumService         *service.KurikulumService
 	scheduleService          service.ScheduleService
-	jurusanService           *service.JurusanService // <-- TAMBAHAN
+	jurusanService           *service.JurusanService
 	contextHandler           *ContextHandler
 	authHandler              *AuthHandler
 	publicHandler            *PublicHandler
@@ -138,7 +138,7 @@ func NewRouter(
 		teacherService:           teacherService,
 		kurikulumService:         kurikulumService,
 		scheduleService:          scheduleService,
-		jurusanService:           jurusanService, // <-- TAMBAHAN
+		jurusanService:           jurusanService,
 		contextHandler:           NewContextHandler(prefService),
 		authHandler:              NewAuthHandler(authService),
 		publicHandler:            NewPublicHandler(publicService),
@@ -189,6 +189,12 @@ func NewRouter(
 	r.registerSystemRoutes(mux)
 	r.registerStatisticRoutes(mux)
 	r.registerLaporanRoutes(mux)
+	
+	// RUTE BARU YANG SEBELUMNYA HILANG
+	r.registerSKPRoutes(mux)
+	r.registerBukuKontrolRoutes(mux)
+	r.registerUsulanKenaikanRoutes(mux)
+	r.registerKehadiranRoutes(mux)
 
 	return mux
 }

@@ -8,11 +8,6 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/DashboardKepegawaian.vue'),
     },
     {
-      path: 'statistik',
-      name: 'statistik-keberadaan',
-      component: () => import('@/pages/kepegawaian/StatistikKeberadaanPage.vue'),
-    },
-    {
       path: 'direktori-gtk',
       name: 'direktori-gtk',
       component: () => import('@/pages/kepegawaian/DataGuru.vue'),
@@ -28,6 +23,11 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/BukuIndukDetailPage.vue'),
     },
     {
+      path: 'statistik-keberadaan',
+      name: 'statistik-keberadaan',
+      component: () => import('@/pages/kepegawaian/StatistikKeberadaanPage.vue'),
+    },
+    {
       path: 'sk-pembagian-tugas',
       name: 'sk-pembagian-tugas',
       component: () => import('@/pages/kepegawaian/SKPembagianTugasPage.vue'),
@@ -38,17 +38,17 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/SKWizardPage.vue'),
     },
     {
-      path: 'skp',
+      path: 'skp-periode',
       name: 'skp-periode',
       component: () => import('@/pages/kepegawaian/SKPPeriodePage.vue'),
     },
     {
-      path: 'skp/periode/:id',
+      path: 'skp-penilaian',
       name: 'skp-penilaian',
       component: () => import('@/pages/kepegawaian/SKPPenilaianPage.vue'),
     },
     {
-      path: 'skp/penilaian/:id',
+      path: 'skp-form',
       name: 'skp-form',
       component: () => import('@/pages/kepegawaian/SKPFormPage.vue'),
     },
@@ -63,7 +63,7 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/UsulanKenaikanPage.vue'),
     },
     {
-      path: 'kehadiran',
+      path: 'kehadiran-pegawai',
       name: 'kehadiran-pegawai',
       component: () => import('@/pages/kepegawaian/KehadiranPage.vue'),
     },
@@ -81,6 +81,18 @@ const kepegawaian = {
       path: 'arsip-kepegawaian',
       name: 'arsip-kepegawaian',
       component: () => import('@/pages/kepegawaian/ArsipDokumen.vue'),
+    },
+    {
+      path: 'laporan-berkala',
+      name: 'laporan-berkala',
+      component: () => import('@/pages/kepegawaian/LaporanBerkalaPage.vue'),
+    },
+    // Rute Kinerja GTK (Karena di menu baru diganti menjadi "Penilaian SKP", 
+    // kita tetap daftarkan ini agar tidak error jika ada yang mengakses langsung)
+    {
+      path: 'kinerja-gtk',
+      name: 'kinerja-gtk',
+      component: () => import('@/pages/kepegawaian/KinerjaGTK.vue'),
     },
   ],
   meta: {

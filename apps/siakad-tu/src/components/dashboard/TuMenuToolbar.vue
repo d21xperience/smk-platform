@@ -41,6 +41,7 @@ const itemKepegawaian = [
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },
+  { title: 'Laporan Berkala', to: { name: 'laporan-berkala' } },
 ]
 
 const itemKurikulum = [
