@@ -58,6 +58,11 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/BukuKontrolPage.vue'),
     },
     {
+      path: 'usulan-kenaikan',
+      name: 'usulan-kenaikan',
+      component: () => import('@/pages/kepegawaian/UsulanKenaikanPage.vue'),
+    },
+    {
       path: 'beban-mengajar',
       name: 'beban-mengajar',
       component: () => import('@/pages/kepegawaian/BebanMengajar.vue'),

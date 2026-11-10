@@ -49,6 +49,7 @@ type AppServices struct {
 	Statistik      *service.StatistikService
 	SKP            *service.SKPService
 	BukuKontrol    *service.BukuKontrolService
+	UsulanKenaikan *service.UsulanKenaikanService
 	Kurikulum      *service.KurikulumService
 	Schedule       service.ScheduleService
 	Jurusan        *service.JurusanService
@@ -110,6 +111,7 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Statistik:      service.NewStatistikService(repos.Statistik),
 		SKP:            service.NewSKPService(repos.SKP, repos.School, minioClient),
 		BukuKontrol:    service.NewBukuKontrolService(repos.BukuKontrol),
+		UsulanKenaikan: service.NewUsulanKenaikanService(repos.UsulanKenaikan),
 		Kurikulum:      service.NewKurikulumService(repos.Subject, repos.Pembelajaran, repos.KurikulumStat),
 		Schedule:       service.NewScheduleService(repos.Schedule, db),
 		Jurusan:        service.NewJurusanService(repos.Jurusan),

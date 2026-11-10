@@ -31,6 +31,7 @@ type AppRepositories struct {
 	Statistik      repository.StatistikRepository
 	SKP            repository.SKPRepository
 	BukuKontrol    repository.BukuKontrolRepository
+	UsulanKenaikan repository.UsulanKenaikanRepository
 	Enrollment     repository.EnrollmentRepository
 	User           repository.UserRepository
 	Public         repository.PublicRepository
@@ -77,6 +78,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Statistik:      repository.NewStatistikRepository(db),
 		SKP:            repository.NewSKPRepository(db),
 		BukuKontrol:    repository.NewBukuKontrolRepository(db),
+		UsulanKenaikan: repository.NewUsulanKenaikanRepository(db),
 		Enrollment:     repository.NewEnrollmentRepository(db),
 		User:           repository.NewUserRepository(db),
 		Public:         repository.NewPublicRepository(db),

@@ -35,7 +35,8 @@ const itemKepegawaian = [
   { title: 'Statistik Keberadaan', to: { name: 'statistik-keberadaan' } },
   { title: 'SK Pembagian Tugas', to: { name: 'sk-pembagian-tugas' } },
   { title: 'Penilaian SKP', to: { name: 'skp-periode' } },
-  { title: 'Buku Kontrol Kenaikan', to: { name: 'buku-kontrol' } }, // <-- MENU BARU
+  { title: 'Buku Kontrol Kenaikan', to: { name: 'buku-kontrol' } },
+  { title: 'Usulan Kenaikan', to: { name: 'usulan-kenaikan' } }, // <-- MENU BARU
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },

@@ -1,0 +1,1 @@
+-- No-op (Recalculation is idempotent and safe to keep)
