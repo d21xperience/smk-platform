@@ -15,6 +15,8 @@ import (
 func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers", r.wrapWithContext(r.handleTeachers))
 	mux.HandleFunc("/api/v1/teachers/dashboard", r.wrapWithContext(r.handleTeacherDashboard))
+	mux.HandleFunc("/api/v1/teachers/buku-induk", r.wrapWithContext(r.handleBukuIndukList))
+	mux.HandleFunc("/api/v1/teachers/buku-induk/", r.wrapWithContext(r.handleBukuIndukDetail))
 	mux.HandleFunc("/api/v1/teachers/workload", r.wrapWithContext(r.handleTeacherWorkload))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
 	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
@@ -427,4 +429,35 @@ func (r *Router) handleTeacherDashboard(w http.ResponseWriter, req *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, stats)
+}
+
+func (r *Router) handleBukuIndukList(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	list, err := r.bukuIndukService.ListBukuInduk(req.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+func (r *Router) handleBukuIndukDetail(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	id := strings.TrimPrefix(req.URL.Path, "/api/v1/teachers/buku-induk/")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "ID required"})
+		return
+	}
+	detail, err := r.bukuIndukService.GetBukuIndukDetail(req.Context(), id)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Data tidak ditemukan"})
+		return
+	}
+	writeJSON(w, http.StatusOK, detail)
 }

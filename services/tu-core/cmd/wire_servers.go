@@ -52,6 +52,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		scheduleHandler, services.Disposition, services.Signature,
 		infra.MinIO, services.TeacherHistory, services.PtkLeave,
 		services.PtkPerformance, services.PtkArchive, services.PtkDashboard,
+		services.BukuInduk, // <-- TAMBAHKAN INI
 		services.Logistic, services.KIR, services.LetterType,
 		services.Procurement,
 		services.GoodsReceipt,

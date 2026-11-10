@@ -45,6 +45,7 @@ type AppServices struct {
 	PtkPerformance *service.PtkPerformanceService
 	PtkArchive     *service.PtkArchiveService
 	PtkDashboard   *service.PtkDashboardService
+	BukuInduk      *service.BukuIndukService // <-- NEW
 	Kurikulum      *service.KurikulumService
 	Schedule       service.ScheduleService
 	Jurusan        *service.JurusanService
@@ -56,7 +57,7 @@ type AppServices struct {
 	Logistic       *service.LogisticService
 	KIR            *service.KIRService
 	LetterType     *service.LetterTypeService
-	Procurement    *service.ProcurementService // <-- NEW
+	Procurement    *service.ProcurementService
 	GoodsReceipt   *service.GoodsReceiptService
 	Document       *service.DocumentService
 	Disposal       *service.DisposalService
@@ -99,6 +100,7 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		PtkPerformance: service.NewPtkPerformanceService(repos.PtkPerformance),
 		PtkArchive:     service.NewPtkArchiveService(repos.PtkArchive),
 		PtkDashboard:   service.NewPtkDashboardService(repos.PtkDashboard),
+		BukuInduk:      service.NewBukuIndukService(repos.BukuInduk), // <-- NEW
 		Kurikulum:      service.NewKurikulumService(repos.Subject, repos.Pembelajaran, repos.KurikulumStat),
 		Schedule:       service.NewScheduleService(repos.Schedule, db),
 		Jurusan:        service.NewJurusanService(repos.Jurusan),
@@ -110,7 +112,7 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Logistic:       service.NewLogisticService(repos.Logistic),
 		KIR:            service.NewKIRService(db, repos.KirItem),
 		LetterType:     service.NewLetterTypeService(repos.LetterType),
-		Procurement:    service.NewProcurementService(repos.Procurement), // <-- NEW
+		Procurement:    service.NewProcurementService(repos.Procurement),
 		GoodsReceipt:   service.NewGoodsReceiptService(repos.GoodsReceipt),
 		Document:       service.NewDocumentService(repos.Document, minioClient),
 		Disposal:       service.NewDisposalService(repos.Disposal),

@@ -27,6 +27,7 @@ type AppRepositories struct {
 	PtkPerformance repository.PtkPerformanceRepository
 	PtkArchive     repository.PtkArchiveRepository
 	PtkDashboard   repository.PtkDashboardRepository
+	BukuInduk      repository.BukuIndukRepository // <-- NEW
 	Enrollment     repository.EnrollmentRepository
 	User           repository.UserRepository
 	Public         repository.PublicRepository
@@ -41,7 +42,7 @@ type AppRepositories struct {
 	KirItem        repository.InventoryItemRepository
 	Notification   notifHandlers.InvoiceRepository
 	LetterType     repository.LetterTypeRepository
-	Procurement    repository.ProcurementRepository // <-- NEW
+	Procurement    repository.ProcurementRepository
 	GoodsReceipt   repository.GoodsReceiptRepository
 	Document       repository.DocumentRepository
 	Disposal       repository.DisposalRepository
@@ -67,6 +68,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		PtkPerformance: repository.NewPtkPerformanceRepository(db),
 		PtkArchive:     repository.NewPtkArchiveRepository(db),
 		PtkDashboard:   repository.NewPtkDashboardRepository(db),
+		BukuInduk:      repository.NewBukuIndukRepository(db), // <-- NEW
 		Enrollment:     repository.NewEnrollmentRepository(db),
 		User:           repository.NewUserRepository(db),
 		Public:         repository.NewPublicRepository(db),
@@ -81,7 +83,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		KirItem:        repository.NewInventoryItemRepository(db),
 		Notification:   notification.NewNotificationRepositoryImpl(db),
 		LetterType:     repository.NewLetterTypeRepository(db),
-		Procurement:    repository.NewProcurementRepository(db), // <-- NEW
+		Procurement:    repository.NewProcurementRepository(db),
 		GoodsReceipt:   repository.NewGoodsReceiptRepository(db),
 		Document:       repository.NewDocumentRepository(db),
 		Disposal:       repository.NewDisposalRepository(db),

@@ -13,6 +13,16 @@ const kepegawaian = {
       component: () => import('@/pages/kepegawaian/DataGuru.vue'),
     },
     {
+      path: 'buku-induk',
+      name: 'buku-induk',
+      component: () => import('@/pages/kepegawaian/BukuIndukPage.vue'),
+    },
+    {
+      path: 'buku-induk/:id',
+      name: 'buku-induk-detail',
+      component: () => import('@/pages/kepegawaian/BukuIndukDetailPage.vue'),
+    },
+    {
       path: 'kinerja-gtk',
       name: 'kinerja-gtk',
       component: () => import('@/pages/kepegawaian/KinerjaGTK.vue'),

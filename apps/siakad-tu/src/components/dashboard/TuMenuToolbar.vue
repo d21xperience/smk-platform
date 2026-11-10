@@ -35,6 +35,7 @@ const itemPersuratan = [
 const itemKepegawaian = [
   { title: 'Dashboard', to: { name: 'dashboard-kepegawaian' } },
   { title: 'Direktori GTK', to: { name: 'direktori-gtk' } },
+  { title: 'Buku Induk Pegawai', to: { name: 'buku-induk' } },
   { title: 'Kinerja GTK', to: { name: 'kinerja-gtk' } },
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
