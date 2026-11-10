@@ -17,6 +17,8 @@ func (r *Router) registerPtkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/teachers/dashboard", r.wrapWithContext(r.handleTeacherDashboard))
 	mux.HandleFunc("/api/v1/teachers/buku-induk", r.wrapWithContext(r.handleBukuIndukList))
 	mux.HandleFunc("/api/v1/teachers/buku-induk/", r.wrapWithContext(r.handleBukuIndukDetail))
+	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas", r.wrapWithContext(r.handleSKPembagianTugas))
+	mux.HandleFunc("/api/v1/kepegawaian/sk-pembagian-tugas/", r.wrapWithContext(r.handleSKPembagianTugasByID))
 	mux.HandleFunc("/api/v1/teachers/workload", r.wrapWithContext(r.handleTeacherWorkload))
 	mux.HandleFunc("/api/v1/teachers/photo/", r.wrapWithContext(r.handleTeacherPhoto))
 	mux.HandleFunc("/api/v1/teachers/history/upload", r.wrapWithContext(r.handleHistoryDocumentUpload))
@@ -460,4 +462,90 @@ func (r *Router) handleBukuIndukDetail(w http.ResponseWriter, req *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, detail)
+}
+
+func (r *Router) handleSKPembagianTugas(w http.ResponseWriter, req *http.Request) {
+	opCtx := middleware.GetOperationalContext(req.Context())
+	if opCtx == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
+		return
+	}
+
+	switch req.Method {
+	case http.MethodGet:
+		list, err := r.skPembagianTugasService.ListSK(req.Context())
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, list)
+
+	case http.MethodPost:
+		var body repository.SKCreateRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid body"})
+			return
+		}
+		skID, nomorSK, err := r.skPembagianTugasService.CreateDraft(req.Context(), body, opCtx.SchoolID, opCtx.UserID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"message": "Draft SK berhasil dibuat", "sk_id": skID, "nomor_sk": nomorSK})
+
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func (r *Router) handleSKPembagianTugasByID(w http.ResponseWriter, req *http.Request) {
+	opCtx := middleware.GetOperationalContext(req.Context())
+	if opCtx == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing operational context"})
+		return
+	}
+
+	path := strings.TrimPrefix(req.URL.Path, "/api/v1/kepegawaian/sk-pembagian-tugas/")
+	parts := splitPath(path)
+	if len(parts) < 2 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid URL"})
+		return
+	}
+	id := parts[0]
+	action := parts[1]
+
+	if req.Method != http.MethodPut {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+
+	var body struct {
+		Reason string `json:"reason"`
+		Notes  string `json:"notes"`
+	}
+	if req.Body != http.NoBody {
+		_ = json.NewDecoder(req.Body).Decode(&body)
+	}
+
+	var err error
+	switch action {
+	case "submit":
+		err = r.skPembagianTugasService.SubmitSK(req.Context(), id)
+	case "approve":
+		err = r.skPembagianTugasService.ApproveAndIssueSK(req.Context(), id, opCtx.SchoolID)
+	case "reject":
+		err = r.skPembagianTugasService.RejectSK(req.Context(), id, body.Reason)
+	case "revision":
+		err = r.skPembagianTugasService.RequestRevision(req.Context(), id, body.Notes)
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Unknown action"})
+		return
+	}
+
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Aksi " + action + " berhasil"})
 }
