@@ -1,143 +1,91 @@
 // apps/siakad-tu/src/adapters/api/registrationRealAdapter.js
-
 import { api } from '@/boot/axios.js'
 
-/**
- * Helper: Map Backend Registration DTO ke Frontend Contract
- */
 const mapBackendToRegistration = (backendDto) => {
   if (!backendDto) return null
-
   return {
-    registrationId: backendDto.registration_id || backendDto.id,
-    studentId: backendDto.student_id || null, // Null jika belum di-approve
-    nisn: backendDto.nisn,
-    nis: backendDto.nis,
-    fullName: backendDto.full_name || backendDto.fullName,
-    gender: backendDto.gender,
-    birthDate: backendDto.birth_date || backendDto.birthDate,
-    status: backendDto.status, // 'DRAFT', 'SUBMITTED', 'VERIFIED', 'APPROVED', 'REJECTED'
-    schoolId: backendDto.school_id,
-    periodId: backendDto.period_id,
-    createdAt: backendDto.created_at || backendDto.createdAt,
-    updatedAt: backendDto.updated_at || backendDto.updatedAt,
-    rejectionReason: backendDto.rejection_reason || null,
+    id: backendDto.ID,
+    schoolId: backendDto.SchoolID,
+    academicPeriodId: backendDto.AcademicPeriodID,
+    calonNisn: backendDto.CalonNISN,
+    nis: backendDto.NIS,
+    calonNama: backendDto.CalonNama,
+    calonJenisKelamin: backendDto.CalonJenisKelamin,
+    calonTempatLahir: backendDto.CalonTempatLahir,
+    calonTanggalLahir: backendDto.CalonTanggalLahir,
+    asalSekolah: backendDto.AsalSekolah,
+    jurusanDipilih: backendDto.JurusanDipilih,
+    biayaStandar: backendDto.BiayaStandar,
+    biayaPendaftaran: backendDto.BiayaPendaftaran,
+    berkasIjazah: backendDto.BerkasIjazah,
+    berkasKK: backendDto.BerkasKK,
+    berkasAkta: backendDto.BerkasAkta,
+    status: backendDto.Status,
+    createdAt: backendDto.CreatedAt,
+    updatedAt: backendDto.UpdatedAt,
   }
 }
 
-/**
- * Helper: Konversi ApplicationError ke format Service yang konsisten
- */
 const handleApiError = (error) => ({
   success: false,
   data: null,
   error: {
-    code: error.code || 'API_ERROR',
-    message: error.message || 'Terjadi kesalahan pada server.',
-    details: error.details || null,
+    code: error.response?.status || 'API_ERROR',
+    message: error.response?.data?.error || error.message || 'Terjadi kesalahan.',
   },
 })
 
-const handleSuccess = (data) => ({
-  success: true,
-  data,
-  error: null,
-})
+const handleSuccess = (data) => ({ success: true, data, error: null })
 
 export const registrationRealAdapter = {
-  /**
-   * Buat draft registrasi baru
-   */
-  async createDraft(command, context) {
-    try {
-      const payload = { ...command, schoolId: context.schoolId, periodId: context.periodId }
-      const response = await api.post('/registrations/draft', payload)
-      return handleSuccess(mapBackendToRegistration(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Submit draft untuk diverifikasi
-   */
-  async submitRegistration(registrationId) {
-    try {
-      const response = await api.post(`/registrations/${registrationId}/submit`)
-      return handleSuccess(mapBackendToRegistration(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Verifikasi data registrasi (oleh admin/tu)
-   */
-  async verifyRegistration(registrationId, command) {
-    try {
-      const response = await api.post(`/registrations/${registrationId}/verify`, command)
-      return handleSuccess(mapBackendToRegistration(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Approve registrasi (Trigger auto-create Student)
-   */
-  async approveRegistration(registrationId, command) {
-    try {
-      const payload = {
-        classId: command.classId,
-        enrollmentDate: command.enrollmentDate || new Date().toISOString(),
-      }
-      const response = await api.post(`/registrations/${registrationId}/approve`, payload)
-      return handleSuccess(mapBackendToRegistration(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Reject registrasi
-   */
-  async rejectRegistration(registrationId, command) {
-    try {
-      const payload = { reason: command.reason }
-      const response = await api.post(`/registrations/${registrationId}/reject`, payload)
-      return handleSuccess(mapBackendToRegistration(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Ambil detail registrasi by ID
-   */
-  async getRegistrationById(registrationId) {
-    try {
-      const response = await api.get(`/registrations/${registrationId}`)
-      return handleSuccess(mapBackendToRegistration(response.data))
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Ambil daftar registrasi dengan filter
-   */
   async getRegistrations(context, filters = {}) {
     try {
-      const params = { schoolId: context.schoolId, periodId: context.periodId, ...filters }
+      const params = {}
+      if (filters.status) params.status = filters.status
+      if (filters.search) params.search = filters.search
       const response = await api.get('/registrations', { params })
+      
+      const items = response.data.data || []
+      return handleSuccess({
+        items: items.map(mapBackendToRegistration),
+        total: response.data.total || items.length,
+      })
+    } catch (error) { return handleApiError(error) }
+  },
 
-      const mappedData = response.data.items
-        ? { ...response.data, items: response.data.items.map(mapBackendToRegistration) }
-        : response.data
+  async createRegistration(command) {
+    try {
+      // Payload sesuai service.CreateRegistrationRequest
+      const payload = {
+        CalonNISN: command.calonNisn || '',
+        CalonNama: command.calonNama || '',
+        CalonJenisKelamin: command.calonJenisKelamin || 'L',
+        CalonTempatLahir: command.calonTempatLahir || '',
+        CalonTanggalLahir: command.calonTanggalLahir || null,
+        AsalSekolah: command.asalSekolah || '',
+        JurusanDipilih: command.jurusanDipilih || '',
+        BiayaStandar: command.biayaStandar || 0,
+        BiayaPendaftaran: command.biayaPendaftaran || 0,
+        BerkasIjazah: command.berkasIjazah || false,
+        BerkasKK: command.berkasKK || false,
+        BerkasAkta: command.berkasAkta || false,
+      }
+      const response = await api.post('/registrations', payload)
+      return handleSuccess(mapBackendToRegistration(response.data))
+    } catch (error) { return handleApiError(error) }
+  },
 
-      return handleSuccess(mappedData)
-    } catch (error) {
-      return handleApiError(error)
-    }
+  async generateNisMassal(prefix) {
+    try {
+      const response = await api.post('/registrations/generate-nis', { prefix })
+      return handleSuccess(response.data)
+    } catch (error) { return handleApiError(error) }
+  },
+
+  async activateRegistration(regId) {
+    try {
+      const response = await api.post(`/registrations/${regId}/activate`)
+      return handleSuccess(response.data)
+    } catch (error) { return handleApiError(error) }
   },
 }

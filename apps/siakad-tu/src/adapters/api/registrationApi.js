@@ -3,11 +3,11 @@
 import { registrationMockAdapter } from '../mock/registrationMockAdapter.js'
 import { registrationRealAdapter } from './registrationRealAdapter.js'
 
-const useApi = import.meta.env?.QCLI_USE_API === 'true'
-const forceMock = import.meta.env?.QCLI_MOCK_MODE === 'true'
+// PAKSA MENGGUNAKAN REAL API UNTUK DEVELOPMENT
+const forceMock = false
+const useApi = true
 
-export const registrationApi =
-  forceMock || !useApi ? registrationMockAdapter : registrationRealAdapter
+export const registrationApi = forceMock || !useApi ? registrationMockAdapter : registrationRealAdapter
 
 export function __forceMockRegistrationAdapter() {
   return registrationMockAdapter

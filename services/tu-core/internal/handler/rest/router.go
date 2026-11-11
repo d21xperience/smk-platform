@@ -14,33 +14,45 @@ import (
 )
 
 type Router struct {
-	studentService           *service.StudentService
-	mutationService          *service.MutationService
-	registrationService      *service.RegistrationService
-	attendanceService        *service.AttendanceService
-	assessmentService        *service.AssessmentService
-	financeService           *service.FinanceService
-	correspondenceService    *service.CorrespondenceService
-	dispositionService       *service.DispositionService
-	signatureService         *service.SignatureService
-	classService             *service.ClassService
-	enrollmentService        *service.EnrollmentService
-	statisticsService        *service.StatisticsService
+	// Akademik & Kesiswaan
+	studentService      *service.StudentService
+	mutationService     *service.MutationService
+	registrationService *service.RegistrationService
+	attendanceService   *service.AttendanceService
+	assessmentService   *service.AssessmentService
+	financeService      *service.FinanceService
+	classService        *service.ClassService
+	enrollmentService   *service.EnrollmentService
+	statisticsService   *service.StatisticsService
+	kurikulumService    *service.KurikulumService
+	scheduleService     service.ScheduleService
+	jurusanService      *service.JurusanService
+	scheduleHandler     *ScheduleHandler
+	attendanceHandler   *AttendanceHandler
+
+	// Persuratan
+	correspondenceService *service.CorrespondenceService
+	dispositionService    *service.DispositionService
+	signatureService      *service.SignatureService
+	expeditionService     *service.ExpeditionService
+	archiveService        *service.ArchiveService
+	agendaService         *service.AgendaService
+	letterTypeService     *service.LetterTypeService
+	correspondenceHandler *CorrespondenceHandler
+	dispositionHandler    *DispositionHandler
+	signatureHandler      *SignatureHandler
+	expeditionHandler     *ExpeditionHandler
+	archiveHandler        *ArchiveHandler
+	agendaHandler         *AgendaHandler
+	// System & Auth
+	contextHandler *ContextHandler
+	authHandler    *AuthHandler
+	publicHandler  *PublicHandler
+	userHandler    *UserHandler
+	schoolHandler  *SchoolHandler
+
+	// Kepegawaian (PTK)
 	teacherService           *service.TeacherService
-	kurikulumService         *service.KurikulumService
-	scheduleService          service.ScheduleService
-	jurusanService           *service.JurusanService
-	contextHandler           *ContextHandler
-	authHandler              *AuthHandler
-	publicHandler            *PublicHandler
-	userHandler              *UserHandler
-	schoolHandler            *SchoolHandler
-	attendanceHandler        *AttendanceHandler
-	scheduleHandler          *ScheduleHandler
-	correspondenceHandler    *CorrespondenceHandler
-	dispositionHandler       *DispositionHandler
-	signatureHandler         *SignatureHandler
-	minioClient              *storage.MinioClient
 	teacherHistoryService    *service.TeacherHistoryService
 	ptkLeaveService          *service.PtkLeaveService
 	ptkArchiveService        *service.PtkArchiveService
@@ -58,16 +70,20 @@ type Router struct {
 	usulanKenaikanService    *service.UsulanKenaikanService
 	kehadiranService         *service.KehadiranService
 	pelayananService         *service.PelayananService
-	logisticService          *service.LogisticService
-	kirService               *service.KIRService
-	letterTypeService        *service.LetterTypeService
-	procurementService       *service.ProcurementService
-	goodsReceiptService      *service.GoodsReceiptService
-	documentService          *service.DocumentService
-	disposalService          *service.DisposalService
-	borrowingService         *service.BorrowingService
-	maintenanceService       *service.MaintenanceService
-	sarprasReportService     *service.SarprasReportService
+
+	// Sarpras (12 Modul)
+	logisticService      *service.LogisticService
+	kirService           *service.KIRService
+	procurementService   *service.ProcurementService
+	goodsReceiptService  *service.GoodsReceiptService
+	documentService      *service.DocumentService
+	disposalService      *service.DisposalService
+	borrowingService     *service.BorrowingService
+	maintenanceService   *service.MaintenanceService
+	sarprasReportService *service.SarprasReportService
+
+	// Storage
+	minioClient *storage.MinioClient
 }
 
 func NewRouter(
@@ -93,6 +109,9 @@ func NewRouter(
 	scheduleHandler *ScheduleHandler,
 	dispositionService *service.DispositionService,
 	signatureService *service.SignatureService,
+	expeditionService *service.ExpeditionService,
+	archiveService *service.ArchiveService,
+	agendaService *service.AgendaService,
 	minioClient *storage.MinioClient,
 	teacherHistoryService *service.TeacherHistoryService,
 	ptkLeaveService *service.PtkLeaveService,
@@ -132,6 +151,9 @@ func NewRouter(
 		correspondenceService:    correspondenceService,
 		dispositionService:       dispositionService,
 		signatureService:         signatureService,
+		expeditionService:        expeditionService,
+		archiveService:           archiveService,
+		agendaService:            agendaService,
 		classService:             classService,
 		enrollmentService:        enrollmentService,
 		statisticsService:        statisticsService,
@@ -149,6 +171,9 @@ func NewRouter(
 		correspondenceHandler:    NewCorrespondenceHandler(correspondenceService),
 		dispositionHandler:       NewDispositionHandler(dispositionService),
 		signatureHandler:         NewSignatureHandler(signatureService),
+		expeditionHandler:        NewExpeditionHandler(expeditionService),
+		archiveHandler:           NewArchiveHandler(archiveService),
+		agendaHandler:            NewAgendaHandler(agendaService),
 		minioClient:              minioClient,
 		teacherHistoryService:    teacherHistoryService,
 		ptkLeaveService:          ptkLeaveService,
@@ -181,21 +206,43 @@ func NewRouter(
 
 	mux := http.NewServeMux()
 
-	// Registrasi Rute Terpusat
+	// ===== RUTE KESISWAAN, AKADEMIK, KURIKULUM =====
 	r.registerPtkRoutes(mux)
 	r.registerStudentRoutes(mux)
+	r.registerPSBRoutes(mux)
 	r.registerAcademicRoutes(mux)
+
+	// ===== RUTE PERSURATAN =====
 	r.registerCorrespondenceRoutes(mux)
+	r.registerArchiveRoutes(mux)
+	r.registerAgendaRoutes(mux)
+	r.registerLetterTypeRoutes(mux)
+
+	// ===== RUTE SYSTEM & AUTH =====
 	r.registerSystemRoutes(mux)
+
+	// ===== RUTE STATISTIK & LAPORAN UMUM =====
 	r.registerStatisticRoutes(mux)
 	r.registerLaporanRoutes(mux)
-	
-	// RUTE BARU YANG SEBELUMNYA HILANG
+
+	// ===== RUTE KEPEGAWAIAN (PTK) =====
 	r.registerSKPRoutes(mux)
 	r.registerBukuKontrolRoutes(mux)
 	r.registerUsulanKenaikanRoutes(mux)
 	r.registerKehadiranRoutes(mux)
 
+	// ===== RUTE SARPRAS (12 MODUL) =====
+	r.registerSarprasRoutes(mux)      // Logistik, KIR, Master Data, Mutate, History, Condition Book
+	r.registerProcurementRoutes(mux)  // Pengajuan
+	r.registerGoodsReceiptRoutes(mux) // Penerimaan (BAST)
+	r.registerDocumentRoutes(mux)     // Dokumen Inventaris
+	r.registerDisposalRoutes(mux)     // Penghapusan
+	r.registerBorrowingRoutes(mux)    // Peminjaman
+	r.registerMaintenanceRoutes(mux)  // Perawatan & Tiket
+	r.registerReportRoutes(mux)       // Dashboard & Laporan
+	// ===== RUTE STATIC FILE (EXPORT EXCEL/PDF) =====
+	fs := http.FileServer(http.Dir("./storage"))
+	mux.Handle("/storage/", http.StripPrefix("/storage/", fs))
 	return mux
 }
 

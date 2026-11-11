@@ -37,6 +37,7 @@ type AppServices struct {
 	Assessment        *service.AssessmentService
 	Finance           *service.FinanceService
 	Signature         *service.SignatureService
+	Agenda            *service.AgendaService // <-- TAMBAHAN
 	Correspondence    *service.CorrespondenceService
 	Disposition       *service.DispositionService
 	Class             *service.ClassService
@@ -76,6 +77,8 @@ type AppServices struct {
 	Maintenance       *service.MaintenanceService
 	SarprasReport     *service.SarprasReportService
 	SKPembagian       *service.SKPembagianTugasService
+	Expedition        *service.ExpeditionService
+	Archive           *service.ArchiveService
 }
 
 func initEngines() *AppEngines {
@@ -95,17 +98,21 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 	prefService := service.NewPreferenceService(sqlDB)
 
 	signatureSvc := service.NewSignatureService(repos.Signature)
+	agendaSvc := service.NewAgendaService(repos.Agenda) // <-- INISIALISASI AGENDA
 
 	return &AppServices{
 		Preference:        prefService,
 		Student:           service.NewStudentService(repos.Student, repos.StudentDoc, minioClient, engines.Student, eventPub),
 		Mutation:          service.NewMutationService(repos.Mutation, repos.Student, engines.Mutation, eventPub),
-		Registration:      service.NewRegistrationService(repos.Registration, repos.Student, engines.Registration, eventPub),
+		Registration:      service.NewRegistrationService(repos.Registration, repos.Student, eventPub),
 		Attendance:        service.NewAttendanceService(repos.Attendance, repos.Student, eventPub),
 		Assessment:        service.NewAssessmentService(repos.Assessment, repos.Student, engines.Assessment, eventPub),
 		Finance:           service.NewFinanceService(repos.Finance, repos.Student, engines.Finance, eventPub),
 		Signature:         signatureSvc,
-		Correspondence:    service.NewCorrespondenceService(repos.Correspondence, signatureSvc, engines.Correspondence, eventPub),
+		Agenda:            agendaSvc, // <-- MASUKKAN KE STRUCT
+		Correspondence:    service.NewCorrespondenceService(repos.Correspondence, signatureSvc, agendaSvc, repos.School, engines.Correspondence, eventPub),
+		Expedition:        service.NewExpeditionService(repos.Expedition, repos.Correspondence, repos.School),
+		Archive:           service.NewArchiveService(repos.Archive, repos.Correspondence),
 		Disposition:       service.NewDispositionService(repos.Disposition),
 		Class:             service.NewClassService(repos.Class, engines.Class, eventPub),
 		Stats:             service.NewStatisticsService(repos.Stats),
@@ -142,7 +149,7 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Pelayanan:         service.NewPelayananService(repos.Pelayanan, repos.School, minioClient),
 		Borrowing:         service.NewBorrowingService(repos.Borrowing, repos.KirItem),
 		Maintenance:       service.NewMaintenanceService(repos.Maintenance),
-		SarprasReport:     service.NewSarprasReportService(db), // <-- FIX: Langsung pakai db
+		SarprasReport:     service.NewSarprasReportService(db),
 		SKPembagian:       service.NewSKPembagianTugasService(repos.SKPembagian, repos.School, minioClient),
 	}
 }
