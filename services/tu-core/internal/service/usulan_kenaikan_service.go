@@ -27,8 +27,13 @@ func (s *UsulanKenaikanService) GetSaranUsulan(ctx context.Context) ([]repositor
 func (s *UsulanKenaikanService) CreateUsulan(ctx context.Context, ptkID, jenis, catatan, userID string, golSekarangID, golBaruID int, tmtBaru time.Time) (string, error) {
 	// Generate Nomor Usulan Sederhana
 	prefix := "USUL"
-	if jenis == "KGB" { prefix = "KGB" } else if jenis == "SATYALANCANA" { prefix = "SAT" }
-	
+	switch jenis {
+	case "KGB":
+		prefix = "KGB"
+	case "SATYALANCANA":
+		prefix = "SAT"
+	}
+
 	tahun := time.Now().Year()
 	bulan := time.Now().Month()
 	nomorUsulan := fmt.Sprintf("%s/%d/%02d/%d", prefix, tahun, bulan, time.Now().Unix()%1000)

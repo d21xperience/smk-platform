@@ -249,10 +249,8 @@ type PaymentResponse struct {
 }
 
 // === CORRESPONDENCE DTOs ===
-
-// CreateCorrespondenceRequest adalah request untuk membuat surat.
 type CreateCorrespondenceRequest struct {
-	Type            string                 `json:"type"` // INCOMING, OUTGOING
+	Type            string                 `json:"type"`
 	JenisSurat      string                 `json:"jenis_surat"`
 	Kategori        string                 `json:"kategori"`
 	KodeKlasifikasi string                 `json:"kode_klasifikasi"`
@@ -268,7 +266,6 @@ type CreateCorrespondenceRequest struct {
 	Konten          map[string]interface{} `json:"konten"`
 }
 
-// UpdateCorrespondenceRequest adalah request untuk update surat.
 type UpdateCorrespondenceRequest struct {
 	Kategori        string                 `json:"kategori"`
 	KodeKlasifikasi string                 `json:"kode_klasifikasi"`
@@ -280,7 +277,6 @@ type UpdateCorrespondenceRequest struct {
 	Konten          map[string]interface{} `json:"konten"`
 }
 
-// CorrespondenceResponse adalah response untuk data surat.
 type CorrespondenceResponse struct {
 	ID              string                 `json:"id"`
 	Type            string                 `json:"type"`
@@ -288,6 +284,7 @@ type CorrespondenceResponse struct {
 	Kategori        string                 `json:"kategori"`
 	KodeKlasifikasi string                 `json:"kode_klasifikasi"`
 	Number          string                 `json:"number"`
+	NomorAgenda     string                 `json:"nomor_agenda"`
 	Date            time.Time              `json:"date"`
 	Subject         string                 `json:"subject"`
 	From            string                 `json:"from"`

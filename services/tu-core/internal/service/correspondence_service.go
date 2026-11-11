@@ -19,15 +19,19 @@ import (
 )
 
 type CorrespondenceService struct {
-	repo       repository.CorrespondenceRepository
-	sigService *SignatureService
-	corrEngine *engine.CorrespondenceEngine
-	publisher  EventPublisher
+	repo          repository.CorrespondenceRepository
+	sigService    *SignatureService
+	agendaService *AgendaService
+	schoolRepo    repository.SchoolRepository // <-- TAMBAHAN
+	corrEngine    *engine.CorrespondenceEngine
+	publisher     EventPublisher
 }
 
 func NewCorrespondenceService(
 	repo repository.CorrespondenceRepository,
 	sigService *SignatureService,
+	agendaService *AgendaService,
+	schoolRepo repository.SchoolRepository, // <-- TAMBAHAN
 	corrEngine *engine.CorrespondenceEngine,
 	publisher EventPublisher,
 ) *CorrespondenceService {
@@ -35,10 +39,12 @@ func NewCorrespondenceService(
 		publisher = NewNoopEventPublisher()
 	}
 	return &CorrespondenceService{
-		repo:       repo,
-		sigService: sigService,
-		corrEngine: corrEngine,
-		publisher:  publisher,
+		repo:          repo,
+		sigService:    sigService,
+		agendaService: agendaService,
+		schoolRepo:    schoolRepo,
+		corrEngine:    corrEngine,
+		publisher:     publisher,
 	}
 }
 
@@ -59,7 +65,7 @@ func (s *CorrespondenceService) CreateCorrespondence(ctx context.Context, req Cr
 			return nil, NewServiceError("CreateCorrespondence", "Correspondence", "", "failed to generate number", err)
 		}
 		monthRoman := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}[int(req.Date.Month())]
-		
+
 		if req.KodeKlasifikasi != "" {
 			req.Number = fmt.Sprintf("%s/%s", req.KodeKlasifikasi, generateNumberFormat(seq, req.JenisSurat, monthRoman, req.Date.Year()))
 		} else {
@@ -93,6 +99,11 @@ func (s *CorrespondenceService) CreateCorrespondence(ctx context.Context, req Cr
 		return nil, NewServiceError("CreateCorrespondence", "Correspondence", result.Correspondence.ID, "failed to save to database", err)
 	}
 
+	agendaEntry, err := s.agendaService.GenerateAndCreateAgenda(ctx, result.Correspondence.ID, result.Correspondence.Type.String())
+	if err == nil && agendaEntry != nil {
+		result.Correspondence.NomorAgenda = agendaEntry.NomorAgenda
+	}
+
 	event := DomainEvent{
 		EventType:     "CorrespondenceCreated",
 		AggregateType: "Correspondence",
@@ -101,6 +112,7 @@ func (s *CorrespondenceService) CreateCorrespondence(ctx context.Context, req Cr
 			"correspondenceId": result.Correspondence.ID,
 			"type":             result.Correspondence.Type.String(),
 			"number":           result.Correspondence.Number,
+			"nomor_agenda":     result.Correspondence.NomorAgenda,
 		},
 		SchoolID:         opCtx.SchoolID,
 		AcademicPeriodID: opCtx.AcademicPeriodID,
@@ -211,7 +223,6 @@ func (s *CorrespondenceService) ListCorrespondences(ctx context.Context, filter 
 	return responses, nil
 }
 
-// GeneratePDF membuat file PDF surat, menyisipkan TTD & QR Code, dan mengembalikan path relatif URL-nya
 func (s *CorrespondenceService) GeneratePDF(ctx context.Context, id string) (string, error) {
 	opCtx := middleware.GetOperationalContext(ctx)
 	if opCtx == nil {
@@ -223,7 +234,12 @@ func (s *CorrespondenceService) GeneratePDF(ctx context.Context, id string) (str
 		return "", NewServiceError("GeneratePDF", "Correspondence", id, "failed to get correspondence", err)
 	}
 
-	// Buat direktori penyimpanan jika belum ada
+	// Ambil data sekolah dari database
+	school, err := s.schoolRepo.GetByID(ctx, opCtx.SchoolID)
+	if err != nil {
+		return "", NewServiceError("GeneratePDF", "Correspondence", id, "failed to get school data", err)
+	}
+
 	saveDir := "./storage/pdfs"
 	_ = os.MkdirAll(saveDir, os.ModePerm)
 	filePath := filepath.Join(saveDir, fmt.Sprintf("%s.pdf", c.ID))
@@ -231,41 +247,36 @@ func (s *CorrespondenceService) GeneratePDF(ctx context.Context, id string) (str
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
-	// Header / Kop Surat Sederhana
+	// Header / Kop Surat Dinamis
 	pdf.SetFont("Arial", "B", 14)
-	pdf.CellFormat(190, 10, "PEMERINTAH PROVINSI JAWA TIMUR", "", 1, "C", false, 0, "")
-	pdf.CellFormat(190, 10, "SMK PASUNDAN JATINANGOR", "", 1, "C", false, 0, "")
+	pdf.CellFormat(190, 10, fmt.Sprintf("PEMERINTAH PROVINSI %s", school.Propinsi), "", 1, "C", false, 0, "")
+	pdf.CellFormat(190, 10, school.Name, "", 1, "C", false, 0, "")
 	pdf.SetFont("Arial", "", 10)
-	pdf.CellFormat(190, 5, "Jl. Raya Jatinangor No. 1, Kabupaten Sumedang, Jawa Barat", "", 1, "C", false, 0, "")
-	pdf.Line(10, 38, 200, 38) // Garis Kop Surat
+	pdf.CellFormat(190, 5, fmt.Sprintf("%s, %s, %s", school.Address, school.Kecamatan, school.KabKota), "", 1, "C", false, 0, "")
+	pdf.Line(10, 38, 200, 38)
 	pdf.Ln(10)
 
-	// Judul Surat
 	pdf.SetFont("Arial", "BU", 14)
 	pdf.CellFormat(190, 10, c.JenisSurat, "", 1, "C", false, 0, "")
 	pdf.SetFont("Arial", "", 11)
 	pdf.CellFormat(190, 10, fmt.Sprintf("Nomor: %s", c.Number), "", 1, "C", false, 0, "")
 	pdf.Ln(5)
 
-	// Isi Surat
 	pdf.SetFont("Arial", "", 11)
-	pdf.MultiCell(190, 6, fmt.Sprintf("Yang bertanda tangan di bawah ini, Kepala SMK Pasundan Jatinangor, dengan ini menerangkan bahwa surat ini dibuat untuk keperluan: %s.", c.Description), "", "L", false)
+	pdf.MultiCell(190, 6, fmt.Sprintf("Yang bertanda tangan di bawah ini, Kepala %s, dengan ini menerangkan bahwa surat ini dibuat untuk keperluan: %s.", school.Name, c.Description), "", "L", false)
 	pdf.Ln(5)
 
 	pdf.MultiCell(190, 6, fmt.Sprintf("Perihal: %s", c.Subject), "", "L", false)
 	pdf.MultiCell(190, 6, fmt.Sprintf("Kepada: %s", c.ToParty), "", "L", false)
 	pdf.Ln(10)
 
-	// Cek apakah ada TTD Digital
 	sig, _ := s.sigService.GetByCorrespondenceID(ctx, opCtx.SchoolID, c.ID)
-	
-	// Posisi TTD
-	pdf.SetY(190) // Set posisi Y di bawah (kira-kira 190mm dari atas)
+
+	pdf.SetY(190)
 	pdf.SetX(130)
-	
+
 	if sig != nil {
-		// Render QR Code
-		qrContent := fmt.Sprintf("http://localhost:9000/verify/%s", sig.VerificationCode) // Ganti URL sesuai domain frontend Anda
+		qrContent := fmt.Sprintf("http://localhost:9000/verify/%s", sig.VerificationCode)
 		qr, _ := qrcode.New(qrContent, qrcode.Medium)
 		qrPng, _ := qr.PNG(256)
 
@@ -273,8 +284,6 @@ func (s *CorrespondenceService) GeneratePDF(ctx context.Context, id string) (str
 		pdf.RegisterImageOptionsReader("qr_"+sig.VerificationCode, opt, bytes.NewReader(qrPng))
 		pdf.ImageOptions("qr_"+sig.VerificationCode, 155, 190, 25, 25, false, opt, 0, "")
 
-		// Render Gambar TTD
-		// TTD ditaruh di sebelah kiri QR Code
 		optTtd := gofpdf.ImageOptions{ImageType: "PNG"}
 		pdf.RegisterImageOptions(sig.ImageURL, optTtd)
 		pdf.ImageOptions(sig.ImageURL, 120, 195, 30, 0, false, optTtd, 0, "")
@@ -286,20 +295,17 @@ func (s *CorrespondenceService) GeneratePDF(ctx context.Context, id string) (str
 		pdf.SetX(90)
 		pdf.CellFormat(90, 5, fmt.Sprintf("Kode Verifikasi: %s", sig.VerificationCode), "", 1, "L", false, 0, "")
 	} else {
-		// TTD Manual (Kosong)
-		pdf.CellFormat(90, 6, fmt.Sprintf("Jatinangor, %s", c.Date.Format("02 January 2006")), "", 1, "L", false, 0, "")
+		pdf.CellFormat(90, 6, fmt.Sprintf("%s, %s", school.KabKota, c.Date.Format("02 January 2006")), "", 1, "L", false, 0, "")
 		pdf.CellFormat(90, 6, "Kepala Sekolah,", "", 1, "L", false, 0, "")
 		pdf.Ln(20)
 		pdf.CellFormat(90, 6, "________________________", "", 1, "L", false, 0, "")
 	}
 
-	// Simpan PDF
 	err = pdf.OutputFileAndClose(filePath)
 	if err != nil {
 		return "", NewServiceError("GeneratePDF", "Correspondence", id, "failed to generate pdf file", err)
 	}
 
-	// Update URL file di database
 	fileURL := fmt.Sprintf("/api/v1/correspondences/%s/pdf", c.ID)
 	c.FileURL = fileURL
 	_ = s.repo.Update(ctx, c)
@@ -318,6 +324,7 @@ func toCorrespondenceResponse(c *models.Correspondence) *CorrespondenceResponse 
 		Kategori:        c.Kategori,
 		KodeKlasifikasi: c.KodeKlasifikasi,
 		Number:          c.Number,
+		NomorAgenda:     c.NomorAgenda,
 		Date:            c.Date,
 		Subject:         c.Subject,
 		From:            c.FromParty,

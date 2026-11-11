@@ -10,36 +10,35 @@
     <q-card flat bordered class="q-mb-md bg-grey-1">
       <q-card-section class="row q-col-gutter-sm items-center">
         <div class="col-12 col-md-3">
-          <q-input v-model="filter.search" label="Cari Perihal/Nomor" outlined dense clearable
-            @update:model-value="fetchSurat">
+          <q-input v-model="filter.search" label="Cari Perihal/Nomor" outlined dense clearable @update:model-value="fetchSurat">
             <template v-slot:prepend><q-icon name="search" /></template>
           </q-input>
         </div>
         <div class="col-6 col-md-2">
-          <q-select v-model="filter.jenis_surat" :options="jenisSuratOptions" label="Jenis Surat" outlined dense
-            clearable option-label="label" option-value="value" emit-value map-options
-            @update:model-value="fetchSurat" />
+          <q-select v-model="filter.jenis_surat" :options="letterTypeStore.flatOptions" option-group="group" label="Jenis Surat" outlined dense clearable option-label="label" option-value="value" emit-value map-options @update:model-value="fetchSurat" />
         </div>
         <div class="col-6 col-md-2">
-          <q-select v-model="filter.status" :options="['DRAFT', 'PROCESSED', 'ARCHIVED']" label="Status" outlined dense
-            clearable @update:model-value="fetchSurat" />
+          <q-select v-model="filter.status" :options="['DRAFT', 'PROCESSED', 'ARCHIVED']" label="Status" outlined dense clearable @update:model-value="fetchSurat" />
         </div>
         <div class="col-6 col-md-2">
-          <q-input v-model="filter.date_from" label="Dari Tanggal" type="date" outlined dense
-            @update:model-value="fetchSurat" />
+          <q-input v-model="filter.date_from" label="Dari Tanggal" type="date" outlined dense @update:model-value="fetchSurat" />
         </div>
         <div class="col-6 col-md-2">
-          <q-input v-model="filter.date_to" label="Sampai Tanggal" type="date" outlined dense
-            @update:model-value="fetchSurat" />
+          <q-input v-model="filter.date_to" label="Sampai Tanggal" type="date" outlined dense @update:model-value="fetchSurat" />
         </div>
       </q-card-section>
     </q-card>
 
     <!-- Tabel Data -->
-    <q-table :rows="suratList" :columns="columns" row-key="id" flat bordered :loading="isLoading">
+    <q-table :rows="suratStore.suratMasuk" :columns="columns" row-key="id" flat bordered :loading="suratStore.isLoading">
+      <template v-slot:body-cell-agenda="props">
+        <q-td :props="props">
+          <span class="text-weight-bold text-primary">{{ props.row.nomor_agenda || '-' }}</span>
+        </q-td>
+      </template>
       <template v-slot:body-cell-jenis="props">
         <q-td :props="props">
-          <q-badge color="blue-6">{{ formatJenis(props.row.jenis_surat) }}</q-badge>
+          <q-badge color="blue-6">{{ getLabelJenis(props.row.jenis_surat) }}</q-badge>
         </q-td>
       </template>
       <template v-slot:body-cell-status="props">
@@ -58,8 +57,7 @@
           <q-btn v-if="!props.row.ttd_url" flat round dense color="teal" icon="draw" @click="openTtd(props.row)">
             <q-tooltip>Tanda Tangan</q-tooltip>
           </q-btn>
-          <q-btn v-if="props.row.status === 'DRAFT'" flat round dense color="blue" icon="edit"
-            @click="openForm(props.row)">
+          <q-btn v-if="props.row.status === 'DRAFT'" flat round dense color="blue" icon="edit" @click="openForm(props.row)">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
           <q-btn flat round dense color="negative" icon="delete" @click="confirmDelete(props.row)">
@@ -81,12 +79,10 @@
         <q-card-section class="q-pt-none q-gutter-y-md scroll" style="max-height: 70vh">
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-6">
-              <q-select v-model="form.jenis_surat" :options="jenisSuratOptions" label="Jenis Surat" outlined dense
-                option-label="label" option-value="value" emit-value map-options :disable="isEdit" />
+              <q-select v-model="form.jenis_surat" :options="letterTypeStore.flatOptions" option-group="group" label="Jenis Surat" outlined dense option-label="label" option-value="value" emit-value map-options :disable="isEdit" />
             </div>
             <div class="col-12 col-md-6">
-              <q-input v-model="form.kode_klasifikasi" label="Kode Klasifikasi (Opsional)" outlined dense
-                :disable="isEdit" />
+              <q-input v-model="form.kode_klasifikasi" label="Kode Klasifikasi (Opsional)" outlined dense :disable="isEdit" />
             </div>
             <div class="col-12 col-md-6">
               <q-input v-model="form.number" label="Nomor Surat" outlined dense :disable="isEdit" />
@@ -124,9 +120,7 @@
           <div class="text-caption text-grey-7">{{ selectedRow?.subject }}</div>
         </q-card-section>
         <q-card-section class="q-pt-none q-gutter-y-md">
-          <q-select v-model="dispoForm.to_user_id" :options="teachers" label="Pilih Guru / Staf" outlined dense
-            option-label="name" option-value="id" emit-value map-options use-input input-debounce="300"
-            @filter="filterTeachers" />
+          <q-select v-model="dispoForm.to_user_id" :options="teachers" label="Pilih Guru / Staf" outlined dense option-label="name" option-value="id" emit-value map-options use-input input-debounce="300" @filter="filterTeachers" />
           <q-input v-model="dispoForm.note" label="Catatan / Instruksi" type="textarea" outlined dense />
         </q-card-section>
         <q-card-actions align="right">
@@ -146,8 +140,7 @@
           <div v-if="previewTtd" class="q-mb-md">
             <img :src="previewTtd" style="max-height: 150px; border: 1px dashed #ccc;" />
           </div>
-          <q-file v-model="ttdFile" label="Pilih Gambar TTD (PNG)" outlined dense accept=".png"
-            @update:model-value="handleFileUpload">
+          <q-file v-model="ttdFile" label="Pilih Gambar TTD (PNG)" outlined dense accept=".png" @update:model-value="handleFileUpload">
             <template v-slot:prepend><q-icon name="attach_file" /></template>
           </q-file>
         </q-card-section>
@@ -161,21 +154,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Notify, Dialog } from 'quasar'
 import { api } from '@/boot/axios'
-import { KATEGORI_SURAT } from '@/constants/surat'
+import { useSuratStore } from '@/stores/surat/surat'
+import { useLetterTypeStore } from '@/stores/letter-type'
+
+const suratStore = useSuratStore()
+const letterTypeStore = useLetterTypeStore()
 
 // State Tabel & Filter
-const suratList = ref([])
-const isLoading = ref(false)
-const filter = ref({
-  search: '',
-  jenis_surat: null,
-  status: null,
-  date_from: '',
-  date_to: ''
-})
+const filter = ref({ search: '', jenis_surat: null, status: null, date_from: '', date_to: '' })
 
 // State Form
 const showForm = ref(false)
@@ -195,15 +184,13 @@ const showTtd = ref(false)
 const ttdFile = ref(null)
 const previewTtd = ref(null)
 
-// Setup Dropdown 22 Jenis Surat dari constants
-const jenisSuratOptions = computed(() => {
-  return KATEGORI_SURAT.map(kategori => ({
-    label: kategori.label,
-    options: kategori.children
-  }))
-})
+function getLabelJenis(val) {
+  const item = letterTypeStore.list.find(i => i.value === val)
+  return item ? item.label : val
+}
 
 const columns = [
+  { name: 'agenda', label: 'No. Agenda', align: 'left' },
   { name: 'number', label: 'Nomor Surat', field: 'number', align: 'left', sortable: true },
   { name: 'jenis', label: 'Jenis', align: 'left' },
   { name: 'date', label: 'Tanggal', field: r => new Date(r.date).toLocaleDateString('id-ID'), align: 'left', sortable: true },
@@ -220,30 +207,11 @@ function getStatusColor(status) {
   return 'grey'
 }
 
-function formatJenis(val) {
-  for (const grup of KATEGORI_SURAT) {
-    const item = grup.children.find(c => c.value === val)
-    if (item) return item.label
-  }
-  return val ? val.replace(/_/g, ' ') : '-'
-}
-
 async function fetchSurat() {
-  isLoading.value = true
   try {
-    const params = {
-      type: 'INCOMING',
-      ...filter.value
-    }
-    // Hapus parameter kosong
-    Object.keys(params).forEach(key => (!params[key]) && delete params[key])
-
-    const res = await api.get('/correspondences', { params })
-    suratList.value = res.data || []
-  } catch (err) {
-    Notify.create({ type: 'negative', message: 'Gagal memuat surat masuk: ' + (err.response?.data?.error || err.message) })
-  } finally {
-    isLoading.value = false
+    await suratStore.fetchSuratMasuk(filter.value)
+  } catch {
+    Notify.create({ type: 'negative', message: 'Gagal memuat surat masuk' })
   }
 }
 
@@ -254,16 +222,8 @@ function openForm(row = null) {
   } else {
     isEdit.value = false
     form.value = {
-      id: '',
-      type: 'INCOMING',
-      jenis_surat: '',
-      kode_klasifikasi: '',
-      number: '',
-      date: new Date().toISOString().slice(0, 10),
-      subject: '',
-      from: '',
-      to: 'Kepala Sekolah',
-      description: ''
+      id: '', type: 'INCOMING', jenis_surat: '', kode_klasifikasi: '', number: '',
+      date: new Date().toISOString().slice(0, 10), subject: '', from: '', to: 'Kepala Sekolah', description: ''
     }
   }
   showForm.value = true
@@ -276,7 +236,7 @@ async function submitForm() {
   isSubmitting.value = true
   try {
     if (isEdit.value) {
-      await api.put(`/correspondences/${form.value.id}`, {
+      await suratStore.updateSurat(form.value.id, {
         kategori: form.value.kategori,
         kode_klasifikasi: form.value.kode_klasifikasi,
         subject: form.value.subject,
@@ -284,7 +244,7 @@ async function submitForm() {
       })
       Notify.create({ type: 'positive', message: 'Surat masuk berhasil diperbarui' })
     } else {
-      await api.post('/correspondences', form.value)
+      await suratStore.createSurat(form.value)
       Notify.create({ type: 'positive', message: 'Surat masuk berhasil dicatat' })
     }
     showForm.value = false
@@ -304,11 +264,11 @@ function confirmDelete(row) {
     persistent: true
   }).onOk(async () => {
     try {
-      await api.delete(`/correspondences/${row.id}`)
+      await suratStore.deleteSurat(row.id)
       Notify.create({ type: 'positive', message: 'Surat berhasil dihapus' })
       await fetchSurat()
-    } catch (err) {
-      Notify.create({ type: 'negative', message: `Gagal menghapus surat ${err}` })
+    } catch {
+      Notify.create({ type: 'negative', message: 'Gagal menghapus surat' })
     }
   })
 }
@@ -347,11 +307,11 @@ async function submitDisposisi() {
   }
   isSubmitting.value = true
   try {
-    await api.post(`/correspondences/${selectedRow.value.id}/dispositions`, dispoForm.value)
+    await suratStore.disposisiSurat(selectedRow.value.id, dispoForm.value)
     Notify.create({ type: 'positive', message: 'Disposisi berhasil dikirim' })
     showDispo.value = false
-  } catch (err) {
-    Notify.create({ type: 'negative', message: `Gagal mengirim disposisi ${err}` })
+  } catch {
+    Notify.create({ type: 'negative', message: 'Gagal mengirim disposisi' })
   } finally {
     isSubmitting.value = false
   }
@@ -377,15 +337,15 @@ function handleFileUpload(file) {
 async function submitTtd() {
   isSubmitting.value = true
   try {
-    await api.post(`/correspondences/${selectedRow.value.id}/sign`, {
-      signer_role: 'Kepala Sekolah', // Atau ambil dari authStore jika ada
+    await suratStore.signSurat(selectedRow.value.id, {
+      signer_role: 'Kepala Sekolah',
       image_base64: previewTtd.value
     })
     Notify.create({ type: 'positive', message: 'Tanda tangan digital berhasil disimpan' })
     showTtd.value = false
     await fetchSurat()
-  } catch (err) {
-    Notify.create({ type: 'negative', message: `Gagal menyimpan tanda tangan ${err}` })
+  } catch {
+    Notify.create({ type: 'negative', message: 'Gagal menyimpan tanda tangan' })
   } finally {
     isSubmitting.value = false
   }
@@ -398,13 +358,16 @@ async function printSurat(row) {
     const file = new Blob([response.data], { type: 'application/pdf' })
     const fileURL = URL.createObjectURL(file)
     window.open(fileURL, '_blank')
-  } catch (err) {
-    Notify.create({ type: 'negative', message: `Gagal mengunduh PDF surat. ${err}` })
+  } catch {
+    Notify.create({ type: 'negative', message: 'Gagal mengunduh PDF surat.' })
   }
 }
 
 onMounted(() => {
   fetchSurat()
   fetchTeachers()
+  if (letterTypeStore.list.length === 0) {
+    letterTypeStore.fetchList()
+  }
 })
 </script>

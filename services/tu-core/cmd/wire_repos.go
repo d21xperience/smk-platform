@@ -19,6 +19,7 @@ type AppRepositories struct {
 	Correspondence repository.CorrespondenceRepository
 	Disposition    repository.DispositionRepository
 	Signature      repository.SignatureRepository
+	Agenda         repository.AgendaRepository // <-- TAMBAHAN
 	Class          repository.ClassRepository
 	Stats          repository.StatisticsRepository
 	Teacher        repository.TeacherRepository
@@ -56,6 +57,8 @@ type AppRepositories struct {
 	Disposal       repository.DisposalRepository
 	Borrowing      repository.BorrowingRepository
 	Maintenance    repository.MaintenanceRepository
+	Expedition     repository.ExpeditionRepository
+	Archive        repository.ArchiveRepository
 }
 
 func initRepositories(db *pgxpool.Pool) *AppRepositories {
@@ -70,6 +73,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Correspondence: repository.NewCorrespondenceRepository(db),
 		Disposition:    repository.NewDispositionRepository(db),
 		Signature:      repository.NewSignatureRepository(db),
+		Agenda:         repository.NewAgendaRepository(db), // <-- TAMBAHAN
 		Class:          repository.NewClassRepository(db),
 		Stats:          repository.NewStatisticsRepository(db),
 		Teacher:        repository.NewTeacherRepository(db),
@@ -107,5 +111,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Disposal:       repository.NewDisposalRepository(db),
 		Borrowing:      repository.NewBorrowingRepository(db),
 		Maintenance:    repository.NewMaintenanceRepository(db),
+		Expedition:     repository.NewExpeditionRepository(db),
+		Archive:        repository.NewArchiveRepository(db),
 	}
 }

@@ -16,6 +16,7 @@ func (r *Router) registerCorrespondenceRoutes(mux *http.ServeMux) {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 		}
 	}))
+
 	mux.HandleFunc("/api/v1/correspondences/", r.wrapWithContext(func(w http.ResponseWriter, req *http.Request) {
 		if strings.HasSuffix(req.URL.Path, "/archive") {
 			if req.Method == http.MethodPut {
@@ -44,6 +45,17 @@ func (r *Router) registerCorrespondenceRoutes(mux *http.ServeMux) {
 				r.signatureHandler.Sign(w, req, id)
 				return
 			}
+		} else if strings.HasSuffix(req.URL.Path, "/expeditions") {
+			id := strings.Split(strings.TrimPrefix(req.URL.Path, "/api/v1/correspondences/"), "/")[0]
+			switch req.Method {
+			case http.MethodPost:
+				r.expeditionHandler.Create(w, req, id)
+			case http.MethodGet:
+				r.expeditionHandler.ListByCorrespondence(w, req, id)
+			default:
+				writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+			}
+			return
 		} else {
 			switch req.Method {
 			case http.MethodGet:

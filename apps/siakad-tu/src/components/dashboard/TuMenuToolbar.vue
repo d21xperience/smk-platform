@@ -25,6 +25,8 @@ const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
   { title: 'Surat Keluar', to: '/persuratan/surat-keluar' },
   { title: 'Surat Masuk', to: '/persuratan/surat-masuk' },
+  { title: 'Buku Agenda', to: '/persuratan/buku-agenda' },          // <-- BARU
+  { title: 'Master Jenis Surat', to: '/persuratan/master-jenis-surat' }, // <-- BARU
   { title: 'Disposisi', to: '/persuratan/disposisi' },
   { title: 'Klasifikasi', to: '/persuratan/klasifikasi' }
 ]
@@ -37,7 +39,7 @@ const itemKepegawaian = [
   { title: 'Penilaian SKP', to: { name: 'skp-periode' } },
   { title: 'Buku Kontrol Kenaikan', to: { name: 'buku-kontrol' } },
   { title: 'Usulan Kenaikan', to: { name: 'usulan-kenaikan' } },
-  { title: 'Rekap Kehadiran GTK', to: { name: 'kehadiran-pegawai' } }, // <-- MENU BARU
+  { title: 'Rekap Kehadiran GTK', to: { name: 'kehadiran-pegawai' } },
   { title: 'Beban Mengajar', to: { name: 'beban-mengajar' } },
   { title: 'Cuti Kerja', to: { name: 'cuti-kerja' } },
   { title: 'Arsip', to: { name: 'arsip-kepegawaian' } },
@@ -70,14 +72,12 @@ const itemPsb = [
 
 const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
-  { title: 'Kelas', to: '/kesiswaan/kelas' },
-  { title: 'Jadwal Pelajaran', to: '/kesiswaan/jadwal-pelajaran' },
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
-  { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
-  { title: 'Mutasi Siswa', to: { name: 'student-mutation' } },
+  { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
+  { title: 'Mutasi Siswa', to: '/kesiswaan/mutasi-siswa' },
   { title: 'Surat Aktif', to: '/kesiswaan/surat-aktif-siswa' },
-  { title: 'PIP', to: { name: 'beasiswa-pip-siswa' } },
+  { title: 'PIP', to: 'beasiswa-pip-siswa' },
   { title: 'Legalisir', to: '/kesiswaan/legalisir-alumni' },
   { title: 'Pelaporan', to: '/kesiswaan/rekap-pelaporan' },
 ]

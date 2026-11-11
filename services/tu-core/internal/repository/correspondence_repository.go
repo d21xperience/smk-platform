@@ -83,12 +83,14 @@ func (r *pgxCorrespondenceRepository) Create(ctx context.Context, c *models.Corr
 
 func (r *pgxCorrespondenceRepository) GetByID(ctx context.Context, schoolID, academicPeriodID, correspondenceID string) (*models.Correspondence, error) {
 	query := `
-		SELECT id, school_id, academic_period_id, type, jenis_surat, COALESCE(kategori,'') as kategori, COALESCE(kode_klasifikasi,'') as kode_klasifikasi, number, date, subject,
-		       from_party, to_party, COALESCE(description, '') as description,
-		       COALESCE(attachment_url, '') as attachment_url, COALESCE(file_url, '') as file_url,
-		       COALESCE(ttd_url, '') as ttd_url, konten, status, created_at, updated_at
-		FROM correspondences
-		WHERE id = $1 AND school_id = $2 AND academic_period_id = $3
+		SELECT c.id, c.school_id, c.academic_period_id, c.type, c.jenis_surat, COALESCE(c.kategori,'') as kategori, COALESCE(c.kode_klasifikasi,'') as kode_klasifikasi, c.number, c.date, c.subject,
+		       c.from_party, c.to_party, COALESCE(c.description, '') as description,
+		       COALESCE(c.attachment_url, '') as attachment_url, COALESCE(c.file_url, '') as file_url,
+		       COALESCE(c.ttd_url, '') as ttd_url, c.konten, c.status, c.created_at, c.updated_at,
+		       COALESCE(a.nomor_agenda, '') as nomor_agenda
+		FROM correspondences c
+		LEFT JOIN agenda_entries a ON c.id = a.correspondence_id
+		WHERE c.id = $1 AND c.school_id = $2 AND c.academic_period_id = $3
 	`
 
 	var c models.Correspondence
@@ -98,6 +100,7 @@ func (r *pgxCorrespondenceRepository) GetByID(ctx context.Context, schoolID, aca
 	err := r.db.QueryRow(ctx, query, correspondenceID, schoolID, academicPeriodID).Scan(
 		&c.ID, &c.SchoolID, &c.AcademicPeriodID, &typeStr, &c.JenisSurat, &c.Kategori, &c.KodeKlasifikasi, &c.Number, &c.Date, &c.Subject,
 		&c.FromParty, &c.ToParty, &c.Description, &c.AttachmentURL, &c.FileURL, &c.TTDURL, &kontenRaw, &statusStr, &c.CreatedAt, &c.UpdatedAt,
+		&c.NomorAgenda,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -116,52 +119,52 @@ func (r *pgxCorrespondenceRepository) GetByID(ctx context.Context, schoolID, aca
 }
 
 func (r *pgxCorrespondenceRepository) List(ctx context.Context, filter CorrespondenceFilter) ([]models.Correspondence, int, error) {
-	whereClause := "WHERE school_id = $1 AND academic_period_id = $2"
+	whereClause := "WHERE c.school_id = $1 AND c.academic_period_id = $2"
 	args := []interface{}{filter.SchoolID, filter.AcademicPeriodID}
 	argIndex := 3
 
 	if filter.Type != "" {
-		whereClause += fmt.Sprintf(" AND type = $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.type = $%d", argIndex)
 		args = append(args, filter.Type)
 		argIndex++
 	}
 	if filter.Status != "" {
-		whereClause += fmt.Sprintf(" AND status = $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.status = $%d", argIndex)
 		args = append(args, filter.Status)
 		argIndex++
 	}
 	if filter.JenisSurat != "" {
-		whereClause += fmt.Sprintf(" AND jenis_surat = $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.jenis_surat = $%d", argIndex)
 		args = append(args, filter.JenisSurat)
 		argIndex++
 	}
 	if filter.Kategori != "" {
-		whereClause += fmt.Sprintf(" AND kategori = $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.kategori = $%d", argIndex)
 		args = append(args, filter.Kategori)
 		argIndex++
 	}
 	if filter.KodeKlasifikasi != "" {
-		whereClause += fmt.Sprintf(" AND kode_klasifikasi = $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.kode_klasifikasi = $%d", argIndex)
 		args = append(args, filter.KodeKlasifikasi)
 		argIndex++
 	}
 	if filter.DateFrom != "" {
-		whereClause += fmt.Sprintf(" AND date >= $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.date >= $%d", argIndex)
 		args = append(args, filter.DateFrom)
 		argIndex++
 	}
 	if filter.DateTo != "" {
-		whereClause += fmt.Sprintf(" AND date <= $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND c.date <= $%d", argIndex)
 		args = append(args, filter.DateTo)
 		argIndex++
 	}
 	if filter.Search != "" {
-		whereClause += fmt.Sprintf(" AND (subject ILIKE $%d OR number ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (c.subject ILIKE $%d OR c.number ILIKE $%d)", argIndex, argIndex)
 		args = append(args, "%"+filter.Search+"%")
 		argIndex++
 	}
 
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM correspondences %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM correspondences c %s", whereClause)
 	var total int
 	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
@@ -175,12 +178,15 @@ func (r *pgxCorrespondenceRepository) List(ctx context.Context, filter Correspon
 	}
 
 	dataQuery := fmt.Sprintf(`
-		SELECT id, school_id, academic_period_id, type, jenis_surat, COALESCE(kategori,'') as kategori, COALESCE(kode_klasifikasi,'') as kode_klasifikasi, number, date, subject,
-		       from_party, to_party, COALESCE(description, '') as description,
-		       COALESCE(attachment_url, '') as attachment_url, COALESCE(file_url, '') as file_url,
-		       COALESCE(ttd_url, '') as ttd_url, konten, status, created_at, updated_at
-		FROM correspondences %s
-		ORDER BY date DESC, created_at DESC
+		SELECT c.id, c.school_id, c.academic_period_id, c.type, c.jenis_surat, COALESCE(c.kategori,'') as kategori, COALESCE(c.kode_klasifikasi,'') as kode_klasifikasi, c.number, c.date, c.subject,
+		       c.from_party, c.to_party, COALESCE(c.description, '') as description,
+		       COALESCE(c.attachment_url, '') as attachment_url, COALESCE(c.file_url, '') as file_url,
+		       COALESCE(c.ttd_url, '') as ttd_url, c.konten, c.status, c.created_at, c.updated_at,
+		       COALESCE(a.nomor_agenda, '') as nomor_agenda
+		FROM correspondences c
+		LEFT JOIN agenda_entries a ON c.id = a.correspondence_id
+		%s
+		ORDER BY c.date DESC, c.created_at DESC
 		LIMIT $%d OFFSET $%d
 	`, whereClause, argIndex, argIndex+1)
 	args = append(args, filter.Limit, filter.Offset)
@@ -200,6 +206,7 @@ func (r *pgxCorrespondenceRepository) List(ctx context.Context, filter Correspon
 		if err := rows.Scan(
 			&c.ID, &c.SchoolID, &c.AcademicPeriodID, &typeStr, &c.JenisSurat, &c.Kategori, &c.KodeKlasifikasi, &c.Number, &c.Date, &c.Subject,
 			&c.FromParty, &c.ToParty, &c.Description, &c.AttachmentURL, &c.FileURL, &c.TTDURL, &kontenRaw, &statusStr, &c.CreatedAt, &c.UpdatedAt,
+			&c.NomorAgenda,
 		); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}

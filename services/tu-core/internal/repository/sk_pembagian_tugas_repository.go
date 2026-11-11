@@ -37,14 +37,14 @@ type SKDetail struct {
 }
 
 type SKHeader struct {
-	ID           string    `json:"id"`
-	NomorSK      string    `json:"nomorSk"`
-	TahunAjaran  string    `json:"tahunAjaran"`
-	Semester     int       `json:"semester"`
-	Status       string    `json:"status"`
-	DraftPdfURL  string    `json:"draftPdfUrl"`
-	FinalPdfURL  string    `json:"finalPdfUrl"`
-	CreatedAt    time.Time `json:"createdAt"`
+	ID          string    `json:"id"`
+	NomorSK     string    `json:"nomorSk"`
+	TahunAjaran string    `json:"tahunAjaran"`
+	Semester    int       `json:"semester"`
+	Status      string    `json:"status"`
+	DraftPdfURL string    `json:"draftPdfUrl"`
+	FinalPdfURL string    `json:"finalPdfUrl"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 type SKAssignment struct {
@@ -61,9 +61,9 @@ type SKTugasTambahan struct {
 }
 
 type SKCreateRequest struct {
-	TahunAjaran   string             `json:"tahunAjaran"`
-	Semester      int                `json:"semester"`
-	Assignments   []SKAssignment     `json:"assignments"`
+	TahunAjaran   string            `json:"tahunAjaran"`
+	Semester      int               `json:"semester"`
+	Assignments   []SKAssignment    `json:"assignments"`
 	TugasTambahan []SKTugasTambahan `json:"tugasTambahan"`
 }
 
@@ -86,20 +86,22 @@ func NewSKPembagianTugasRepository(db *pgxpool.Pool) SKPembagianTugasRepository 
 
 func (r *pgxSKPembagianTugasRepository) GenerateNextSKNumber(ctx context.Context, schoolID string) (string, error) {
 	tx, err := r.db.Begin(ctx)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	defer tx.Rollback(ctx)
 
 	now := time.Now()
 	bulan := int(now.Month())
 	tahun := now.Year()
-	
+
 	romawi := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
 	bulanRomawi := romawi[bulan]
 
 	var lastSeq int
 	queryCheck := `SELECT sequence FROM sk_numbers WHERE jenis = 'SK_PEMBAGIAN_TUGAS' AND tahun = $1 AND bulan = $2 ORDER BY sequence DESC LIMIT 1 FOR UPDATE`
 	err = tx.QueryRow(ctx, queryCheck, tahun, bulan).Scan(&lastSeq)
-	
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			lastSeq = 0
@@ -113,18 +115,24 @@ func (r *pgxSKPembagianTugasRepository) GenerateNextSKNumber(ctx context.Context
 	nomorSK := fmt.Sprintf("421.2/SK/%s/%s/%d/%03d", kodeSekolah, bulanRomawi, tahun, nextSeq)
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO sk_numbers (jenis, tahun, bulan, sequence, nomor_sk) 
+		INSERT INTO sk_numbers (jenis, tahun, bulan, sequence, nomor_sk)
 		VALUES ('SK_PEMBAGIAN_TUGAS', $1, $2, $3, $4)
 	`, tahun, bulan, nextSeq, nomorSK)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 
-	if err := tx.Commit(ctx); err != nil { return "", err }
+	if err := tx.Commit(ctx); err != nil {
+		return "", err
+	}
 	return nomorSK, nil
 }
 
 func (r *pgxSKPembagianTugasRepository) CreateDraftSK(ctx context.Context, req SKCreateRequest, nomorSK, userID string) (string, error) {
 	tx, err := r.db.Begin(ctx)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	defer tx.Rollback(ctx)
 
 	skID := uuid.New().String()
@@ -133,7 +141,9 @@ func (r *pgxSKPembagianTugasRepository) CreateDraftSK(ctx context.Context, req S
 		INSERT INTO sk_pembagian_tugas (id, nomor_sk, tahun_ajaran, semester, status, created_by)
 		VALUES ($1, $2, $3, $4, 'DRAFT', $5)
 	`, skID, nomorSK, req.TahunAjaran, req.Semester, userID)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 
 	for _, assign := range req.Assignments {
 		detailID := uuid.New().String()
@@ -141,14 +151,18 @@ func (r *pgxSKPembagianTugasRepository) CreateDraftSK(ctx context.Context, req S
 			INSERT INTO sk_pembagian_tugas_detail (id, sk_id, ptk_id, mata_pelajaran_id)
 			VALUES ($1, $2, $3, $4)
 		`, detailID, skID, assign.PtkID, assign.MataPelajaranID)
-		if err != nil { return "", err }
+		if err != nil {
+			return "", err
+		}
 
 		for _, rombelID := range assign.RombonganBelajarIDs {
 			_, err = tx.Exec(ctx, `
 				INSERT INTO sk_pembagian_tugas_kelas (detail_id, rombongan_belajar_id, jam_per_minggu)
 				VALUES ($1, $2, $3)
 			`, detailID, rombelID, assign.JamPerMinggu)
-			if err != nil { return "", err }
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -157,22 +171,28 @@ func (r *pgxSKPembagianTugasRepository) CreateDraftSK(ctx context.Context, req S
 			INSERT INTO sk_pembagian_tugas_tambahan (sk_id, ptk_id, jenis_tugas, keterangan)
 			VALUES ($1, $2, $3, $4)
 		`, skID, tugas.PtkID, tugas.JenisTugas, tugas.Keterangan)
-		if err != nil { return "", err }
+		if err != nil {
+			return "", err
+		}
 	}
 
-	if err := tx.Commit(ctx); err != nil { return "", err }
+	if err := tx.Commit(ctx); err != nil {
+		return "", err
+	}
 	return skID, nil
 }
 
 func (r *pgxSKPembagianTugasRepository) ListSK(ctx context.Context) ([]SKHeader, error) {
 	query := `
-		SELECT id::text, nomor_sk, tahun_ajaran, semester, status, 
+		SELECT id::text, nomor_sk, tahun_ajaran, semester, status,
 		       COALESCE(draft_pdf_url, ''), COALESCE(final_pdf_url, ''), created_at
 		FROM sk_pembagian_tugas
 		ORDER BY created_at DESC
 	`
 	rows, err := r.db.Query(ctx, query)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var list []SKHeader
@@ -193,7 +213,9 @@ func (r *pgxSKPembagianTugasRepository) GetDetailByID(ctx context.Context, id st
 	`
 	var sk SKDetail
 	err := r.db.QueryRow(ctx, queryHeader, id).Scan(&sk.ID, &sk.NomorSK, &sk.TahunAjaran, &sk.Semester, &sk.Status, &sk.CreatedAt)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	queryAssign := `
 		SELECT tp.nama, COALESCE(tp.nip, ''), tm.nm_mapel, tk.nm_kelas, sk.jam_per_minggu
@@ -231,11 +253,12 @@ func (r *pgxSKPembagianTugasRepository) GetDetailByID(ctx context.Context, id st
 
 func (r *pgxSKPembagianTugasRepository) UpdateStatus(ctx context.Context, id string, status string, note string) error {
 	var query string
-	if status == "REJECTED" {
+	switch status {
+	case "REJECTED":
 		query = `UPDATE sk_pembagian_tugas SET status = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3`
-	} else if status == "REVISION" {
+	case "REVISION":
 		query = `UPDATE sk_pembagian_tugas SET status = $1, revision_notes = $2, updated_at = NOW() WHERE id = $3`
-	} else {
+	default:
 		query = `UPDATE sk_pembagian_tugas SET status = $1, updated_at = NOW() WHERE id = $2`
 		_, err := r.db.Exec(ctx, query, status, id)
 		return err
@@ -246,12 +269,12 @@ func (r *pgxSKPembagianTugasRepository) UpdateStatus(ctx context.Context, id str
 
 func (r *pgxSKPembagianTugasRepository) UpdateDocumentURLs(ctx context.Context, id string, draftURL, finalURL, lampiranURL, qrURL string) error {
 	query := `
-		UPDATE sk_pembagian_tugas 
-		SET draft_pdf_url = COALESCE(NULLIF($1, ''), draft_pdf_url), 
-		    final_pdf_url = COALESCE(NULLIF($2, ''), final_pdf_url), 
-		    lampiran_pdf_url = COALESCE(NULLIF($3, ''), lampiran_pdf_url), 
-		    qr_tte_url = COALESCE(NULLIF($4, ''), qr_tte_url), 
-		    updated_at = NOW() 
+		UPDATE sk_pembagian_tugas
+		SET draft_pdf_url = COALESCE(NULLIF($1, ''), draft_pdf_url),
+		    final_pdf_url = COALESCE(NULLIF($2, ''), final_pdf_url),
+		    lampiran_pdf_url = COALESCE(NULLIF($3, ''), lampiran_pdf_url),
+		    qr_tte_url = COALESCE(NULLIF($4, ''), qr_tte_url),
+		    updated_at = NOW()
 		WHERE id = $5
 	`
 	_, err := r.db.Exec(ctx, query, draftURL, finalURL, lampiranURL, qrURL, id)
