@@ -48,6 +48,8 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Mutation,
 		services.Registration,
 		services.Attendance,
+		services.Letter,
+		services.Scholarship,
 		services.Assessment,
 		services.Finance,
 		services.Correspondence,
@@ -57,6 +59,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Teacher,
 		services.Kurikulum,
 		services.Schedule,
+		services.PSB, // <-- TAMBAHAN: Injeksi PSB Service
 		services.Jurusan,
 		services.Preference,
 		services.Auth,
@@ -97,6 +100,7 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Borrowing,
 		services.Maintenance,
 		services.SarprasReport,
+		services.Dashboard,
 	)
 	restServer := server.NewRESTServer(
 		server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)},

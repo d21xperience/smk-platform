@@ -19,7 +19,7 @@ type AppRepositories struct {
 	Correspondence repository.CorrespondenceRepository
 	Disposition    repository.DispositionRepository
 	Signature      repository.SignatureRepository
-	Agenda         repository.AgendaRepository // <-- TAMBAHAN
+	Agenda         repository.AgendaRepository
 	Class          repository.ClassRepository
 	Stats          repository.StatisticsRepository
 	Teacher        repository.TeacherRepository
@@ -46,6 +46,7 @@ type AppRepositories struct {
 	Pembelajaran   repository.PembelajaranRepository
 	KurikulumStat  repository.KurikulumStatRepository
 	Schedule       repository.ScheduleRepository
+	PSB            repository.PSBRepository
 	Jurusan        repository.JurusanRepository
 	Logistic       repository.LogisticRepository
 	KirItem        repository.InventoryItemRepository
@@ -59,6 +60,9 @@ type AppRepositories struct {
 	Maintenance    repository.MaintenanceRepository
 	Expedition     repository.ExpeditionRepository
 	Archive        repository.ArchiveRepository
+	Dashboard      repository.DashboardRepository
+	Letter         repository.LetterRepository
+	Scholarship     repository.ScholarshipRepository
 }
 
 func initRepositories(db *pgxpool.Pool) *AppRepositories {
@@ -73,7 +77,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Correspondence: repository.NewCorrespondenceRepository(db),
 		Disposition:    repository.NewDispositionRepository(db),
 		Signature:      repository.NewSignatureRepository(db),
-		Agenda:         repository.NewAgendaRepository(db), // <-- TAMBAHAN
+		Agenda:         repository.NewAgendaRepository(db),
 		Class:          repository.NewClassRepository(db),
 		Stats:          repository.NewStatisticsRepository(db),
 		Teacher:        repository.NewTeacherRepository(db),
@@ -100,6 +104,7 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Pembelajaran:   repository.NewPembelajaranRepository(db),
 		KurikulumStat:  repository.NewKurikulumStatRepository(db),
 		Schedule:       repository.NewScheduleRepository(db),
+		PSB:            repository.NewPSBRepository(db),
 		Jurusan:        repository.NewJurusanRepository(db),
 		Logistic:       repository.NewLogisticRepository(db),
 		KirItem:        repository.NewInventoryItemRepository(db),
@@ -113,5 +118,8 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Maintenance:    repository.NewMaintenanceRepository(db),
 		Expedition:     repository.NewExpeditionRepository(db),
 		Archive:        repository.NewArchiveRepository(db),
+		Dashboard:      repository.NewDashboardRepository(db),
+		Letter:         repository.NewLetterRepository(db),
+		Scholarship:    repository.NewScholarshipRepository(db),
 	}
 }

@@ -37,7 +37,7 @@ type AppServices struct {
 	Assessment        *service.AssessmentService
 	Finance           *service.FinanceService
 	Signature         *service.SignatureService
-	Agenda            *service.AgendaService // <-- TAMBAHAN
+	Agenda            *service.AgendaService
 	Correspondence    *service.CorrespondenceService
 	Disposition       *service.DispositionService
 	Class             *service.ClassService
@@ -54,6 +54,7 @@ type AppServices struct {
 	PtkStatistic      *service.PtkStatisticService
 	Kurikulum         *service.KurikulumService
 	Schedule          service.ScheduleService
+	PSB               *service.PSBService
 	Jurusan           *service.JurusanService
 	Enrollment        *service.EnrollmentService
 	Auth              *service.AuthService
@@ -79,6 +80,9 @@ type AppServices struct {
 	SKPembagian       *service.SKPembagianTugasService
 	Expedition        *service.ExpeditionService
 	Archive           *service.ArchiveService
+	Dashboard         *service.DashboardService
+	Letter            *service.LetterService
+	Scholarship       *service.ScholarshipService
 }
 
 func initEngines() *AppEngines {
@@ -98,18 +102,18 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 	prefService := service.NewPreferenceService(sqlDB)
 
 	signatureSvc := service.NewSignatureService(repos.Signature)
-	agendaSvc := service.NewAgendaService(repos.Agenda) // <-- INISIALISASI AGENDA
+	agendaSvc := service.NewAgendaService(repos.Agenda)
 
 	return &AppServices{
 		Preference:        prefService,
 		Student:           service.NewStudentService(repos.Student, repos.StudentDoc, minioClient, engines.Student, eventPub),
-		Mutation:          service.NewMutationService(repos.Mutation, repos.Student, engines.Mutation, eventPub),
+		Mutation:          service.NewMutationService(repos.Mutation, repos.Student, eventPub),
 		Registration:      service.NewRegistrationService(repos.Registration, repos.Student, eventPub),
 		Attendance:        service.NewAttendanceService(repos.Attendance, repos.Student, eventPub),
 		Assessment:        service.NewAssessmentService(repos.Assessment, repos.Student, engines.Assessment, eventPub),
 		Finance:           service.NewFinanceService(repos.Finance, repos.Student, engines.Finance, eventPub),
 		Signature:         signatureSvc,
-		Agenda:            agendaSvc, // <-- MASUKKAN KE STRUCT
+		Agenda:            agendaSvc,
 		Correspondence:    service.NewCorrespondenceService(repos.Correspondence, signatureSvc, agendaSvc, repos.School, engines.Correspondence, eventPub),
 		Expedition:        service.NewExpeditionService(repos.Expedition, repos.Correspondence, repos.School),
 		Archive:           service.NewArchiveService(repos.Archive, repos.Correspondence),
@@ -128,6 +132,7 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		PtkStatistic:      service.NewPtkStatisticService(repos.PtkStatistic),
 		Kurikulum:         service.NewKurikulumService(repos.Subject, repos.Pembelajaran, repos.KurikulumStat),
 		Schedule:          service.NewScheduleService(repos.Schedule, db),
+		PSB:               service.NewPSBService(repos.PSB),
 		Jurusan:           service.NewJurusanService(repos.Jurusan),
 		Enrollment:        service.NewEnrollmentService(db, repos.Enrollment, repos.Class, repos.Student, engines.Student, eventPub),
 		Auth:              service.NewAuthService(repos.User, repos.Academic),
@@ -151,5 +156,8 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Maintenance:       service.NewMaintenanceService(repos.Maintenance),
 		SarprasReport:     service.NewSarprasReportService(db),
 		SKPembagian:       service.NewSKPembagianTugasService(repos.SKPembagian, repos.School, minioClient),
+		Dashboard:         service.NewDashboardService(repos.Dashboard),
+		Letter:            service.NewLetterService(repos.Letter, repos.Student, minioClient, eventPub),
+		Scholarship:       service.NewScholarshipService(repos.Scholarship, repos.Student, eventPub),
 	}
 }

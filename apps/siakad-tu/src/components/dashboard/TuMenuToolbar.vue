@@ -16,7 +16,6 @@ const isPsbActive = computed(() => {
   return current?.is_psb_active || false
 })
 
-
 defineProps({ visible: { type: Boolean, default: true } })
 const emit = defineEmits(['menu-click'])
 
@@ -33,8 +32,8 @@ const itemPersuratan = [
   { title: 'Dashboard', to: '/persuratan/dashboard' },
   { title: 'Surat Keluar', to: '/persuratan/surat-keluar' },
   { title: 'Surat Masuk', to: '/persuratan/surat-masuk' },
-  { title: 'Buku Agenda', to: '/persuratan/buku-agenda' },          // <-- BARU
-  { title: 'Master Jenis Surat', to: '/persuratan/master-jenis-surat' }, // <-- BARU
+  { title: 'Buku Agenda', to: '/persuratan/buku-agenda' },
+  { title: 'Master Jenis Surat', to: '/persuratan/master-jenis-surat' },
   { title: 'Disposisi', to: '/persuratan/disposisi' },
   { title: 'Klasifikasi', to: '/persuratan/klasifikasi' }
 ]
@@ -83,15 +82,34 @@ const itemKesiswaan = [
   { title: 'Dashboard', to: '/kesiswaan/dashboard' },
   { title: 'Direktori Siswa', to: '/kesiswaan/siswa' },
   { title: 'Buku Induk Siswa', to: '/kesiswaan/buku-induk-siswa' },
-  { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
-  { title: 'Mutasi Siswa', to: '/kesiswaan/mutasi-siswa' },
-  { title: 'Surat Aktif', to: '/kesiswaan/surat-aktif-siswa' },
-  { title: 'PIP', to: 'beasiswa-pip-siswa' },
+
+  {
+    title: 'Absensi', children: [
+      { title: 'Rekap Kehadiran', to: '/kesiswaan/rekap-kehadiran' },
+      { title: 'Absensi Harian', to: '/kesiswaan/absensi-harian' },
+    ]
+  },
+
+  {
+    title: 'Mutasi Siswa', children: [
+      { title: 'Mutasi Siswa', to: '/kesiswaan/mutasi-siswa' },
+      { title: 'Pengajuan Mutasi', to: '/kesiswaan/pengajuan-mutasi' }, // <-- MENU BARU
+    ]
+  },
+  { title: 'PIP', to: '/kesiswaan/beasiswa-pip-siswa' },
   { title: 'Legalisir', to: '/kesiswaan/legalisir-alumni' },
-  { title: 'Pelaporan', to: '/kesiswaan/rekap-pelaporan' },
+  // { title: 'Pelaporan', to: '/kesiswaan/rekap-pelaporan' },
+  {
+    title: 'Pelaporan', icon: 'room_service', children: [
+      { title: 'Surat Aktif', to: '/kesiswaan/surat-aktif-siswa' },
+      { title: 'Rekap Pelaporan', to: '/sarpras/servis/jadwal' },
+      { title: 'Vendor', to: '/sarpras/servis/vendor' }
+    ]
+  },
 ]
 const itemSarpras = [
   { title: 'Dashboard', to: '/sarpras/dashboard' },
+  { title: 'Master Data', to: '/sarpras/master-data' },
   {
     title: 'Inventaris', icon: 'wallet', children: [
       { title: 'Logistik', to: '/sarpras/inventaris/logistik' },
@@ -118,23 +136,20 @@ const itemSarpras = [
       { title: 'Hapus', to: '/sarpras/mutasi/hapus' },
     ]
   },
+  {
+    title: 'Laporan', icon: 'report', children: [
+      { title: 'Buku Induk', to: '/sarpras/laporan/buku-induk' },
+      { title: 'Buku Perawatan', to: '/sarpras/laporan/buku-perawatan' },
+      { title: 'Buku Keadaan', to: '/sarpras/laporan/buku-keadaan' },
+    ]
+  },
 ]
 
-// const menus = computed(() => [
-//   { label: 'Ur. Kesiswaan', items: itemKesiswaan },
-//   { label: 'Ur. Kurikulum', items: itemKurikulum },
-//   { label: 'Ur. Kepegawaian', items: itemKepegawaian },
-//   { label: 'Ur. Sarpras', items: itemSarpras },
-//   { label: 'Ur. Hubin', items: itemHubin },
-//   { label: 'Persuratan', items: itemPersuratan },
-//   { label: 'PSB', items: itemPsb },
-//   { label: 'Pengaturan Sistem', items: itemPengaturan }
-// ])
 const menus = computed(() => {
   const list = [
     { label: 'Ur. Kesiswaan', items: itemKesiswaan },
-    { label: 'Ur. Kurikulum', items: itemKurikulum },
     { label: 'Ur. Kepegawaian', items: itemKepegawaian },
+    { label: 'Ur. Kurikulum', items: itemKurikulum },
     { label: 'Ur. Sarpras', items: itemSarpras },
     { label: 'Ur. Hubin', items: itemHubin },
     { label: 'Persuratan', items: itemPersuratan },

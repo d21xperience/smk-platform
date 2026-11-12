@@ -26,9 +26,12 @@ type Router struct {
 	statisticsService   *service.StatisticsService
 	kurikulumService    *service.KurikulumService
 	scheduleService     service.ScheduleService
+	psbService          *service.PSBService
 	jurusanService      *service.JurusanService
 	scheduleHandler     *ScheduleHandler
 	attendanceHandler   *AttendanceHandler
+	letterService       *service.LetterService
+	scholarshipService  *service.ScholarshipService
 
 	// Persuratan
 	correspondenceService *service.CorrespondenceService
@@ -82,6 +85,9 @@ type Router struct {
 	maintenanceService   *service.MaintenanceService
 	sarprasReportService *service.SarprasReportService
 
+	// Dashboard
+	dashboardService *service.DashboardService // <-- TAMBAHAN
+
 	// Storage
 	minioClient *storage.MinioClient
 }
@@ -91,6 +97,8 @@ func NewRouter(
 	mutationService *service.MutationService,
 	registrationService *service.RegistrationService,
 	attendanceService *service.AttendanceService,
+	letterService *service.LetterService,
+	scholarshipService *service.ScholarshipService,
 	assessmentService *service.AssessmentService,
 	financeService *service.FinanceService,
 	correspondenceService *service.CorrespondenceService,
@@ -100,6 +108,7 @@ func NewRouter(
 	teacherService *service.TeacherService,
 	kurikulumService *service.KurikulumService,
 	scheduleService service.ScheduleService,
+	psbService *service.PSBService,
 	jurusanService *service.JurusanService,
 	prefService *service.PreferenceService,
 	authService *service.AuthService,
@@ -140,6 +149,7 @@ func NewRouter(
 	borrowingService *service.BorrowingService,
 	maintenanceService *service.MaintenanceService,
 	sarprasReportService *service.SarprasReportService,
+	dashboardService *service.DashboardService, // <-- TAMBAHAN PARAMETER
 ) http.Handler {
 	r := &Router{
 		studentService:           studentService,
@@ -160,6 +170,7 @@ func NewRouter(
 		teacherService:           teacherService,
 		kurikulumService:         kurikulumService,
 		scheduleService:          scheduleService,
+		psbService:               psbService,
 		jurusanService:           jurusanService,
 		contextHandler:           NewContextHandler(prefService),
 		authHandler:              NewAuthHandler(authService),
@@ -167,6 +178,8 @@ func NewRouter(
 		userHandler:              NewUserHandler(userService),
 		schoolHandler:            NewSchoolHandler(schoolService),
 		attendanceHandler:        NewAttendanceHandler(attendanceService),
+		letterService:            letterService,
+		scholarshipService:       scholarshipService,
 		scheduleHandler:          scheduleHandler,
 		correspondenceHandler:    NewCorrespondenceHandler(correspondenceService),
 		dispositionHandler:       NewDispositionHandler(dispositionService),
@@ -202,6 +215,7 @@ func NewRouter(
 		borrowingService:         borrowingService,
 		maintenanceService:       maintenanceService,
 		sarprasReportService:     sarprasReportService,
+		dashboardService:         dashboardService, // <-- TAMBAHAN ASSIGNMENT
 	}
 
 	mux := http.NewServeMux()
@@ -210,8 +224,11 @@ func NewRouter(
 	r.registerPtkRoutes(mux)
 	r.registerStudentRoutes(mux)
 	r.registerPSBRoutes(mux)
+	r.registerMutationRoutes(mux)
 	r.registerAcademicRoutes(mux)
-
+	r.registerAttendanceRoutes(mux)
+	r.registerLetterRoutes(mux)
+	r.registerScholarshipRoutes(mux)
 	// ===== RUTE PERSURATAN =====
 	r.registerCorrespondenceRoutes(mux)
 	r.registerArchiveRoutes(mux)
@@ -232,14 +249,18 @@ func NewRouter(
 	r.registerKehadiranRoutes(mux)
 
 	// ===== RUTE SARPRAS (12 MODUL) =====
-	r.registerSarprasRoutes(mux)      // Logistik, KIR, Master Data, Mutate, History, Condition Book
-	r.registerProcurementRoutes(mux)  // Pengajuan
-	r.registerGoodsReceiptRoutes(mux) // Penerimaan (BAST)
-	r.registerDocumentRoutes(mux)     // Dokumen Inventaris
-	r.registerDisposalRoutes(mux)     // Penghapusan
-	r.registerBorrowingRoutes(mux)    // Peminjaman
-	r.registerMaintenanceRoutes(mux)  // Perawatan & Tiket
-	r.registerReportRoutes(mux)       // Dashboard & Laporan
+	r.registerSarprasRoutes(mux)
+	r.registerProcurementRoutes(mux)
+	r.registerGoodsReceiptRoutes(mux)
+	r.registerDocumentRoutes(mux)
+	r.registerDisposalRoutes(mux)
+	r.registerBorrowingRoutes(mux)
+	r.registerMaintenanceRoutes(mux)
+	r.registerReportRoutes(mux)
+
+	// ===== RUTE DASHBOARD =====
+	r.registerDashboardRoutes(mux) // <-- TAMBAHAN
+
 	// ===== RUTE STATIC FILE (EXPORT EXCEL/PDF) =====
 	fs := http.FileServer(http.Dir("./storage"))
 	mux.Handle("/storage/", http.StripPrefix("/storage/", fs))
