@@ -1,0 +1,42 @@
+-- Seed: 3 Sesi Absensi untuk kelas X TKJ 1 (3 hari terakhir)
+-- Asumsi class_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' (X TKJ 1)
+
+INSERT INTO "attendance_sessions" (
+    "id", "school_id", "academic_period_id", "class_id",
+    "session_date", "start_time", "end_time", "status", "created_at", "updated_at"
+) VALUES
+('c1111111-1111-1111-1111-111111111111', 
+ '11111111-1111-1111-1111-111111111111', '20261', 
+ 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+ CURRENT_DATE - INTERVAL '2 days', '07:00', '08:30', 'COMPLETED', NOW(), NOW()),
+('c2222222-2222-2222-2222-222222222222', 
+ '11111111-1111-1111-1111-111111111111', '20261', 
+ 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+ CURRENT_DATE - INTERVAL '1 day', '07:00', '08:30', 'COMPLETED', NOW(), NOW()),
+('c3333333-3333-3333-3333-333333333333', 
+ '11111111-1111-1111-1111-111111111111', '20261', 
+ 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+ CURRENT_DATE, '07:00', '08:30', 'OPEN', NOW(), NOW());
+
+-- Seed: Record Absensi untuk 5 siswa di 3 sesi
+INSERT INTO "attendance_records" ("id", "session_id", "student_id", "status", "note", "created_at", "updated_at") VALUES
+-- Sesi 1: Semua HADIR
+('d1111111-0000-0000-0000-000000000001', 'c1111111-1111-1111-1111-111111111111', 'fa319cb5-eb56-44ee-90e0-eb4e743e54ba', 'HADIR', '', NOW(), NOW()),
+('d1111111-0000-0000-0000-000000000002', 'c1111111-1111-1111-1111-111111111111', '9830ce3f-cd87-4b10-aa0e-a3fb89d16317', 'HADIR', '', NOW(), NOW()),
+('d1111111-0000-0000-0000-000000000003', 'c1111111-1111-1111-1111-111111111111', '7308aff7-3b22-4d2f-8648-dece2107e5fd', 'HADIR', '', NOW(), NOW()),
+('d1111111-0000-0000-0000-000000000004', 'c1111111-1111-1111-1111-111111111111', '15c822ae-c9b5-4fbf-bba0-6a85088555eb', 'HADIR', '', NOW(), NOW()),
+('d1111111-0000-0000-0000-000000000005', 'c1111111-1111-1111-1111-111111111111', 'cbbbacfb-93fe-4841-a1b7-cbbab2d0ed8f', 'HADIR', '', NOW(), NOW()),
+
+-- Sesi 2: Baldhan SAKIT, Cahya IZIN, lainnya HADIR
+('d2222222-0000-0000-0000-000000000001', 'c2222222-2222-2222-2222-222222222222', 'fa319cb5-eb56-44ee-90e0-eb4e743e54ba', 'SAKIT', 'Demam', NOW(), NOW()),
+('d2222222-0000-0000-0000-000000000002', 'c2222222-2222-2222-2222-222222222222', '9830ce3f-cd87-4b10-aa0e-a3fb89d16317', 'HADIR', '', NOW(), NOW()),
+('d2222222-0000-0000-0000-000000000003', 'c2222222-2222-2222-2222-222222222222', '7308aff7-3b22-4d2f-8648-dece2107e5fd', 'HADIR', '', NOW(), NOW()),
+('d2222222-0000-0000-0000-000000000004', 'c2222222-2222-2222-2222-222222222222', '15c822ae-c9b5-4fbf-bba0-6a85088555eb', 'IZIN', 'Acara keluarga', NOW(), NOW()),
+('d2222222-0000-0000-0000-000000000005', 'c2222222-2222-2222-2222-222222222222', 'cbbbacfb-93fe-4841-a1b7-cbbab2d0ed8f', 'HADIR', '', NOW(), NOW()),
+
+-- Sesi 3: Sesi hari ini yang masih OPEN, siap diinput ulang
+('d3333333-0000-0000-0000-000000000001', 'c3333333-3333-3333-3333-333333333333', 'fa319cb5-eb56-44ee-90e0-eb4e743e54ba', 'HADIR', '', NOW(), NOW()),
+('d3333333-0000-0000-0000-000000000002', 'c3333333-3333-3333-3333-333333333333', '9830ce3f-cd87-4b10-aa0e-a3fb89d16317', 'HADIR', '', NOW(), NOW()),
+('d3333333-0000-0000-0000-000000000003', 'c3333333-3333-3333-3333-333333333333', '7308aff7-3b22-4d2f-8648-dece2107e5fd', 'HADIR', '', NOW(), NOW()),
+('d3333333-0000-0000-0000-000000000004', 'c3333333-3333-3333-3333-333333333333', '15c822ae-c9b5-4fbf-bba0-6a85088555eb', 'HADIR', '', NOW(), NOW()),
+('d3333333-0000-0000-0000-000000000005', 'c3333333-3333-3333-3333-333333333333', 'cbbbacfb-93fe-4841-a1b7-cbbab2d0ed8f', 'HADIR', '', NOW(), NOW());

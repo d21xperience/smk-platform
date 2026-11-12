@@ -4,15 +4,35 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"sekolah-platform/services/tu-core/internal/domain/mutation/models"
-	"sekolah-platform/services/tu-core/internal/domain/mutation/valueobjects"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrMutationNotFound = errors.New("mutation not found")
+
+type StudentMutation struct {
+	ID               string
+	SchoolID         string
+	AcademicPeriodID string
+	StudentID        *string
+	MutationType     string
+	NIS              string
+	NISN             string
+	Nama             string
+	JenisKelamin     string
+	TempatLahir      string
+	TanggalLahir     *time.Time
+	AsalSekolah      string
+	TujuanSekolah    string
+	Alasan           string
+	DokumenURL       string
+	Status           string
+	Catatan          string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
 
 type MutationFilter struct {
 	SchoolID         string
@@ -24,10 +44,11 @@ type MutationFilter struct {
 }
 
 type MutationRepository interface {
-	Create(ctx context.Context, m *models.Mutation) error
-	GetByID(ctx context.Context, schoolID, academicPeriodID, mutationID string) (*models.Mutation, error)
-	List(ctx context.Context, filter MutationFilter) ([]models.Mutation, int, error)
-	Update(ctx context.Context, m *models.Mutation) error
+	Create(ctx context.Context, m *StudentMutation) error
+	GetByID(ctx context.Context, schoolID, academicPeriodID, mutationID string) (*StudentMutation, error)
+	List(ctx context.Context, filter MutationFilter) ([]StudentMutation, int, error)
+	UpdateStatus(ctx context.Context, mutationID, status, catatan string) error
+	GetHistoryByStudent(ctx context.Context, schoolID, studentID string) ([]StudentMutation, error)
 }
 
 type pgxMutationRepository struct {
@@ -38,18 +59,18 @@ func NewMutationRepository(db *pgxpool.Pool) MutationRepository {
 	return &pgxMutationRepository{db: db}
 }
 
-func (r *pgxMutationRepository) Create(ctx context.Context, m *models.Mutation) error {
+func (r *pgxMutationRepository) Create(ctx context.Context, m *StudentMutation) error {
 	query := `
-		INSERT INTO mutations (
+		INSERT INTO student_mutations (
 			id, school_id, academic_period_id, student_id, mutation_type,
-			calon_nama, calon_nisn, asal_sekolah, tujuan_sekolah, alasan,
-			dokumen_url, status, catatan_verifikasi, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			nis, nisn, nama, jenis_kelamin, tempat_lahir, tanggal_lahir,
+			asal_sekolah, tujuan_sekolah, alasan, dokumen_url, status, catatan, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 	`
 	_, err := r.db.Exec(ctx, query,
-		m.ID, m.SchoolID, m.AcademicPeriodID, m.StudentID, m.MutationType.String(),
-		m.CalonNama, m.CalonNISN, m.AsalSekolah, m.TujuanSekolah, m.Alasan,
-		m.DokumenURL, m.Status.String(), m.CatatanVerifikasi, m.CreatedAt, m.UpdatedAt,
+		m.ID, m.SchoolID, m.AcademicPeriodID, m.StudentID, m.MutationType,
+		m.NIS, m.NISN, m.Nama, m.JenisKelamin, m.TempatLahir, m.TanggalLahir,
+		m.AsalSekolah, m.TujuanSekolah, m.Alasan, m.DokumenURL, m.Status, m.Catatan, m.CreatedAt, m.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
@@ -57,22 +78,21 @@ func (r *pgxMutationRepository) Create(ctx context.Context, m *models.Mutation) 
 	return nil
 }
 
-func (r *pgxMutationRepository) GetByID(ctx context.Context, schoolID, academicPeriodID, mutationID string) (*models.Mutation, error) {
+func (r *pgxMutationRepository) GetByID(ctx context.Context, schoolID, academicPeriodID, mutationID string) (*StudentMutation, error) {
 	query := `
 		SELECT id, school_id, academic_period_id, student_id, mutation_type,
-		       calon_nama, calon_nisn, asal_sekolah, tujuan_sekolah, alasan,
-		       dokumen_url, status, catatan_verifikasi, created_at, updated_at
-		FROM mutations
+		       COALESCE(nis, ''), COALESCE(nisn, ''), nama, COALESCE(jenis_kelamin, ''), 
+		       COALESCE(tempat_lahir, ''), tanggal_lahir, COALESCE(asal_sekolah, ''), 
+		       COALESCE(tujuan_sekolah, ''), COALESCE(alasan, ''), COALESCE(dokumen_url, ''), 
+		       status, COALESCE(catatan, ''), created_at, updated_at
+		FROM student_mutations
 		WHERE id = $1 AND school_id = $2 AND academic_period_id = $3
 	`
-
-	var m models.Mutation
-	var mutationTypeStr, statusStr string
-
+	var m StudentMutation
 	err := r.db.QueryRow(ctx, query, mutationID, schoolID, academicPeriodID).Scan(
-		&m.ID, &m.SchoolID, &m.AcademicPeriodID, &m.StudentID, &mutationTypeStr,
-		&m.CalonNama, &m.CalonNISN, &m.AsalSekolah, &m.TujuanSekolah, &m.Alasan,
-		&m.DokumenURL, &statusStr, &m.CatatanVerifikasi, &m.CreatedAt, &m.UpdatedAt,
+		&m.ID, &m.SchoolID, &m.AcademicPeriodID, &m.StudentID, &m.MutationType,
+		&m.NIS, &m.NISN, &m.Nama, &m.JenisKelamin, &m.TempatLahir, &m.TanggalLahir,
+		&m.AsalSekolah, &m.TujuanSekolah, &m.Alasan, &m.DokumenURL, &m.Status, &m.Catatan, &m.CreatedAt, &m.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -80,16 +100,12 @@ func (r *pgxMutationRepository) GetByID(ctx context.Context, schoolID, academicP
 		}
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
-
-	m.MutationType, _ = valueobjects.NewMutationType(mutationTypeStr)
-	m.Status, _ = valueobjects.NewMutationStatus(statusStr)
-
 	return &m, nil
 }
 
-func (r *pgxMutationRepository) List(ctx context.Context, filter MutationFilter) ([]models.Mutation, int, error) {
+func (r *pgxMutationRepository) List(ctx context.Context, filter MutationFilter) ([]StudentMutation, int, error) {
 	whereClause := "WHERE school_id = $1 AND academic_period_id = $2"
-	args := []interface{}{filter.SchoolID, filter.AcademicPeriodID}
+	args := []any{filter.SchoolID, filter.AcademicPeriodID}
 	argIndex := 3
 
 	if filter.Status != "" {
@@ -97,31 +113,28 @@ func (r *pgxMutationRepository) List(ctx context.Context, filter MutationFilter)
 		args = append(args, filter.Status)
 		argIndex++
 	}
-
 	if filter.Type != "" {
 		whereClause += fmt.Sprintf(" AND mutation_type = $%d", argIndex)
 		args = append(args, filter.Type)
 		argIndex++
 	}
 
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM mutations %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM student_mutations %s", whereClause)
 	var total int
 	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 
-	if filter.Limit <= 0 {
-		filter.Limit = 20
-	}
-	if filter.Offset < 0 {
-		filter.Offset = 0
-	}
+	if filter.Limit <= 0 { filter.Limit = 20 }
+	if filter.Offset < 0 { filter.Offset = 0 }
 
 	dataQuery := fmt.Sprintf(`
 		SELECT id, school_id, academic_period_id, student_id, mutation_type,
-		       calon_nama, calon_nisn, asal_sekolah, tujuan_sekolah, alasan,
-		       dokumen_url, status, catatan_verifikasi, created_at, updated_at
-		FROM mutations %s
+		       COALESCE(nis, ''), COALESCE(nisn, ''), nama, COALESCE(jenis_kelamin, ''), 
+		       COALESCE(tempat_lahir, ''), tanggal_lahir, COALESCE(asal_sekolah, ''), 
+		       COALESCE(tujuan_sekolah, ''), COALESCE(alasan, ''), COALESCE(dokumen_url, ''), 
+		       status, COALESCE(catatan, ''), created_at, updated_at
+		FROM student_mutations %s
 		ORDER BY created_at DESC
 		LIMIT $%d OFFSET $%d
 	`, whereClause, argIndex, argIndex+1)
@@ -133,46 +146,24 @@ func (r *pgxMutationRepository) List(ctx context.Context, filter MutationFilter)
 	}
 	defer rows.Close()
 
-	var mutations []models.Mutation
+	var mutations []StudentMutation
 	for rows.Next() {
-		var m models.Mutation
-		var mutationTypeStr, statusStr string
-
+		var m StudentMutation
 		if err := rows.Scan(
-			&m.ID, &m.SchoolID, &m.AcademicPeriodID, &m.StudentID, &mutationTypeStr,
-			&m.CalonNama, &m.CalonNISN, &m.AsalSekolah, &m.TujuanSekolah, &m.Alasan,
-			&m.DokumenURL, &statusStr, &m.CatatanVerifikasi, &m.CreatedAt, &m.UpdatedAt,
+			&m.ID, &m.SchoolID, &m.AcademicPeriodID, &m.StudentID, &m.MutationType,
+			&m.NIS, &m.NISN, &m.Nama, &m.JenisKelamin, &m.TempatLahir, &m.TanggalLahir,
+			&m.AsalSekolah, &m.TujuanSekolah, &m.Alasan, &m.DokumenURL, &m.Status, &m.Catatan, &m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 		}
-
-		m.MutationType, _ = valueobjects.NewMutationType(mutationTypeStr)
-		m.Status, _ = valueobjects.NewMutationStatus(statusStr)
-
 		mutations = append(mutations, m)
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("%w: %v", ErrDatabaseError, err)
-	}
-
-	return mutations, total, nil
+	return mutations, total, rows.Err()
 }
 
-func (r *pgxMutationRepository) Update(ctx context.Context, m *models.Mutation) error {
-	query := `
-		UPDATE mutations
-		SET student_id = $1, mutation_type = $2, calon_nama = $3, calon_nisn = $4,
-		    asal_sekolah = $5, tujuan_sekolah = $6, alasan = $7, dokumen_url = $8,
-		    status = $9, catatan_verifikasi = $10, updated_at = $11
-		WHERE id = $12 AND school_id = $13 AND academic_period_id = $14
-	`
-	result, err := r.db.Exec(ctx, query,
-		m.StudentID, m.MutationType.String(), m.CalonNama, m.CalonNISN,
-		m.AsalSekolah, m.TujuanSekolah, m.Alasan, m.DokumenURL,
-		m.Status.String(), m.CatatanVerifikasi, m.UpdatedAt,
-		m.ID, m.SchoolID, m.AcademicPeriodID,
-	)
+func (r *pgxMutationRepository) UpdateStatus(ctx context.Context, mutationID, status, catatan string) error {
+	query := `UPDATE student_mutations SET status = $1, catatan = $2, updated_at = NOW() WHERE id = $3`
+	result, err := r.db.Exec(ctx, query, status, catatan, mutationID)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
@@ -180,4 +171,36 @@ func (r *pgxMutationRepository) Update(ctx context.Context, m *models.Mutation) 
 		return ErrMutationNotFound
 	}
 	return nil
+}
+
+func (r *pgxMutationRepository) GetHistoryByStudent(ctx context.Context, schoolID, studentID string) ([]StudentMutation, error) {
+	query := `
+		SELECT id, school_id, academic_period_id, student_id, mutation_type,
+		       COALESCE(nis, ''), COALESCE(nisn, ''), nama, COALESCE(jenis_kelamin, ''), 
+		       COALESCE(tempat_lahir, ''), tanggal_lahir, COALESCE(asal_sekolah, ''), 
+		       COALESCE(tujuan_sekolah, ''), COALESCE(alasan, ''), COALESCE(dokumen_url, ''), 
+		       status, COALESCE(catatan, ''), created_at, updated_at
+		FROM student_mutations
+		WHERE school_id = $1 AND student_id = $2
+		ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(ctx, query, schoolID, studentID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+	defer rows.Close()
+
+	var mutations []StudentMutation
+	for rows.Next() {
+		var m StudentMutation
+		if err := rows.Scan(
+			&m.ID, &m.SchoolID, &m.AcademicPeriodID, &m.StudentID, &m.MutationType,
+			&m.NIS, &m.NISN, &m.Nama, &m.JenisKelamin, &m.TempatLahir, &m.TanggalLahir,
+			&m.AsalSekolah, &m.TujuanSekolah, &m.Alasan, &m.DokumenURL, &m.Status, &m.Catatan, &m.CreatedAt, &m.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
+		}
+		mutations = append(mutations, m)
+	}
+	return mutations, rows.Err()
 }

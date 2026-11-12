@@ -10,20 +10,20 @@ import (
 )
 
 type LaporanBerkala struct {
-	ID             string          `json:"id"`
-	SchoolID       string          `json:"schoolId"`
-	Tahun          int             `json:"tahun"`
-	Triwulan       int             `json:"triwulan"`
-	TanggalMulai   time.Time       `json:"tanggalMulai"`
-	TanggalSelesai time.Time       `json:"tanggalSelesai"`
-	Status         string          `json:"status"`
-	DataJSON       json.RawMessage `json:"dataJson"`
-	PDFUrl         string          `json:"pdfUrl"`
-	ExcelDinasURL  string          `json:"excelDinasUrl"`
-	ExcelYayasanURL string         `json:"excelYayasanUrl"`
-	RingkasanURL   string          `json:"ringkasanUrl"`
-	SuratURL       string          `json:"suratUrl"`
-	CreatedAt      time.Time       `json:"createdAt"`
+	ID              string          `json:"id"`
+	SchoolID        string          `json:"schoolId"`
+	Tahun           int             `json:"tahun"`
+	Triwulan        int             `json:"triwulan"`
+	TanggalMulai    time.Time       `json:"tanggalMulai"`
+	TanggalSelesai  time.Time       `json:"tanggalSelesai"`
+	Status          string          `json:"status"`
+	DataJSON        json.RawMessage `json:"dataJson"`
+	PDFUrl          string          `json:"pdfUrl"`
+	ExcelDinasURL   string          `json:"excelDinasUrl"`
+	ExcelYayasanURL string          `json:"excelYayasanUrl"`
+	RingkasanURL    string          `json:"ringkasanUrl"`
+	SuratURL        string          `json:"suratUrl"`
+	CreatedAt       time.Time       `json:"createdAt"`
 }
 
 type LaporanBerkalaRepository interface {
@@ -90,15 +90,16 @@ func (r *pgxLaporanBerkalaRepository) List(ctx context.Context, schoolID string)
 
 func (r *pgxLaporanBerkalaRepository) UpdateStatus(ctx context.Context, id, status, userID, notes string) error {
 	query := `UPDATE laporan_berkala SET status = $1, updated_at = NOW() WHERE id = $2`
-	if status == "REVIEWED" {
+	switch status {
+	case "REVIEWED":
 		query = `UPDATE laporan_berkala SET status = $1, catatan_ktu = $3, reviewed_by = $4, updated_at = NOW() WHERE id = $2`
 		_, err := r.db.Exec(ctx, query, status, id, notes, userID)
 		return err
-	} else if status == "APPROVED" {
+	case "APPROVED":
 		query = `UPDATE laporan_berkala SET status = $1, catatan_approve = $3, approved_by = $4, updated_at = NOW() WHERE id = $2`
 		_, err := r.db.Exec(ctx, query, status, id, notes, userID)
 		return err
-	} else if status == "SENT" {
+	case "SENT":
 		query = `UPDATE laporan_berkala SET status = $1, sent_by = $4, sent_at = NOW(), updated_at = NOW() WHERE id = $2`
 		_, err := r.db.Exec(ctx, query, status, id, notes, userID)
 		return err
@@ -109,7 +110,7 @@ func (r *pgxLaporanBerkalaRepository) UpdateStatus(ctx context.Context, id, stat
 
 func (r *pgxLaporanBerkalaRepository) UpdateDocuments(ctx context.Context, id string, pdfURL, excelDinas, excelYayasan, ringkasan, surat string) error {
 	query := `
-		UPDATE laporan_berkala SET 
+		UPDATE laporan_berkala SET
 			pdf_url = COALESCE(NULLIF($1, ''), pdf_url),
 			excel_dinas_url = COALESCE(NULLIF($2, ''), excel_dinas_url),
 			excel_yayasan_url = COALESCE(NULLIF($3, ''), excel_yayasan_url),

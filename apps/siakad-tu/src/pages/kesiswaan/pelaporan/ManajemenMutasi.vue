@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md bg-grey-2">
-    <!-- Header Halaman -->
+    <!-- Header -->
     <div class="row items-center justify-between q-mb-md">
       <div>
         <h1 class="text-h5 text-weight-bold q-my-none text-primary">Manajemen Mutasi Siswa</h1>
@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <!-- Tab Filter Alur Mutasi -->
+    <!-- Tabs -->
     <q-card class="shadow-1 q-mb-md">
       <q-tabs v-model="activeTab" dense class="text-grey" active-color="primary" indicator-color="primary" align="left"
         narrow-indicator>
@@ -21,27 +21,32 @@
       </q-tabs>
     </q-card>
 
-    <!-- Tabel Riwayat Mutasi -->
+    <!-- Tabel -->
     <q-card class="shadow-1">
       <q-card-section class="q-pa-none">
         <q-table flat :rows="activeTab === 'masuk' ? riwayatMasuk : riwayatKeluar"
-          :columns="activeTab === 'masuk' ? kolomMasuk : kolomKeluar" row-key="id" :pagination="{ rowsPerPage: 10 }">
-          <!-- Kustomisasi Kolom Berkas / Status -->
-          <template v-slot:body-cell-berkas="props">
+          :columns="activeTab === 'masuk' ? kolomMasuk : kolomKeluar" row-key="id" :pagination="{ rowsPerPage: 10 }"
+          :loading="isLoading">
+
+          <template v-slot:body-cell-status="props">
             <q-td :props="props" class="text-center">
-              <q-chip :color="props.row.berkasLengkap ? 'green-1' : 'amber-1'"
-                :text-color="props.row.berkasLengkap ? 'green-9' : 'amber-9'" size="sm" dense
-                :icon="props.row.berkasLengkap ? 'check_circle' : 'pending'">
-                {{ props.row.berkasLengkap ? 'Lengkap' : 'Belum Lengkap' }}
-              </q-chip>
+              <q-badge :color="getStatusColor(props.row.status)" :label="props.row.status" />
             </q-td>
           </template>
 
-          <!-- Kustomisasi Kolom Aksi Cetak Dokumen -->
           <template v-slot:body-cell-aksi="props">
-            <q-td :props="props" class="text-center">
+            <q-td :props="props" class="text-center q-gutter-xs">
+              <!-- Tombol Approve/Reject hanya untuk PENDING -->
+              <template v-if="props.row.status === 'PENDING'">
+                <q-btn size="sm" color="green-8" icon="check" round flat @click="konfirmasiApprove(props.row)">
+                  <q-tooltip>Setujui Mutasi</q-tooltip>
+                </q-btn>
+                <q-btn size="sm" color="red-8" icon="close" round flat @click="konfirmasiReject(props.row)">
+                  <q-tooltip>Tolak Mutasi</q-tooltip>
+                </q-btn>
+              </template>
               <q-btn size="sm" color="primary" icon="print" round flat @click="cetakSuratMutasi(props.row)">
-                <q-tooltip>Cetak Surat Keterangan / Arsip</q-tooltip>
+                <q-tooltip>Cetak Surat</q-tooltip>
               </q-btn>
             </q-td>
           </template>
@@ -49,7 +54,7 @@
       </q-card-section>
     </q-card>
 
-    <!-- DIALOG FORM INPUT MUTASI BARU -->
+    <!-- Dialog Form -->
     <q-dialog v-model="dialogOpen" persistent>
       <q-card style="min-width: 500px; max-width: 600px;">
         <q-card-section class="row items-center q-pb-none">
@@ -65,7 +70,6 @@
         <q-card-section class="q-scroll q-py-md" style="max-height: 70vh;">
           <q-form @submit.prevent="simpanMutasi" class="row q-col-gutter-sm">
 
-            <!-- Jika MUTASI MASUK (Input Data Baru) -->
             <template v-if="activeTab === 'masuk'">
               <div class="col-12"><q-input v-model="form.nama" label="Nama Lengkap Siswa" outlined dense required />
               </div>
@@ -75,35 +79,29 @@
                 <q-select v-model="form.jurusan" :options="opsiJurusan" label="Pilihan Jurusan SMK" outlined dense
                   required />
               </div>
-              <div class="col-12"><q-input v-model="form.sekolahAsal" label="Sekolah Asal (SMK/SMA Asal)" outlined dense
+              <div class="col-12"><q-input v-model="form.asalSekolah" label="Sekolah Asal (SMK/SMA Asal)" outlined dense
                   required /></div>
-              <div class="col-12"><q-input v-model="form.noSuratRekomendasi" label="No. Surat Rekomendasi Dinas"
-                  outlined dense /></div>
-              <div class="col-12">
-                <q-checkbox v-model="form.berkasLengkap"
-                  label="Seluruh berkas fisik/rapor mutasi sudah diverifikasi lengkap" color="green" />
-              </div>
+              <div class="col-12"><q-input v-model="form.alasan" label="Alasan Mutasi" outlined dense /></div>
             </template>
 
-            <!-- Jika MUTASI KELUAR (Pilih dari data yang sudah ada) -->
             <template v-else>
               <div class="col-12">
-                <q-input v-model="form.nama" label="Nama Siswa Aktif" placeholder="Ketik nama atau NISN siswa..."
-                  outlined dense required />
-                <p class="text-caption text-grey-6 q-mt-xs q-mb-none">*Sistem otomatis menonaktifkan status di Dapodik
-                  setelah disimpan.</p>
+                <q-input v-model="form.nama" label="Nama Siswa Aktif" placeholder="Ketik nama siswa..." outlined dense
+                  required />
+                <p class="text-caption text-grey-6 q-mt-xs q-mb-none">*Sistem otomatis menonaktifkan status siswa
+                  setelah
+                  disetujui.</p>
               </div>
-              <div class="col-12"><q-input v-model="form.sekolahTujuan" label="Sekolah Tujuan (Tempat Pindah)" outlined
+              <div class="col-12"><q-input v-model="form.tujuanSekolah" label="Sekolah Tujuan (Tempat Pindah)" outlined
                   dense required /></div>
               <div class="col-12"><q-input v-model="form.alasan" label="Alasan Pindah / Mutasi Keluar" outlined dense
                   type="textarea" rows="2" required /></div>
             </template>
 
-            <!-- Tombol Submit -->
             <div class="col-12 flex justify-end q-mt-md">
               <q-btn label="Batal" color="grey" flat v-close-popup class="q-mr-sm" />
               <q-btn :label="activeTab === 'masuk' ? 'Simpan & Daftarkan' : 'Proses Keluar'"
-                :color="activeTab === 'masuk' ? 'green-8' : 'red-9'" type="submit" />
+                :color="activeTab === 'masuk' ? 'green-8' : 'red-9'" type="submit" :loading="isLoading" />
             </div>
           </q-form>
         </q-card-section>
@@ -113,100 +111,121 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { useMutasiStore } from '@/stores/kesiswaan/mutasiStore'
 
 const $q = useQuasar()
+const mutasiStore = useMutasiStore()
 
-// State Navigasi Tab Aktif ('masuk' atau 'keluar')
 const activeTab = ref('masuk')
-
-// State Mengontrol Dialog Form
 const dialogOpen = ref(false)
 
-// Struktur Reactive Form Object
 const form = ref({
-  nama: '', nisn: '', jurusan: '', sekolahAsal: '', sekolahTujuan: '',
-  noSuratRekomendasi: '', alasan: '', berkasLengkap: false
+  nama: '', nisn: '', jurusan: '', asalSekolah: '', tujuanSekolah: '',
+  alasan: '',
 })
 
 const opsiJurusan = ['RPL', 'TKRO', 'AKL']
 
-// 1. Defenisi Kolom & Data Mock MUTASI MASUK
+const riwayatMasuk = computed(() => mutasiStore.riwayatMasuk)
+const riwayatKeluar = computed(() => mutasiStore.riwayatKeluar)
+const isLoading = computed(() => mutasiStore.isLoading)
+
 const kolomMasuk = [
-  { name: 'tgl', align: 'left', label: 'Tanggal Masuk', field: 'tgl', sortable: true },
+  { name: 'tgl', align: 'left', label: 'Tanggal Masuk', field: (r) => formatDate(r.createdAt), sortable: true },
   { name: 'nama', align: 'left', label: 'Nama Siswa', field: 'nama' },
   { name: 'nisn', align: 'left', label: 'NISN', field: 'nisn' },
-  { name: 'jurusan', align: 'center', label: 'Jurusan', field: 'jurusan' },
-  { name: 'sekolahAsal', align: 'left', label: 'Sekolah Asal', field: 'sekolahAsal' },
-  { name: 'berkas', align: 'center', label: 'Status Berkas' },
-  { name: 'aksi', align: 'center', label: 'Cetak' }
+  { name: 'asalSekolah', align: 'left', label: 'Sekolah Asal', field: 'asalSekolah' },
+  { name: 'status', align: 'center', label: 'Status' },
+  { name: 'aksi', align: 'center', label: 'Aksi' }
 ]
 
-const riwayatMasuk = ref([
-  { id: 101, tgl: '10/02/2026', nama: 'Rian Hidayat', nisn: '0078811223', jurusan: 'RPL', sekolahAsal: 'SMKN 2 Bandung', berkasLengkap: true },
-  { id: 102, tgl: '22/01/2026', nama: 'Siti Sarah', nisn: '0075544332', jurusan: 'AKL', sekolahAsal: 'SMA Pasundan 1', berkasLengkap: false }
-])
-
-// 2. Defenisi Kolom & Data Mock MUTASI KELUAR
 const kolomKeluar = [
-  { name: 'tgl', align: 'left', label: 'Tanggal Keluar', field: 'tgl', sortable: true },
+  { name: 'tgl', align: 'left', label: 'Tanggal Keluar', field: (r) => formatDate(r.createdAt), sortable: true },
   { name: 'nama', align: 'left', label: 'Nama Siswa', field: 'nama' },
-  { name: 'kelasAsal', align: 'center', label: 'Kelas Asal', field: 'kelasAsal' },
-  { name: 'sekolahTujuan', align: 'left', label: 'Sekolah Tujuan', field: 'sekolahTujuan' },
+  { name: 'tujuanSekolah', align: 'left', label: 'Sekolah Tujuan', field: 'tujuanSekolah' },
   { name: 'alasan', align: 'left', label: 'Alasan Mutasi', field: 'alasan' },
-  { name: 'aksi', align: 'center', label: 'Cetak' }
+  { name: 'status', align: 'center', label: 'Status' },
+  { name: 'aksi', align: 'center', label: 'Aksi' }
 ]
 
-const riwayatKeluar = ref([
-  { id: 201, tgl: '05/02/2026', nama: 'Fajar Ramadhan', kelasAsal: 'XII TKRO 1', sekolahTujuan: 'SMKN 1 Sumedang', alasan: 'Ikut Domisili Orang Tua' }
-])
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
-// Membuka Dialog dan Mereset Isi Form
-const openMutasiDialog = () => {
-  form.value = {
-    nama: '', nisn: '', jurusan: '', sekolahAsal: '', sekolahTujuan: '',
-    noSuratRekomendasi: '', alasan: '', berkasLengkap: false
-  }
+function getStatusColor(status) {
+  const colors = { PENDING: 'orange', APPROVED: 'green', REJECTED: 'red' }
+  return colors[status] || 'grey'
+}
+
+function openMutasiDialog() {
+  form.value = { nama: '', nisn: '', jurusan: '', asalSekolah: '', tujuanSekolah: '', alasan: '' }
   dialogOpen.value = true
 }
 
-// Menangani Submit Form Simpan Data Mutasi
-const simpanMutasi = () => {
-  const tglHariIni = new Date().toLocaleDateString('id-ID')
-
-  if (activeTab.value === 'masuk') {
-    riwayatMasuk.value.unshift({
-      id: Date.now(),
-      tgl: tglHariIni,
-      nama: form.value.nama,
-      nisn: form.value.nisn,
-      jurusan: form.value.jurusan,
-      sekolahAsal: form.value.sekolahAsal,
-      berkasLengkap: form.value.berkasLengkap
-    })
-    $q.notify({ color: 'green-8', message: 'Siswa masuk berhasil terdata di buku mutasi!', icon: 'check' })
-  } else {
-    riwayatKeluar.value.unshift({
-      id: Date.now(),
-      tgl: tglHariIni,
-      nama: form.value.nama,
-      kelasAsal: 'Deteksi Otomatis System',
-      sekolahTujuan: form.value.sekolahTujuan,
-      alasan: form.value.alasan
-    })
-    $q.notify({ color: 'red-9', message: 'Siswa berhasil dimutasikan keluar sistem.', icon: 'logout' })
+async function simpanMutasi() {
+  const payload = {
+    mutationType: activeTab.value === 'masuk' ? 'MASUK' : 'KELUAR',
+    nama: form.value.nama,
+    nisn: form.value.nisn,
+    asalSekolah: form.value.asalSekolah,
+    tujuanSekolah: form.value.tujuanSekolah,
+    alasan: form.value.alasan,
   }
 
-  dialogOpen.value = false
+  const success = await mutasiStore.createMutation(payload)
+  if (success) {
+    $q.notify({ color: 'positive', message: 'Data mutasi berhasil disimpan!', icon: 'check' })
+    dialogOpen.value = false
+  } else {
+    $q.notify({ color: 'negative', message: mutasiStore.error?.message || 'Gagal menyimpan mutasi', icon: 'error' })
+  }
 }
 
-// Fungsi Cetak Berkas Surat Keterangan Pindah
-const cetakSuratMutasi = (row) => {
-  $q.notify({
-    color: 'primary',
-    message: `Mencetak dokumen mutasi untuk: ${row.nama}`,
-    icon: 'print'
+function konfirmasiApprove(row) {
+  $q.dialog({
+    title: 'Konfirmasi Setujui Mutasi',
+    message: `Setujui mutasi untuk ${row.nama}? Siswa akan ${row.mutationType === 'KELUAR' ? 'dinonaktifkan dari sekolah' : 'diaktifkan'}.`,
+    cancel: true,
+    persistent: true,
+  }).onOk(async () => {
+    const success = await mutasiStore.approveMutation(row.id, 'Disetujui admin')
+    if (success) {
+      $q.notify({ color: 'green-9', message: 'Mutasi disetujui.', icon: 'check' })
+    } else {
+      $q.notify({ color: 'negative', message: mutasiStore.error?.message || 'Gagal', icon: 'error' })
+    }
   })
 }
+
+function konfirmasiReject(row) {
+  $q.dialog({
+    title: 'Tolak Mutasi',
+    message: 'Masukkan alasan penolakan:',
+    prompt: { model: '', type: 'text' },
+    cancel: true,
+    persistent: true,
+  }).onOk(async (reason) => {
+    const success = await mutasiStore.rejectMutation(row.id, reason || 'Ditolak admin')
+    if (success) {
+      $q.notify({ color: 'orange-9', message: 'Mutasi ditolak.', icon: 'close' })
+    }
+  })
+}
+
+function cetakSuratMutasi(row) {
+  $q.notify({ color: 'primary', message: `Mencetak surat mutasi untuk: ${row.nama}`, icon: 'print' })
+}
+
+onMounted(() => {
+  mutasiStore.fetchMutations()
+})
+
+watch(activeTab, () => {
+  // Refresh dengan filter type yang sesuai
+  const type = activeTab.value === 'masuk' ? 'MASUK' : 'KELUAR'
+  mutasiStore.fetchMutations({ type })
+})
 </script>

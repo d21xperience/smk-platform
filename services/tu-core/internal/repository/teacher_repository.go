@@ -48,7 +48,6 @@ type ScheduleDetail struct {
 	SubjectName string `json:"subjectName"`
 }
 
-// FIX: Renamed to TeacherWorkloadSummary to avoid conflict with kurikulum_stat_repository.go
 type TeacherWorkloadSummary struct {
 	TeacherID     string           `json:"teacherId"`
 	TeacherName   string           `json:"teacherName"`
@@ -116,6 +115,25 @@ func scanTeacher(row pgx.Row, t *Teacher) error {
 		t.BirthDate = *birthDate
 	}
 	return nil
+}
+
+// Helper untuk mapping ID ke String di ptk_buku_induk_ext
+func getStatusPegawaiString(id int) string {
+	switch id {
+	case 1: return "PNS"
+	case 2: return "PPPK"
+	case 3: return "GTY"
+	case 4: return "Honorer"
+	default: return "Honorer"
+	}
+}
+
+func getJenisPegawaiString(jenisPtkID int) string {
+	// 1=Guru Mapel, 2=Guru Kelas, 3=Kepsek (Guru), 4=Tenaga Administrasi (Tendik)
+	if jenisPtkID == 4 {
+		return "Tendik"
+	}
+	return "Guru"
 }
 
 func (r *pgxTeacherRepository) GetByID(ctx context.Context, teacherID string) (*Teacher, error) {
@@ -269,6 +287,19 @@ func (r *pgxTeacherRepository) Create(ctx context.Context, t *Teacher) error {
 	_, err = tx.Exec(ctx, queryPelengkap, uuid.New().String(), t.ID, nullableString(t.GelarDepan), nullableString(t.GelarBelakang), nullableString(t.NIP))
 	if err != nil { return fmt.Errorf("%w: %v", ErrDatabaseError, err) }
 
+	// TAMBAHAN: SINKRONISASI KE ptk_buku_induk_ext
+	jenisPegawaiStr := getJenisPegawaiString(t.JenisPtkID)
+	statusPegawaiStr := getStatusPegawaiString(t.StatusKepegawaian)
+	queryExt := `
+		INSERT INTO ptk_buku_induk_ext (ptk_id, jenis_pegawai, status_pegawai)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (ptk_id) DO UPDATE SET 
+			jenis_pegawai = EXCLUDED.jenis_pegawai,
+			status_pegawai = EXCLUDED.status_pegawai
+	`
+	_, err = tx.Exec(ctx, queryExt, t.ID, jenisPegawaiStr, statusPegawaiStr)
+	if err != nil { return fmt.Errorf("gagal sinkronisasi ext: %w", err) }
+
 	return tx.Commit(ctx)
 }
 
@@ -304,6 +335,19 @@ func (r *pgxTeacherRepository) Update(ctx context.Context, t *Teacher) error {
 	`
 	_, err = tx.Exec(ctx, queryPelengkap, uuid.New().String(), t.ID, nullableString(t.GelarDepan), nullableString(t.GelarBelakang), nullableString(t.NIP))
 	if err != nil { return fmt.Errorf("%w: %v", ErrDatabaseError, err) }
+
+	// TAMBAHAN: SINKRONISASI KE ptk_buku_induk_ext
+	jenisPegawaiStr := getJenisPegawaiString(t.JenisPtkID)
+	statusPegawaiStr := getStatusPegawaiString(t.StatusKepegawaian)
+	queryExt := `
+		INSERT INTO ptk_buku_induk_ext (ptk_id, jenis_pegawai, status_pegawai)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (ptk_id) DO UPDATE SET 
+			jenis_pegawai = EXCLUDED.jenis_pegawai,
+			status_pegawai = EXCLUDED.status_pegawai
+	`
+	_, err = tx.Exec(ctx, queryExt, t.ID, jenisPegawaiStr, statusPegawaiStr)
+	if err != nil { return fmt.Errorf("gagal sinkronisasi ext: %w", err) }
 
 	return tx.Commit(ctx)
 }

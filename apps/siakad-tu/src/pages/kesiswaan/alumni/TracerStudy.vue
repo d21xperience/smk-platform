@@ -4,13 +4,16 @@
     <div class="row items-center justify-between q-mb-md">
       <div>
         <h1 class="text-h5 text-weight-bold q-my-none text-primary">Tracer Study Alumni (BMW)</h1>
-        <p class="text-caption text-grey-7 q-mb-none">Pelacakan rekam jejak keterserapan lulusan SMK: Bekerja,
-          Melanjutkan Kuliah, atau Wirausaha</p>
+        <p class="text-caption text-grey-7 q-mb-none">Pelacakan rekam jejak keterserapan lulusan SMK: Bekerja, Melanjutkan Kuliah, atau Wirausaha</p>
       </div>
       <div>
         <q-btn color="primary" icon="analytics" label="Unduh Laporan Kemdikbud" @click="downloadLaporanKementerian" />
       </div>
     </div>
+
+    <q-banner v-if="store.error" class="bg-red-1 text-red-9 q-mb-md" rounded>
+      <q-icon name="error" class="q-mr-sm" />{{ store.error }}
+    </q-banner>
 
     <!-- Layout Atas: Grafik Visualisasi & Statistik Ringkas -->
     <div class="row q-col-gutter-md q-mb-md">
@@ -35,7 +38,7 @@
               <q-card-section class="q-py-sm flex justify-between items-center">
                 <div>
                   <div class="text-caption text-grey-7">B — Bekerja (Industri)</div>
-                  <div class="text-h6 text-weight-bold text-blue-9">145 Alumni</div>
+                  <div class="text-h6 text-weight-bold text-blue-9">{{ stats.bekerja }} Alumni</div>
                 </div>
                 <q-avatar color="blue-1" text-color="primary" icon="business" size="36px" />
               </q-card-section>
@@ -46,7 +49,7 @@
               <q-card-section class="q-py-sm flex justify-between items-center">
                 <div>
                   <div class="text-caption text-grey-7">M — Melanjutkan (Kuliah)</div>
-                  <div class="text-h6 text-weight-bold text-green-9">52 Alumni</div>
+                  <div class="text-h6 text-weight-bold text-green-9">{{ stats.kuliah }} Alumni</div>
                 </div>
                 <q-avatar color="green-1" text-color="green-9" icon="school" size="36px" />
               </q-card-section>
@@ -57,7 +60,7 @@
               <q-card-section class="q-py-sm flex justify-between items-center">
                 <div>
                   <div class="text-caption text-grey-7">W — Wirausaha (Mandiri)</div>
-                  <div class="text-h6 text-weight-bold text-purple-9">24 Alumni</div>
+                  <div class="text-h6 text-weight-bold text-purple-9">{{ stats.wirausaha }} Alumni</div>
                 </div>
                 <q-avatar color="purple-1" text-color="purple-9" icon="storefront" size="36px" />
               </q-card-section>
@@ -68,7 +71,7 @@
               <q-card-section class="q-py-sm flex justify-between items-center">
                 <div>
                   <div class="text-caption text-grey-7">Belum Terserap / Mencari</div>
-                  <div class="text-h6 text-weight-bold text-red-9">39 Alumni</div>
+                  <div class="text-h6 text-weight-bold text-red-9">{{ stats.belum }} Alumni</div>
                 </div>
                 <q-avatar color="red-1" text-color="red-9" icon="person_search" size="36px" />
               </q-card-section>
@@ -76,8 +79,7 @@
           </div>
           <div class="col-12 q-mt-sm">
             <q-banner class="bg-amber-1 text-amber-10 rounded-borders dense text-caption">
-              <q-icon name="info" /> <strong>Indikator Kinerja Utama (IKU):</strong> Target keterserapan minimal
-              angkatan lulusan tahun ini adalah sebesar 85% dalam waktu 6 bulan setelah kelulusan resmi.
+              <q-icon name="info" /> <strong>Indikator Kinerja Utama (IKU):</strong> Target keterserapan minimal angkatan lulusan tahun ini adalah sebesar 85% dalam waktu 6 bulan setelah kelulusan resmi.
             </q-banner>
           </div>
         </div>
@@ -94,13 +96,10 @@
             </q-input>
           </div>
           <div class="col-12 col-sm-6 col-md-3">
-            <q-select v-model="filterStatus"
-              :options="['Semua Status', 'Bekerja', 'Melanjutkan Kuliah', 'Wirausaha', 'Belum Bekerja']" dense outlined
-              label="Status Keterserapan" />
+            <q-select v-model="filterStatus" :options="['Semua Status', 'Bekerja', 'Melanjutkan Kuliah', 'Wirausaha', 'Belum Bekerja']" dense outlined label="Status Keterserapan" />
           </div>
           <div class="col-12 col-sm-6 col-md-3">
-            <q-select v-model="filterAngkatan" :options="['Angkatan 2025', 'Angkatan 2024', 'Angkatan 2023']" dense
-              outlined label="Tahun Lulus" />
+            <q-select v-model="filterAngkatan" :options="['Angkatan 2025', 'Angkatan 2024', 'Angkatan 2023']" dense outlined label="Tahun Lulus" />
           </div>
           <div class="col-12 col-md-2 flex justify-end">
             <q-btn flat color="grey-7" icon="refresh" label="Reset" @click="resetFilters" />
@@ -110,7 +109,7 @@
 
       <!-- Tabel Data Rekam Jejak Tracer -->
       <q-card-section class="q-pa-none">
-        <q-table flat :rows="filteredTracer" :columns="columns" row-key="id" :pagination="{ rowsPerPage: 10 }">
+        <q-table flat :rows="filteredTracer" :columns="columns" row-key="id" :loading="store.loading" :pagination="{ rowsPerPage: 10 }">
           <!-- Custom Tampilan Kolom Status BMW -->
           <template v-slot:body-cell-status="props">
             <q-td :props="props" class="text-center">
@@ -146,22 +145,18 @@
       <q-card style="min-width: 400px;">
         <q-card-section class="bg-primary text-white">
           <div class="text-h6">Pembaruan Tracer Study</div>
-          <div class="text-caption text-blue-2">Alumni: {{ activeAlumni.nama }} ({{ activeAlumni.angkatan }})</div>
+          <div class="text-caption text-blue-2">Alumni: {{ activeAlumni.nama }} ({{ activeAlumni.tahunLulus }})</div>
         </q-card-section>
 
         <q-card-section class="q-gutter-md q-pt-md">
-          <q-select v-model="formTracer.status"
-            :options="['Bekerja', 'Melanjutkan Kuliah', 'Wirausaha', 'Belum Bekerja']"
-            label="Status Penyerapan Saat Ini" outlined dense />
-          <q-input v-model="formTracer.instansi" label="Nama Tempat Industri / Universitas / Nama Toko" outlined dense
-            placeholder="Contoh: PT. Yamaha Motor / Universitas Padjadjaran..." />
-          <q-input v-model="formTracer.posisiUsaha" label="Jabatan Kerja / Program Studi / Bidang Bisnis" outlined dense
-            placeholder="Contoh: Operator Produksi / S1 Teknik Informatika..." />
+          <q-select v-model="formTracer.status" :options="['Bekerja', 'Melanjutkan Kuliah', 'Wirausaha', 'Belum Bekerja']" label="Status Penyerapan Saat Ini" outlined dense />
+          <q-input v-model="formTracer.instansi" label="Nama Tempat Industri / Universitas / Nama Toko" outlined dense placeholder="Contoh: PT. Yamaha Motor / Universitas Padjadjaran..." />
+          <q-input v-model="formTracer.posisiUsaha" label="Jabatan Kerja / Program Studi / Bidang Bisnis" outlined dense placeholder="Contoh: Operator Produksi / S1 Teknik Informatika..." />
         </q-card-section>
 
         <q-card-actions align="right" class="q-pb-md q-pr-md">
           <q-btn flat label="Batal" v-close-popup color="grey" />
-          <q-btn color="primary" label="Simpan Rekam Jejak" @click="saveTracerInfo" />
+          <q-btn color="primary" label="Simpan Rekam Jejak" :loading="saving" @click="saveTracerInfo" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -169,22 +164,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import apexchart from 'vue3-apexcharts'
+import { useAlumniTrackingStore } from '@/stores/kesiswaan/alumniTrackingStore.js'
 
 const $q = useQuasar()
+const store = useAlumniTrackingStore()
 
-// State Komponen
 const search = ref('')
 const filterStatus = ref('Semua Status')
 const filterAngkatan = ref('Angkatan 2025')
 const dialogTracerOpen = ref(false)
+const saving = ref(false)
 
 const activeAlumni = ref({})
 const formTracer = ref({ status: '', instansi: '', posisiUsaha: '' })
 
-// Konfigurasi Donut Chart (ApexCharts)
+onMounted(() => {
+  store.fetchList()
+})
+
 const chartOptions = ref({
   chart: { id: 'donut-tracer-chart' },
   labels: ['Bekerja', 'Melanjutkan Kuliah', 'Wirausaha', 'Belum Terserap'],
@@ -193,10 +193,24 @@ const chartOptions = ref({
   dataLabels: { enabled: true }
 })
 
-// Data Array untuk Donut Chart (Sesuai dengan jumlah widget kanan)
-const chartSeries = ref([145, 52, 24, 39])
+const stats = computed(() => {
+  let bekerja = 0, kuliah = 0, wirausaha = 0, belum = 0
+  for (const item of store.list) {
+    if (item.status === 'Bekerja') bekerja++
+    else if (item.status === 'Melanjutkan Kuliah') kuliah++
+    else if (item.status === 'Wirausaha') wirausaha++
+    else belum++
+  }
+  return { bekerja, kuliah, wirausaha, belum }
+})
 
-// Struktur Kolom Tabel q-table Log Tracer Study
+const chartSeries = computed(() => [
+  stats.value.bekerja,
+  stats.value.kuliah,
+  stats.value.wirausaha,
+  stats.value.belum
+])
+
 const columns = [
   { name: 'nama', align: 'left', label: 'Nama Lengkap Alumni', field: 'nama', sortable: true },
   { name: 'jurusan', align: 'left', label: 'Jurusan', field: 'jurusan' },
@@ -205,42 +219,44 @@ const columns = [
   { name: 'aksi', align: 'center', label: 'Aksi' }
 ]
 
-// Data Mock / Dummy Tracer Lulusan SMK
-const dataTracer = ref([
-  { id: 1, nama: 'Rian Hidayat', angkatan: '2025', jurusan: 'RPL', status: 'Bekerja', instansi: 'PT. Telekomunikasi Indonesia Tbk', posisiUsaha: 'Frontend Developer' },
-  { id: 2, nama: 'Siti Sarah', angkatan: '2025', jurusan: 'AKL', status: 'Melanjutkan Kuliah', instansi: 'Universitas Indonesia', posisiUsaha: 'S1 Akuntansi Perajakan' }, { id: 3, nama: 'Denny Wahyudi', angkatan: '2025', jurusan: 'TKRO', status: 'Wirausaha', instansi: 'Bengkel Wahyudi Motor', posisiUsaha: 'Pemilik Bengkel Mandiri' }, { id: 4, nama: 'Gita Permata', angkatan: '2025', jurusan: 'RPL', status: 'Belum Bekerja', instansi: '', posisiUsaha: '' }])
-// Logika Compute Filter Pencarian Alumni di Frontend Sisi Klien
 const filteredTracer = computed(() => {
-  return dataTracer.value.filter(item => {
-    const matchSearch = search.value ? item.nama.toLowerCase().includes(search.value.toLowerCase()) || item.instansi.toLowerCase().includes(search.value.toLowerCase()) : true
+  return store.list.filter(item => {
+    const matchSearch = search.value ? item.nama.toLowerCase().includes(search.value.toLowerCase()) || (item.instansi && item.instansi.toLowerCase().includes(search.value.toLowerCase())) : true
     const matchStatus = filterStatus.value !== 'Semua Status' ? item.status === filterStatus.value : true
-    const matchAngkatan = filterAngkatan.value ? item.angkatan === filterAngkatan.value.split(' ') // Mengambil angka tahun saja dari string "Angkatan 2025"
-      : true
+    const matchAngkatan = filterAngkatan.value ? item.tahunLulus === filterAngkatan.value.split(' ')[1] : true
     return matchSearch && matchStatus && matchAngkatan
   })
 })
-// Fungsi Penanganan Event Aksi Kesiswaan & BKK
+
 const resetFilters = () => {
   search.value = ''
   filterStatus.value = 'Semua Status'
   filterAngkatan.value = 'Angkatan 2025'
 }
+
 const openUpdateStatusDialog = (row) => {
   activeAlumni.value = row
-  formTracer.value = { status: row.status, instansi: row.instansi, posisiUsaha: row.posisiUsaha }
+  formTracer.value = { status: row.status, instansi: row.instansi || '', posisiUsaha: row.posisiUsaha || '' }
   dialogTracerOpen.value = true
 }
-const saveTracerInfo = () => {
-  const target = dataTracer.value.find(item => item.id === activeAlumni.value.id)
-  if (target) {
-    target.status = formTracer.value.status
-    target.instansi = formTracer.value.instansi
-    target.posisiUsaha = formTracer.value.posisiUsaha
+
+const saveTracerInfo = async () => {
+  saving.value = true
+  try {
+    const result = await store.updateAlumni(activeAlumni.value.id, formTracer.value)
+    if (result.success) {
+      $q.notify({ color: 'primary', message: `Data penelusuran karir untuk ${activeAlumni.value.nama} berhasil diperbarui!`, icon: 'save' })
+      dialogTracerOpen.value = false
+      store.fetchList()
+    } else {
+      $q.notify({ color: 'negative', message: result.error, icon: 'error' })
+    }
+  } finally {
+    saving.value = false
   }
-  $q.notify({ color: 'primary', message: `Data penelusuran karir untuk ${activeAlumni.value.nama} berhasil diperbarui!`, icon: 'save' })
-  dialogTracerOpen.value = false
 }
-const downloadLaporanKementerian = () => { $q.notify({ color: 'green-8', message: 'Sukses mengekspor sinkronisasi draf file .xml siap upload ke web Tracer Study Direktorat SMK Kemdikbud.', icon: 'cloud_download' }) }
 
-
+const downloadLaporanKementerian = () => {
+  $q.notify({ color: 'green-8', message: 'Sukses mengekspor sinkronisasi draf file .xml siap upload ke web Tracer Study Direktorat SMK Kemdikbud.', icon: 'cloud_download' })
+}
 </script>

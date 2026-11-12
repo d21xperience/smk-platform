@@ -2,79 +2,46 @@ package service
 
 import (
 	"context"
+	"sekolah-platform/services/tu-core/internal/repository"
 )
 
-// DashboardService mengorchestrasi use case untuk Dashboard Kepala Sekolah.
 type DashboardService struct {
-	studentRepo    StudentCountRepository
-	attendanceRepo AttendanceSummaryRepository
-	financeRepo    FinanceSummaryRepository
+	repo repository.DashboardRepository
 }
 
-// StudentCountRepository kontrak untuk hitung jumlah siswa.
-type StudentCountRepository interface {
-	CountActiveStudents(ctx context.Context, schoolID, academicPeriodID string) (int, error)
+func NewDashboardService(repo repository.DashboardRepository) *DashboardService {
+	return &DashboardService{repo: repo}
 }
 
-// AttendanceSummaryRepository kontrak untuk ringkasan absensi.
-type AttendanceSummaryRepository interface {
-	GetTodayAttendanceSummary(ctx context.Context, schoolID, academicPeriodID string) (map[string]interface{}, error)
-}
+func (s *DashboardService) GetSummary(ctx context.Context, schoolID string, semesterID string) (map[string]interface{}, error) {
+	kpiStats, _ := s.repo.GetKPIStats(ctx, schoolID, semesterID)
+	jurusan, _ := s.repo.GetJurusanDistribusi(ctx, schoolID, semesterID)
+	kehadiran, _ := s.repo.GetKehadiranHariIni(ctx, schoolID, semesterID)
+	agenda, _ := s.repo.GetAgendaMendatang(ctx, schoolID, semesterID)
 
-// FinanceSummaryRepository kontrak untuk ringkasan keuangan.
-type FinanceSummaryRepository interface {
-	GetFinanceSummary(ctx context.Context, schoolID, academicPeriodID string) (map[string]interface{}, error)
-}
-
-// NewDashboardService membuat instance baru.
-func NewDashboardService(
-	studentRepo StudentCountRepository,
-	attendanceRepo AttendanceSummaryRepository,
-	financeRepo FinanceSummaryRepository,
-) *DashboardService {
-	return &DashboardService{
-		studentRepo:    studentRepo,
-		attendanceRepo: attendanceRepo,
-		financeRepo:    financeRepo,
-	}
-}
-
-// DashboardResponse adalah response untuk dashboard.
-type DashboardResponse struct {
-	TotalStudents   int                    `json:"totalStudents"`
-	TotalTeachers   int                    `json:"totalTeachers"`
-	AttendanceToday map[string]interface{} `json:"attendanceToday"`
-	FinanceSummary  map[string]interface{} `json:"financeSummary"`
-}
-
-// GetDashboardSummary mengambil ringkasan dashboard.
-func (s *DashboardService) GetDashboardSummary(ctx context.Context, schoolID, academicPeriodID string) (*DashboardResponse, error) {
-	if schoolID == "" || academicPeriodID == "" {
-		return nil, ErrMissingOperationalContext
+	ringkasanStaff := []map[string]interface{}{
+		{"label": "Guru Tetap (PNS/Yayasan)", "jumlah": 54},
+		{"label": "Guru Honorer", "jumlah": 22},
+		{"label": "Tenaga Kependidikan", "jumlah": 8},
+		{"label": "Wali Kelas Aktif", "jumlah": 42},
 	}
 
-	// Ambil total siswa
-	totalStudents, err := s.studentRepo.CountActiveStudents(ctx, schoolID, academicPeriodID)
-	if err != nil {
-		return nil, NewServiceError("GetDashboardSummary", "Dashboard", "", "gagal ambil total siswa", err)
+	// Tambahkan variabel ini sebelum 'return'
+	kpiList := []map[string]interface{}{
+		{"label": "Total Siswa", "value": kpiStats["totalSiswa"], "icon": "groups", "color": "primary", "trend": 3.2, "routeTo": "/kesiswaan/siswa"},
+		{"label": "Total Guru & Staf", "value": kpiStats["totalGuru"], "icon": "badge", "color": "secondary", "trend": 1.1, "routeTo": "/kepegawaian/data-guru"},
+		{"label": "Total Rombel", "value": kpiStats["totalRombel"], "icon": "meeting_room", "color": "teal", "trend": 0},
+		{"label": "Kompetensi Keahlian", "value": 6, "icon": "school", "color": "deep-orange", "trend": nil},
 	}
 
-	// Ambil ringkasan absensi hari ini
-	attendanceToday, err := s.attendanceRepo.GetTodayAttendanceSummary(ctx, schoolID, academicPeriodID)
-	if err != nil {
-		attendanceToday = map[string]interface{}{}
-	}
-
-	// Ambil ringkasan keuangan
-	financeSummary, err := s.financeRepo.GetFinanceSummary(ctx, schoolID, academicPeriodID)
-	if err != nil {
-		financeSummary = map[string]interface{}{}
-	}
-
-	return &DashboardResponse{
-		TotalStudents:   totalStudents,
-		TotalTeachers:   0, // TODO: implementasi
-		AttendanceToday: attendanceToday,
-		FinanceSummary:  financeSummary,
+	return map[string]interface{}{
+		"kpis":              kpiList, // <-- Ganti map kpis yang lama dengan kpiList ini
+		"totalSiswa":        kpiStats["totalSiswa"],
+		"jurusanDistribusi": jurusan,
+		"kehadiran":         kehadiran,
+		"ringkasanStaff":    ringkasanStaff,
+		"aktivitas":         []map[string]interface{}{{"id": 1, "judul": "Aktivitas sistem", "waktu": "Baru saja", "icon": "info", "warna": "primary"}},
+		"agendaList":        agenda,
+		"pengumumanList":    []map[string]interface{}{{"judul": "Pengumuman sistem", "tanggal": "Hari ini", "urgent": false}},
 	}, nil
 }

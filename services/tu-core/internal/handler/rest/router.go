@@ -61,6 +61,11 @@ type Router struct {
 	ptkArchiveService        *service.PtkArchiveService
 	ptkDashboardService      *service.PtkDashboardService
 	bukuIndukService         *service.BukuIndukService
+		studentBukuIndukService *service.StudentBukuIndukService
+		kesiswaanReportService *service.KesiswaanReportService
+		alumniLegalisirService *service.AlumniLegalisirService
+		alumniTrackingService *service.AlumniTrackingService
+		pklPlottingService *service.PklPlottingService
 	laporanBerkalaRepo       repository.LaporanBerkalaRepository
 	laporanAggregatorService *service.LaporanAggregatorService
 	laporanBerkalaService    *service.LaporanBerkalaService
@@ -127,6 +132,11 @@ func NewRouter(
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
 	bukuIndukService *service.BukuIndukService,
+		studentBukuIndukService *service.StudentBukuIndukService,
+		kesiswaanReportService *service.KesiswaanReportService,
+		alumniLegalisirService *service.AlumniLegalisirService,
+		alumniTrackingService *service.AlumniTrackingService,
+		pklPlottingService *service.PklPlottingService,
 	laporanBerkalaRepo repository.LaporanBerkalaRepository,
 	laporanAggregatorService *service.LaporanAggregatorService,
 	laporanBerkalaService *service.LaporanBerkalaService,
@@ -216,6 +226,11 @@ func NewRouter(
 		maintenanceService:       maintenanceService,
 		sarprasReportService:     sarprasReportService,
 		dashboardService:         dashboardService, // <-- TAMBAHAN ASSIGNMENT
+		studentBukuIndukService: studentBukuIndukService,
+		kesiswaanReportService: kesiswaanReportService,
+		alumniLegalisirService: alumniLegalisirService,
+		alumniTrackingService: alumniTrackingService,
+		pklPlottingService: pklPlottingService,
 	}
 
 	mux := http.NewServeMux()
@@ -223,6 +238,11 @@ func NewRouter(
 	// ===== RUTE KESISWAAN, AKADEMIK, KURIKULUM =====
 	r.registerPtkRoutes(mux)
 	r.registerStudentRoutes(mux)
+	r.registerStudentBukuIndukRoutes(mux)
+	r.registerKesiswaanReportRoutes(mux)
+	r.registerAlumniLegalisirRoutes(mux)
+	r.registerAlumniTrackingRoutes(mux)
+	r.registerPklPlottingRoutes(mux)
 	r.registerPSBRoutes(mux)
 	r.registerMutationRoutes(mux)
 	r.registerAcademicRoutes(mux)

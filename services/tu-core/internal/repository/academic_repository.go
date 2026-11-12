@@ -16,6 +16,7 @@ type AcademicPeriod struct {
 	AcademicYear string // academic_year (contoh: "2026/2027")
 	Semester     int    // semester (contoh: 1)
 	IsActive     bool   // is_active
+	IsPsbActive  bool   // is_psb_active
 }
 
 type AcademicRepository interface {
@@ -38,9 +39,9 @@ func (r *pgxAcademicRepository) GetActivePeriod(ctx context.Context, schoolID st
 		return nil, ErrMissingOperationalContext
 	}
 	// Tabel semesters global (tidak punya school_id)
-	query := `SELECT id, name, academic_year, semester, is_active FROM semesters WHERE is_active = TRUE LIMIT 1`
+	query := `SELECT id, name, academic_year, semester, is_active, COALESCE(is_psb_active, FALSE) FROM semesters WHERE is_active = TRUE LIMIT 1`
 	var p AcademicPeriod
-	err := r.db.QueryRow(ctx, query).Scan(&p.ID, &p.Name, &p.AcademicYear, &p.Semester, &p.IsActive)
+	err := r.db.QueryRow(ctx, query).Scan(&p.ID, &p.Name, &p.AcademicYear, &p.Semester, &p.IsActive, &p.IsPsbActive)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
@@ -54,9 +55,9 @@ func (r *pgxAcademicRepository) GetPeriodByID(ctx context.Context, schoolID, per
 	if schoolID == "" || periodID == "" {
 		return nil, ErrMissingOperationalContext
 	}
-	query := `SELECT id, name, academic_year, semester, is_active FROM semesters WHERE id = $1`
+	query := `SELECT id, name, academic_year, semester, is_active, COALESCE(is_psb_active, FALSE) FROM semesters WHERE id = $1`
 	var p AcademicPeriod
-	err := r.db.QueryRow(ctx, query, periodID).Scan(&p.ID, &p.Name, &p.AcademicYear, &p.Semester, &p.IsActive)
+	err := r.db.QueryRow(ctx, query, periodID).Scan(&p.ID, &p.Name, &p.AcademicYear, &p.Semester, &p.IsActive, &p.IsPsbActive)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound

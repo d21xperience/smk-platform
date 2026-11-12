@@ -37,7 +37,6 @@ func (r *Router) registerSystemRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/school", r.handleSchool)
 
 	// Legacy Stubs (Tetap dipertahankan agar rute lama tidak 404)
-	mux.HandleFunc("/api/v1/mutations", r.stubHandler)
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
 

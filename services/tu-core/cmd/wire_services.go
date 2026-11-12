@@ -83,6 +83,11 @@ type AppServices struct {
 	Dashboard         *service.DashboardService
 	Letter            *service.LetterService
 	Scholarship       *service.ScholarshipService
+	StudentBukuInduk   *service.StudentBukuIndukService
+	KesiswaanReport   *service.KesiswaanReportService
+	AlumniLegalisir   *service.AlumniLegalisirService
+	AlumniTracking   *service.AlumniTrackingService
+	PklPlotting   *service.PklPlottingService
 }
 
 func initEngines() *AppEngines {
@@ -159,5 +164,10 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		Dashboard:         service.NewDashboardService(repos.Dashboard),
 		Letter:            service.NewLetterService(repos.Letter, repos.Student, minioClient, eventPub),
 		Scholarship:       service.NewScholarshipService(repos.Scholarship, repos.Student, eventPub),
+		StudentBukuInduk:  service.NewStudentBukuIndukService(repos.StudentBukuInduk, repos.School),
+		KesiswaanReport:   service.NewKesiswaanReportService(repos.KesiswaanReport, repos.School),
+		AlumniLegalisir:   service.NewAlumniLegalisirService(repos.AlumniLegalisir),
+		AlumniTracking:   service.NewAlumniTrackingService(repos.AlumniTracking),
+		PklPlotting:   service.NewPklPlottingService(repos.PklPlotting),
 	}
 }

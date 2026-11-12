@@ -12,7 +12,7 @@ export default {
     },
     {
       path: 'surat-aktif-siswa',
-      name: 'kesiswaan-dashboard',
+      name: 'surat-aktif-siswa',
       component: () => import('@/pages/kesiswaan/pelaporan/SuratAktif.vue'),
     },
     // MUTASI
@@ -63,6 +63,36 @@ export default {
       path: 'beasiswa-pip-siswa',
       name: 'kesiswaan-beasiswa-pip',
       component: () => import('@/pages/kesiswaan/kesejahteraan/BeasiswaPip.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'rekap-pelaporan',
+      name: 'rekap-pelaporan',
+      component: () => import('@/pages/kesiswaan/pelaporan/RekapPelaporan.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'legalisir-alumni',
+      name: 'legalisir-alumni',
+      component: () => import('@/pages/kesiswaan/alumni/LegalisirAlumni.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'tracer-study',
+      name: 'tracer-study',
+      component: () => import('@/pages/kesiswaan/alumni/TracerStudy.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'ploting-berkas-siswa',
+      name: 'ploting-berkas-siswa',
+      component: () => import('@/pages/kesiswaan/pelaporan/PlottingBerkas.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: 'buku-induk-siswa',
+      name: 'buku-induk-siswa',
+      component: () => import('@/pages/kesiswaan/siswa/BukuIndukSiswa.vue'),
       meta: { requiresAuth: true },
     },
   ],

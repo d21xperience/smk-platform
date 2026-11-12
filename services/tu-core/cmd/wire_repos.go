@@ -63,6 +63,11 @@ type AppRepositories struct {
 	Dashboard      repository.DashboardRepository
 	Letter         repository.LetterRepository
 	Scholarship     repository.ScholarshipRepository
+	StudentBukuInduk repository.StudentBukuIndukRepository
+	KesiswaanReport repository.KesiswaanReportRepository
+	AlumniLegalisir repository.AlumniLegalisirRepository
+	AlumniTracking repository.AlumniTrackingRepository
+	PklPlotting repository.PklPlottingRepository
 }
 
 func initRepositories(db *pgxpool.Pool) *AppRepositories {
@@ -121,5 +126,10 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		Dashboard:      repository.NewDashboardRepository(db),
 		Letter:         repository.NewLetterRepository(db),
 		Scholarship:    repository.NewScholarshipRepository(db),
+		StudentBukuInduk: repository.NewStudentBukuIndukRepository(db),
+		KesiswaanReport: repository.NewKesiswaanReportRepository(db),
+		AlumniLegalisir: repository.NewAlumniLegalisirRepository(db),
+		AlumniTracking: repository.NewAlumniTrackingRepository(db),
+		PklPlotting: repository.NewPklPlottingRepository(db),
 	}
 }

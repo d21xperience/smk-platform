@@ -1,69 +1,108 @@
-import { defineStore, acceptHMRUpdate } from 'pinia'
+// apps/siakad-tu/src/stores/kesiswaan/mutasiStore.js
 
-export const useMutasiStore = defineStore('mutasi', {
-  state: () => ({
-    list: [], // array pengajuan mutasi
-  }),
-  actions: {
-    loadData() {
-      const stored = localStorage.getItem('data_mutasi')
-      if (stored) this.list = JSON.parse(stored)
-      else this.list = []
-    },
-    saveData() {
-      localStorage.setItem('data_mutasi', JSON.stringify(this.list))
-    },
-    // Tambah pengajuan mutasi
-    tambah(mutasi) {
-      mutasi.id = Date.now()
-      mutasi.tanggal_pengajuan = new Date().toISOString()
-      mutasi.status = 'pending' // pending, disetujui, ditolak
-      mutasi.catatan_verifikasi = null
-      this.list.push(mutasi)
-      this.saveData()
-      return mutasi.id
-    },
-    update(id, updated) {
-      const idx = this.list.findIndex((m) => m.id === id)
-      if (idx !== -1) {
-        this.list[idx] = { ...this.list[idx], ...updated }
-        this.saveData()
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { useMutationCommandService, useMutationQueryService } from '@/services/mutation/serviceFactory'
+import { useContextStore } from '@/stores/contextStore'
+
+export const useMutasiStore = defineStore('mutasi', () => {
+  const contextStore = useContextStore()
+  const commandService = useMutationCommandService()
+  const queryService = useMutationQueryService()
+
+  const list = ref([])
+  const isLoading = ref(false)
+  const error = ref(null)
+
+  const riwayatMasuk = computed(() => list.value.filter((m) => m.mutationType === 'MASUK'))
+  const riwayatKeluar = computed(() => list.value.filter((m) => m.mutationType === 'KELUAR'))
+  const pendingCount = computed(() => list.value.filter((m) => m.status === 'PENDING').length)
+
+  async function fetchMutations(filters = {}) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const context = contextStore.currentContext
+      const result = await queryService.getMutations(context, filters)
+      if (result.success) {
+        list.value = result.data.items || []
+      } else {
+        error.value = result.error
       }
-    },
-    setujui(id, catatan = '') {
-      const idx = this.list.findIndex((m) => m.id === id)
-      if (idx !== -1 && this.list[idx].status === 'pending') {
-        this.list[idx].status = 'disetujui'
-        this.list[idx].catatan_verifikasi = catatan
-        this.list[idx].tanggal_verifikasi = new Date().toISOString()
-        this.saveData()
+    } catch (err) {
+      error.value = { code: 'UNEXPECTED_ERROR', message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function createMutation(payload) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await commandService.createMutation(payload)
+      if (result.success) {
+        await fetchMutations()
         return true
       }
+      error.value = result.error
       return false
-    },
-    tolak(id, catatan) {
-      const idx = this.list.findIndex((m) => m.id === id)
-      if (idx !== -1 && this.list[idx].status === 'pending') {
-        this.list[idx].status = 'ditolak'
-        this.list[idx].catatan_verifikasi = catatan
-        this.saveData()
+    } catch (err) {
+      error.value = { code: 'UNEXPECTED_ERROR', message: err.message }
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function approveMutation(mutationId, catatan = '') {
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await commandService.approveMutation(mutationId, catatan)
+      if (result.success) {
+        await fetchMutations()
         return true
       }
+      error.value = result.error
       return false
-    },
-    hapus(id) {
-      this.list = this.list.filter((m) => m.id !== id)
-      this.saveData()
-    },
-    getByStatus(status) {
-      return this.list.filter((m) => m.status === status)
-    },
-    getByJenis(jenis) {
-      return this.list.filter((m) => m.jenis === jenis) // 'masuk' atau 'keluar'
-    },
-  },
+    } catch (err) {
+      error.value = { code: 'UNEXPECTED_ERROR', message: err.message }
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function rejectMutation(mutationId, catatan = '') {
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await commandService.rejectMutation(mutationId, catatan)
+      if (result.success) {
+        await fetchMutations()
+        return true
+      }
+      error.value = result.error
+      return false
+    } catch (err) {
+      error.value = { code: 'UNEXPECTED_ERROR', message: err.message }
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    list,
+    isLoading,
+    error,
+    riwayatMasuk,
+    riwayatKeluar,
+    pendingCount,
+    fetchMutations,
+    createMutation,
+    approveMutation,
+    rejectMutation,
+  }
 })
-
-if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useMutasiStore, import.meta.hot))
-}
