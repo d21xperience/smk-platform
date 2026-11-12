@@ -8,6 +8,14 @@
 <script setup>
 import { computed } from 'vue'
 import DropDownMenu from '@/components/DropDownMenu.vue'
+import { useContextStore } from '@/stores/contextStore'
+const contextStore = useContextStore()
+
+const isPsbActive = computed(() => {
+  const current = contextStore.availablePeriods.find(p => String(p.semester_id) === String(contextStore.selectedSemesterId))
+  return current?.is_psb_active || false
+})
+
 
 defineProps({ visible: { type: Boolean, default: true } })
 const emit = defineEmits(['menu-click'])
@@ -50,6 +58,7 @@ const itemKurikulum = [
   { title: 'Dashboard Kurikulum', to: '/preview/kurikulum' },
   { title: 'Mata Pelajaran', to: '/kurikulum/mapel' },
   { title: 'Penugasan Mengajar', to: '/kurikulum/pembelajaran' },
+  { title: 'Kelas', to: '/kurikulum/kelas' },
 ]
 
 const itemHubin = [
@@ -67,7 +76,7 @@ const itemHubin = [
 const itemPsb = [
   { title: 'Tambah Siswa', to: '/psb/siswa/baru' },
   { title: 'Rekap Asal Sekolah', to: '/psb/analisis-asal-sekolah' },
-  { title: 'Kelas', to: '/psb/generate-kelas' },
+  { title: 'Generate Kelas', to: '/psb/generate-kelas' },
 ]
 
 const itemKesiswaan = [
@@ -111,16 +120,34 @@ const itemSarpras = [
   },
 ]
 
-const menus = computed(() => [
-  { label: 'Ur. Kesiswaan', items: itemKesiswaan },
-  { label: 'Ur. Kurikulum', items: itemKurikulum },
-  { label: 'Ur. Kepegawaian', items: itemKepegawaian },
-  { label: 'Ur. Sarpras', items: itemSarpras },
-  { label: 'Ur. Hubin', items: itemHubin },
-  { label: 'Persuratan', items: itemPersuratan },
-  { label: 'PSB', items: itemPsb },
-  { label: 'Pengaturan Sistem', items: itemPengaturan }
-])
+// const menus = computed(() => [
+//   { label: 'Ur. Kesiswaan', items: itemKesiswaan },
+//   { label: 'Ur. Kurikulum', items: itemKurikulum },
+//   { label: 'Ur. Kepegawaian', items: itemKepegawaian },
+//   { label: 'Ur. Sarpras', items: itemSarpras },
+//   { label: 'Ur. Hubin', items: itemHubin },
+//   { label: 'Persuratan', items: itemPersuratan },
+//   { label: 'PSB', items: itemPsb },
+//   { label: 'Pengaturan Sistem', items: itemPengaturan }
+// ])
+const menus = computed(() => {
+  const list = [
+    { label: 'Ur. Kesiswaan', items: itemKesiswaan },
+    { label: 'Ur. Kurikulum', items: itemKurikulum },
+    { label: 'Ur. Kepegawaian', items: itemKepegawaian },
+    { label: 'Ur. Sarpras', items: itemSarpras },
+    { label: 'Ur. Hubin', items: itemHubin },
+    { label: 'Persuratan', items: itemPersuratan },
+  ]
+
+  // Hanya tampilkan PSB jika aktif
+  if (isPsbActive.value) {
+    list.push({ label: 'PSB', items: itemPsb })
+  }
+
+  list.push({ label: 'Pengaturan Sistem', items: itemPengaturan })
+  return list
+})
 </script>
 
 <style scoped>

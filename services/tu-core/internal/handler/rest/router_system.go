@@ -12,6 +12,8 @@ func (r *Router) registerSystemRoutes(mux *http.ServeMux) {
 
 	// Context & Preferences
 	mux.HandleFunc("/api/v1/context/periods", r.contextHandler.GetPeriods)
+	mux.HandleFunc("/api/v1/context/toggle-psb", r.contextHandler.TogglePSB)
+
 	mux.HandleFunc("/api/v1/users/me/preferences", func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case http.MethodGet:
@@ -38,6 +40,7 @@ func (r *Router) registerSystemRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/mutations", r.stubHandler)
 	mux.HandleFunc("/api/v1/assessments", r.stubHandler)
 	mux.HandleFunc("/api/v1/finance", r.stubHandler)
+
 }
 
 func (r *Router) handleSchool(w http.ResponseWriter, req *http.Request) {

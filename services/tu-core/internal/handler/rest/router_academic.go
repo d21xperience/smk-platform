@@ -25,6 +25,14 @@ func (r *Router) registerAcademicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/classes", r.handleClasses)
 	mux.HandleFunc("/api/v1/classes/{id}", r.handleClassByID)
 	mux.HandleFunc("/api/v1/classes/{id}/members", r.handleClassMembers)
+	mux.HandleFunc("/api/v1/classes/promote", r.handlePromoteClasses)
+
+	// PERBAIKAN: Bungkus handleJurusan dengan wrapWithContext
+	mux.HandleFunc("/api/v1/jurusan", r.wrapWithContext(r.handleJurusan))
+
+	// RUTE PSB (Generate Kelas)
+	mux.HandleFunc("/api/v1/psb/calon-siswa", r.handlePSBCalonSiswa)
+	mux.HandleFunc("/api/v1/psb/generate-kelas", r.handlePSBGenerateKelas)
 }
 
 func (r *Router) handleSchedules(w http.ResponseWriter, req *http.Request) {
@@ -194,4 +202,21 @@ func (r *Router) handleKurikulumStats(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, stats)
+}
+
+func (r *Router) handlePromoteClasses(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+		return
+	}
+	ctx, err := r.enrichContext(req)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing context"})
+		return
+	}
+	if err := r.classService.PromoteClasses(ctx); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Kenaikan tingkat berhasil"})
 }

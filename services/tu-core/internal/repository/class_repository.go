@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -26,7 +28,7 @@ type Class struct {
 	Major            string
 	HomeroomID       string
 	Capacity         int
-	CurrentStudents  int    // <-- TAMBAHAN: Jumlah siswa saat ini
+	CurrentStudents  int // <-- TAMBAHAN: Jumlah siswa saat ini
 	Status           string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
@@ -51,6 +53,7 @@ type ClassRepository interface {
 	Delete(ctx context.Context, schoolID, periodID, classID string) error
 	CountActiveMembers(ctx context.Context, schoolID, periodID, classID string) (int, error)
 	GetByGradeAndPeriod(ctx context.Context, schoolID, periodID string, grade int) ([]Class, error)
+	PromoteClasses(ctx context.Context, schoolID, currentPeriodID string) error
 }
 
 type pgxClassRepository struct {
@@ -101,8 +104,8 @@ const classSelectColumns = `
 	COALESCE(capacity, 0),
 	COALESCE(created_at, '1970-01-01 00:00:00+00'::timestamptz),
 	COALESCE(updated_at, '1970-01-01 00:00:00+00'::timestamptz),
-	(SELECT COUNT(*) FROM tabel_anggotakelas tak 
-	 WHERE tak.rombongan_belajar_id = tabel_kelas.rombongan_belajar_id 
+	(SELECT COUNT(*) FROM tabel_anggotakelas tak
+	 WHERE tak.rombongan_belajar_id = tabel_kelas.rombongan_belajar_id
 	 AND tak.semester_id = tabel_kelas.semester_id) AS current_students
 `
 
@@ -328,4 +331,143 @@ func (r *pgxClassRepository) GetByGradeAndPeriod(ctx context.Context, schoolID, 
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseError, err)
 	}
 	return classes, nil
+}
+func (r *pgxClassRepository) PromoteClasses(ctx context.Context, schoolID, currentPeriodID string) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Dapatkan semester berikutnya (nextPeriodID)
+	var nextPeriodID string
+	queryNextPeriod := `SELECT id FROM semesters WHERE id > $1 ORDER BY id ASC LIMIT 1`
+	if err := tx.QueryRow(ctx, queryNextPeriod, currentPeriodID).Scan(&nextPeriodID); err != nil {
+		return fmt.Errorf("semester berikutnya tidak ditemukan (pastikan semester tujuan sudah dibuat): %w", err)
+	}
+
+	// 2. Ambil semua kelas di semester saat ini
+	// FIX: Gunakan COALESCE untuk mencegah error "cannot scan NULL" pada kolom yang nullable
+	queryKelas := `
+		SELECT
+			rombongan_belajar_id,
+			COALESCE(nm_kelas, ''),
+			COALESCE(tingkat_pendidikan_id, 0),
+			ptk_id::text,
+			COALESCE(nama_jurusan_sp, ''),
+			COALESCE(kurikulum_id, 1),
+			COALESCE(capacity, 36)
+		FROM tabel_kelas
+		WHERE sekolah_id = $1 AND semester_id = $2
+	`
+	rows, err := tx.Query(ctx, queryKelas, schoolID, currentPeriodID)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrDatabaseError, err)
+	}
+
+	type ClassData struct {
+		ID        string
+		Name      string
+		Grade     int
+		PtkID     *string
+		Major     string
+		Kurikulum int
+		Capacity  int
+	}
+	var classes []ClassData
+	for rows.Next() {
+		var c ClassData
+		var ptk *string
+		if err := rows.Scan(&c.ID, &c.Name, &c.Grade, &ptk, &c.Major, &c.Kurikulum, &c.Capacity); err != nil {
+			rows.Close()
+			return fmt.Errorf("%w: %v", ErrDatabaseError, err)
+		}
+		c.PtkID = ptk
+		classes = append(classes, c)
+	}
+	rows.Close()
+
+	// 3. Looping setiap kelas untuk diproses
+	// 3. Looping setiap kelas untuk diproses
+	for _, c := range classes {
+		// Jika tingkat 12 (atau maksimal dari jenjang), siswa lulus (tidak dipindahkan)
+		// Anda bisa menyesuaikan 12 dengan lama_pendidikan dari tabel_sekolah nantinya
+		if c.Grade >= 12 {
+			continue
+		}
+
+		newClassID := uuid.New().String()
+		newGrade := c.Grade + 1
+
+		// FIX: Gunakan intToRoman dinamis (kita salin fungsinya ke package ini atau panggil util)
+		newRoman := intToRoman(newGrade)
+		oldRoman := intToRoman(c.Grade)
+
+		// Bersihkan prefix romawi lama (misal "X ") dari nama kelas
+		baseName := c.Name
+		prefix := oldRoman + " "
+		if after, ok := strings.CutPrefix(baseName, prefix); ok {
+			baseName = after
+		}
+
+		// Bentuk nama kelas baru (misal "XI TKJ 1")
+		newName := newRoman + " " + baseName
+
+		// Insert kelas baru
+		queryInsertKelas := `
+			INSERT INTO tabel_kelas (
+				rombongan_belajar_id, sekolah_id, semester_id, nm_kelas,
+				tingkat_pendidikan_id, ptk_id, nama_jurusan_sp, jenis_rombel, kurikulum_id, capacity
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, $9)
+		`
+		_, err = tx.Exec(ctx, queryInsertKelas, newClassID, schoolID, nextPeriodID, newName, newGrade, c.PtkID, c.Major, c.Kurikulum, c.Capacity)
+		if err != nil {
+			return fmt.Errorf("gagal insert kelas baru: %w", err)
+		}
+
+		// Pindahkan Anggota Kelas
+		queryMoveAnggota := `
+			INSERT INTO tabel_anggotakelas (anggota_rombel_id, peserta_didik_id, rombongan_belajar_id, semester_id)
+			SELECT gen_random_uuid(), peserta_didik_id, $1, $2
+			FROM tabel_anggotakelas
+			WHERE rombongan_belajar_id = $3 AND semester_id = $4
+		`
+		_, err = tx.Exec(ctx, queryMoveAnggota, newClassID, nextPeriodID, c.ID, currentPeriodID)
+		if err != nil {
+			return fmt.Errorf("gagal pindah anggota: %w", err)
+		}
+
+		// Pindahkan Pembelajaran (Mata Pelajaran)
+		queryMovePembelajaran := `
+			INSERT INTO tabel_pembelajaran (pembelajaran_id, rombongan_belajar_id, mata_pelajaran_id, semester_id, ptk_terdaftar_id)
+			SELECT gen_random_uuid(), $1, mata_pelajaran_id, $2, ptk_terdaftar_id
+			FROM tabel_pembelajaran
+			WHERE rombongan_belajar_id = $3 AND semester_id = $4
+		`
+		_, err = tx.Exec(ctx, queryMovePembelajaran, newClassID, nextPeriodID, c.ID, currentPeriodID)
+		if err != nil {
+			return fmt.Errorf("gagal pindah pembelajaran: %w", err)
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func intToRoman(num int) string {
+	romanMap := []struct {
+		value  int
+		symbol string
+	}{
+		{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"},
+		{100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"},
+		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+	}
+	result := ""
+	for _, v := range romanMap {
+		for num >= v.value {
+			result += v.symbol
+			num -= v.value
+		}
+	}
+	return result
 }

@@ -117,7 +117,7 @@ func (s *ClassService) CreateClass(ctx context.Context, req CreateClassRequest) 
 		AcademicPeriodID: domainClass.PeriodID(),
 		Name:             domainClass.Name(),
 		Grade:            domainClass.Grade(),
-		Level:            mapLevelToInt(domainClass.Level()),
+		Level:            req.Grade,
 		Major:            domainClass.Major(),
 		HomeroomID:       domainClass.HomeroomID(),
 		Capacity:         domainClass.Capacity(),
@@ -246,7 +246,7 @@ func (s *ClassService) UpdateClass(ctx context.Context, classID string, req Upda
 		AcademicPeriodID: updated.PeriodID(),
 		Name:             updated.Name(),
 		Grade:            updated.Grade(),
-		Level:            mapLevelToInt(updated.Level()),
+		Level:            req.Grade,
 		Major:            updated.Major(),
 		HomeroomID:       updated.HomeroomID(),
 		Capacity:         updated.Capacity(),
@@ -323,7 +323,7 @@ func (s *ClassService) SetHomeroom(ctx context.Context, classID, teacherID strin
 		existing.AcademicPeriodID,
 		existing.Name,
 		existing.Grade,
-		mapLevelToString(existing.Level),
+		intToRoman(existing.Grade),
 		existing.Major,
 		existing.HomeroomID,
 		existing.Capacity,
@@ -370,6 +370,14 @@ func (s *ClassService) SetHomeroom(ctx context.Context, classID, teacherID strin
 	return nil
 }
 
+func (s *ClassService) PromoteClasses(ctx context.Context) error {
+	opCtx := middleware.GetOperationalContext(ctx)
+	if opCtx == nil {
+		return ErrMissingOperationalContext
+	}
+	return s.repo.PromoteClasses(ctx, opCtx.SchoolID, opCtx.AcademicPeriodID)
+}
+
 type ClassListResponse struct {
 	Data    []ClassResponse `json:"data"`
 	Total   int             `json:"total"`
@@ -385,7 +393,7 @@ func toClassResponse(c *repository.Class) *ClassResponse {
 		PeriodID:        c.AcademicPeriodID,
 		Name:            c.Name,
 		Grade:           c.Grade,
-		Level:           mapLevelToString(c.Level),
+		Level:           intToRoman(c.Grade),
 		Major:           c.Major,
 		HomeroomID:      c.HomeroomID,
 		Capacity:        c.Capacity,
@@ -411,6 +419,24 @@ func mapLevelToInt(level string) int {
 
 func mapLevelToString(level int) string {
 	switch level {
+	case 1:
+		return "I"
+	case 2:
+		return "II"
+	case 3:
+		return "III"
+	case 4:
+		return "IV"
+	case 5:
+		return "V"
+	case 6:
+		return "VI"
+	case 7:
+		return "VII"
+	case 8:
+		return "VIII"
+	case 9:
+		return "IX"
 	case 10:
 		return "X"
 	case 11:
@@ -420,4 +446,24 @@ func mapLevelToString(level int) string {
 	default:
 		return ""
 	}
+}
+
+func intToRoman(num int) string {
+	romanMap := []struct {
+		value  int
+		symbol string
+	}{
+		{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"},
+		{100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"},
+		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+	}
+
+	result := ""
+	for _, v := range romanMap {
+		for num >= v.value {
+			result += v.symbol
+			num -= v.value
+		}
+	}
+	return result
 }

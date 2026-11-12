@@ -11,7 +11,14 @@ export const useJurusanStore = defineStore('jurusan', {
       this.isLoading = true
       try {
         const res = await api.get('/jurusan')
-        this.list = res.data.data || []
+        const rawData = res.data.data || []
+        
+        // ACL (Anti-Corruption Layer): Map API response ke format UI Quasar
+        this.list = rawData.map(item => ({
+          id: item.jurusan_id,
+          name: item.nama_jurusan,
+          level: item.level_bidang_id
+        }))
       } catch (e) {
         console.error('Gagal mengambil data jurusan:', e)
         throw e

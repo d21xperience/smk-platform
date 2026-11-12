@@ -10,7 +10,7 @@ export const useKelasStore = defineStore('kelas', {
     members: [],
     availableStudents: [],
     isLoadingMembers: false,
-    isLoadingAvailable: false
+    isLoadingAvailable: false,
   }),
   actions: {
     async fetchKelas(params = { limit: 100 }) {
@@ -80,7 +80,17 @@ export const useKelasStore = defineStore('kelas', {
     },
     async removeMember(classId, studentId) {
       await api.delete(`/classes/${classId}/members/${studentId}`)
-    }
+    },
+    // Tambahkan ini di dalam actions kelasStore.js
+    async promoteClasses() {
+      this.isLoading = true
+      try {
+        await api.post('/classes/promote')
+        await this.fetchKelas() // Refresh data setelah kenaikan
+      } finally {
+        this.isLoading = false
+      }
+    },
   },
 })
 

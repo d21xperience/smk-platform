@@ -6,7 +6,19 @@
         <p class="text-caption text-grey-7 q-mb-none">Kelola data rombongan belajar sesuai semester aktif</p>
       </div>
       <div class="q-gutter-x-sm">
-        <q-btn color="primary" icon="add" label="Tambah Kelas" @click="openDialog()" />
+        <!-- TOMBOL TAMBAH KELAS (Disable jika PSB aktif) -->
+        <q-btn 
+          v-if="!isPsbActive" 
+          color="primary" icon="add" label="Tambah Kelas" 
+          @click="openDialog()" 
+        />
+        
+        <!-- TOMBOL KENAIKAN TINGKAT (Muncul jika PSB aktif) -->
+        <q-btn 
+          v-else 
+          color="orange-9" icon="upgrade" label="Kenaikan Tingkat" 
+          @click="showPromoteDialog = true" 
+        />
       </div>
     </div>
 
@@ -43,9 +55,12 @@
 
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
-            <q-btn flat round dense color="teal" icon="people" @click="openMemberDialog(props.row)">
-              <q-tooltip>Kelola Anggota Kelas</q-tooltip>
+            <q-btn flat round dense color="teal" icon="people" @click="openMemberDialog(props.row)" 
+              :disable="isPsbActive && props.row.grade === 10">
+              <q-tooltip v-if="isPsbActive && props.row.grade === 10">PSB aktif. Anggota kelas X dikelola di modul PSB.</q-tooltip>
+              <q-tooltip v-else>Kelola Anggota Kelas</q-tooltip>
             </q-btn>
+            
             <q-btn flat round dense color="orange" icon="edit" @click="openDialog(props.row)">
               <q-tooltip>Edit Kelas</q-tooltip>
             </q-btn>
@@ -57,6 +72,7 @@
       </q-table>
     </q-card>
 
+    <!-- Dialog Form Tambah/Edit -->
     <q-dialog v-model="dialogOpen" persistent>
       <q-card style="min-width: 450px">
         <q-card-section class="row items-center q-pb-none bg-primary text-white">
@@ -76,20 +92,9 @@
               </div>
             </div>
             
-            <!-- DROPDOWN JURUSAN -->
-            <q-select
-              v-model="form.major"
-              :options="jurusanOptions"
-              label="Jurusan"
-              option-value="name"
-              option-label="name"
-              emit-value
-              map-options
-              filled
-              :loading="jurusanStore.isLoading"
-            />
+            <q-select v-model="form.major" :options="jurusanOptions" label="Jurusan" option-value="name"
+              option-label="name" emit-value map-options filled :loading="jurusanStore.isLoading" />
 
-            <!-- DROPDOWN WALI KELAS -->
             <q-select v-model="form.homeroomId" :options="teacherOptions" label="Wali Kelas" option-value="id"
               option-label="name" emit-value map-options filled clearable :loading="guruStore.isLoading" />
 
@@ -102,22 +107,41 @@
       </q-card>
     </q-dialog>
 
+    <!-- Dialog Konfirmasi Kenaikan Tingkat -->
+    <q-dialog v-model="showPromoteDialog" persistent>
+      <q-card style="min-width: 400px">
+        <q-card-section class="bg-orange-9 text-white">
+          <div class="text-h6">Konfirmasi Kenaikan Tingkat</div>
+        </q-card-section>
+        <q-card-section>
+          Apakah Anda yakin ingin memproses kenaikan tingkat untuk seluruh siswa? 
+          Siswa kelas X akan naik ke XI, XI ke XII, dan XII akan diluluskan.
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Batal" v-close-popup />
+          <q-btn color="orange-9" label="Ya, Proses Kenaikan" :loading="kelasStore.isLoading" @click="prosesKenaikanTingkat" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <KelolaAnggotaDialog v-model="memberDialogOpen" :class-data="selectedClassForMembers" />
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useKelasStore } from '@/stores/kesiswaan/kelasStore'
 import { useGuruStore } from '@/stores/kepegawaian/guru'
 import { useJurusanStore } from '@/stores/kurikulum/jurusanStore'
+import { useContextStore } from '@/stores/contextStore'
 import KelolaAnggotaDialog from '@/components/kesiswaan/KelolaAnggotaDialog.vue'
 
 const $q = useQuasar()
 const kelasStore = useKelasStore()
 const guruStore = useGuruStore()
 const jurusanStore = useJurusanStore()
+const contextStore = useContextStore()
 
 const filterKeyword = ref('')
 const dialogOpen = ref(false)
@@ -127,8 +151,16 @@ const form = ref({ id: '', name: '', grade: 10, major: '', capacity: 36, homeroo
 const memberDialogOpen = ref(false)
 const selectedClassForMembers = ref(null)
 
+// State Kenaikan Tingkat
+const showPromoteDialog = ref(false)
+
 const teacherOptions = computed(() => guruStore.list)
 const jurusanOptions = computed(() => jurusanStore.list)
+
+const isPsbActive = computed(() => {
+  const current = contextStore.availablePeriods.find(p => String(p.semester_id) === String(contextStore.selectedSemesterId))
+  return current?.is_psb_active || false
+})
 
 const columns = [
   { name: 'name', label: 'Nama Kelas', field: 'name', align: 'left', sortable: true },
@@ -149,6 +181,10 @@ onMounted(async () => {
   } catch (e) {
     console.error("Gagal load data referensi", e)
   }
+})
+
+watch(() => contextStore.selectedSemesterId, () => {
+  loadData()
 })
 
 const getTeacherName = (id) => {
@@ -215,5 +251,16 @@ const confirmDelete = (row) => {
 const openMemberDialog = (row) => {
   selectedClassForMembers.value = row
   memberDialogOpen.value = true
+}
+
+// Fungsi Kenaikan Tingkat
+const prosesKenaikanTingkat = async () => {
+  try {
+    await kelasStore.promoteClasses()
+    $q.notify({ color: 'positive', message: 'Kenaikan tingkat berhasil diproses!' })
+    showPromoteDialog.value = false
+  } catch (err) {
+    $q.notify({ color: 'negative', message: err.response?.data?.error || 'Gagal memproses kenaikan' })
+  }
 }
 </script>

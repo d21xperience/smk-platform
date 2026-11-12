@@ -40,7 +40,7 @@ func (h *ContextHandler) CreatePeriod(w http.ResponseWriter, req *http.Request) 
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "Konteks operasional tidak ditemukan."})
 		return
 	}
-	
+
 	role := strings.ToLower(strings.TrimSpace(opCtx.Role))
 	if role != "admin" {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "Akses ditolak. Role Anda: " + role})
@@ -144,4 +144,21 @@ func (h *ContextHandler) UpdatePreference(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"success": true})
+}
+
+func (h *ContextHandler) TogglePSB(w http.ResponseWriter, req *http.Request) {
+	var body struct {
+		SemesterID string `json:"semester_id"`
+		IsActive   bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON body"})
+		return
+	}
+
+	if err := h.prefSvc.TogglePSB(req.Context(), body.SemesterID, body.IsActive); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Status PSB berhasil diubah"})
 }

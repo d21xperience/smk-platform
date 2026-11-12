@@ -21,6 +21,7 @@ type Period struct {
 	NamaSemester     string `json:"nama_semester"`
 	Semester         int    `json:"semester"`
 	PeriodeAktif     bool   `json:"periode_aktif"`
+	IsPsbActive      bool   `json:"is_psb_active"`
 }
 
 type PreferenceService struct {
@@ -39,7 +40,8 @@ func (s *PreferenceService) ListPeriods(ctx context.Context) ([]Period, error) {
 			s.academic_year AS tahun_ajaran_label,
 			s.name AS nama_semester,
 			s.semester,
-			s.is_active
+			s.is_active,
+			COALESCE(s.is_psb_active, FALSE) as is_psb_active -- <-- TAMBAHKAN INI
 		FROM semesters s
 		ORDER BY s.id DESC
 	`
@@ -52,7 +54,7 @@ func (s *PreferenceService) ListPeriods(ctx context.Context) ([]Period, error) {
 	var result []Period
 	for rows.Next() {
 		var p Period
-		if err := rows.Scan(&p.SemesterID, &p.TahunAjaranID, &p.TahunAjaranLabel, &p.NamaSemester, &p.Semester, &p.PeriodeAktif); err != nil {
+		if err := rows.Scan(&p.SemesterID, &p.TahunAjaranID, &p.TahunAjaranLabel, &p.NamaSemester, &p.Semester, &p.PeriodeAktif, &p.IsPsbActive); err != nil {
 			return nil, fmt.Errorf("scan period: %w", err)
 		}
 		result = append(result, p)
@@ -87,8 +89,8 @@ func (s *PreferenceService) GetUserPreference(ctx context.Context, userID, schoo
 func (s *PreferenceService) SaveUserPreference(ctx context.Context, userID, schoolID, semesterID string) error {
 	// 1. Coba lakukan UPDATE terlebih dahulu
 	queryUpdate := `
-		UPDATE user_period_preference 
-		SET semester_id = $1, updated_at = CURRENT_TIMESTAMP 
+		UPDATE user_period_preference
+		SET semester_id = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = $2 AND school_id = $3
 	`
 	res, err := s.db.ExecContext(ctx, queryUpdate, semesterID, userID, schoolID)
@@ -104,7 +106,7 @@ func (s *PreferenceService) SaveUserPreference(ctx context.Context, userID, scho
 
 	// 2. Jika 0 baris terpengaruh (berarti belum ada data), lakukan INSERT
 	queryInsert := `
-		INSERT INTO user_period_preference (user_id, school_id, semester_id, updated_at) 
+		INSERT INTO user_period_preference (user_id, school_id, semester_id, updated_at)
 		VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
 	`
 	_, err = s.db.ExecContext(ctx, queryInsert, userID, schoolID, semesterID)
@@ -190,5 +192,13 @@ func (s *PreferenceService) DeletePeriod(ctx context.Context, semesterID string)
 		return fmt.Errorf("gagal menghapus periode: %w", err)
 	}
 
+	return nil
+}
+func (s *PreferenceService) TogglePSB(ctx context.Context, semesterID string, isActive bool) error {
+	query := `UPDATE semesters SET is_psb_active = $1 WHERE id = $2`
+	_, err := s.db.ExecContext(ctx, query, isActive, semesterID)
+	if err != nil {
+		return fmt.Errorf("gagal toggle psb: %w", err)
+	}
 	return nil
 }
