@@ -98,12 +98,13 @@ const itemKesiswaan = [
   },
   { title: 'PIP', to: '/kesiswaan/beasiswa-pip-siswa' },
   { title: 'Legalisir', to: '/kesiswaan/legalisir-alumni' },
+  { title: 'Tracer Study', to: '/kesiswaan/tracer-study' },
+  { title: 'Ploting', to: '/kesiswaan/ploting-berkas-siswa' },
   // { title: 'Pelaporan', to: '/kesiswaan/rekap-pelaporan' },
   {
     title: 'Pelaporan', icon: 'room_service', children: [
       { title: 'Surat Aktif', to: '/kesiswaan/surat-aktif-siswa' },
-      { title: 'Rekap Pelaporan', to: '/sarpras/servis/jadwal' },
-      { title: 'Vendor', to: '/sarpras/servis/vendor' }
+      { title: 'Rekap Pelaporan', to: '/kesiswaan/rekap-pelaporan' },
     ]
   },
 ]
@@ -145,6 +146,26 @@ const itemSarpras = [
   },
 ]
 
+const itemKeuangan = [
+  { title: 'Dashboard Keuangan', to: '/keuangan/dashboard' },
+  { title: 'Penerimaan Iuran', to: '/keuangan/penerimaan/input' },
+  { title: 'Rekap Harian', to: '/keuangan/penerimaan/rekap-harian' },
+  { title: 'Daftar Tagihan', to: '/keuangan/tagihan' },
+  { title: 'Buku Kas Umum', to: '/keuangan/bku' },
+  { title: 'Ajukan Pengeluaran', to: '/keuangan/pengeluaran/ajukan' },
+  { title: 'Daftar Pengeluaran', to: '/keuangan/pengeluaran' },
+  { title: 'RAB Tahunan', to: '/keuangan/rab' },
+  { title: 'Realisasi Anggaran', to: '/keuangan/rab/realisasi' },
+  { title: 'Rekonsiliasi Bank', to: '/keuangan/rekonsiliasi' },
+  { title: 'Buku Piutang', to: '/keuangan/piutang' },
+  { title: 'Penutupan Buku Kas', to: '/keuangan/penutupan' },
+  { title: 'Laporan Neraca', to: '/keuangan/laporan/neraca' },
+  { title: 'Laporan LRA', to: '/keuangan/laporan/lra' },
+  { title: 'Master: Jenis Iuran', to: '/keuangan/master/jenis-iuran' },
+  { title: 'Master: Rekening Bank', to: '/keuangan/master/rekening-bank' },
+  { title: 'PIN TTD Digital', to: '/keuangan/pengaturan/pin-ttd' },
+]
+
 const menus = computed(() => {
   const list = [
     { label: 'Ur. Kesiswaan', items: itemKesiswaan },
@@ -160,6 +181,7 @@ const menus = computed(() => {
     list.push({ label: 'PSB', items: itemPsb })
   }
 
+  list.push({ label: 'Keuangan', items: itemKeuangan })
   list.push({ label: 'Pengaturan Sistem', items: itemPengaturan })
   return list
 })

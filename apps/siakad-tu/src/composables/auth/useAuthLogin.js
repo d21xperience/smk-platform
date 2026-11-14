@@ -80,6 +80,8 @@ export function useAuthLogin() {
 
         if (redirectTo.value) {
           router.push(redirectTo.value)
+        } else if (authStore.userRole === 'bendahara' || authStore.userRole === 'kepala_sekolah') {
+          router.push('/keuangan/dashboard')
         } else {
           router.push({ name: 'landing-home' })
         }

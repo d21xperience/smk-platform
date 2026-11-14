@@ -110,6 +110,8 @@ const roleOptions = [
   { label: 'Kepegawaian', value: 'kepegawaian' },
   { label: 'Sarana Prasarana (Sarpras)', value: 'sarpras' },
   { label: 'Hubungan Industri (Hubin)', value: 'hubin' },
+  { label: 'Bendahara', value: 'bendahara' },
+  { label: 'Kepala Sekolah', value: 'kepala_sekolah' },
 ]
 
 const columns = [

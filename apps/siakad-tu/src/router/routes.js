@@ -6,6 +6,7 @@ import persuratan from './routes/persuratan.js'
 import previewDev from './routes/preview-routes.js'
 import psb from './routes/psb-routes.js'
 import sarpras from './routes/sarpras.js'
+import financeRoutes from './routes/finance-routes.js'
 
 const routes = [
   {
@@ -62,6 +63,7 @@ const routes = [
       },
     ],
   },
+  financeRoutes,
   {
     path: '/:catchAll(.*)*',
     component: () => import('@/pages/ErrorNotFound.vue'),
