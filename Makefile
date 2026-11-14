@@ -285,12 +285,25 @@ dev-fe-psb:
 #=============================================================================
 # BACKEND DEVELOPMENT
 #=============================================================================
+# .PHONY: dev-be
+# dev-be:
+# 	@$(E) "$(GREEN)$(I_BE) Rebuild TU-Core...$(NC)"
+# 	@cd $(SERVICES_DIR)/tu-core && go build ./... && echo "✅ ALL BUILD OK"
+# 	@$(E) "$(GREEN)$(I_BE) Starting TU-Core...$(NC)"
+# 	@cd $(SERVICES_DIR)/tu-core && go run ./cmd/main.go
+
 .PHONY: dev-be
 dev-be:
 	@$(E) "$(GREEN)$(I_BE) Rebuild TU-Core...$(NC)"
-	@cd $(SERVICES_DIR)/tu-core && go build ./... && echo "✅ ALL BUILD OK"
+	@cd $(SERVICES_DIR)/tu-core && go build ./cmd && echo "✅ ALL BUILD OK"
 	@$(E) "$(GREEN)$(I_BE) Starting TU-Core...$(NC)"
-	@cd $(SERVICES_DIR)/tu-core && go run ./cmd/main.go
+	@cd $(SERVICES_DIR)/tu-core && go run ./cmd
+
+.PHONY: dev-be-build
+dev-be-build:
+	@$(E) "$(GREEN)$(I_BE) Rebuild TU-Core...$(NC)"
+	@cd $(SERVICES_DIR)/tu-core && go build ./cmd && echo "✅ ALL BUILD OK"
+
 
 .PHONY: dev-be-edge
 dev-be-edge:
