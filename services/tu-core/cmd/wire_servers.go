@@ -106,7 +106,17 @@ func setupServers(services *AppServices, repos *AppRepositories, infra *Infrastr
 		services.Maintenance,
 		services.SarprasReport,
 		services.Dashboard,
-	)
+
+		services.KeuanganMaster,
+		services.Iuran,
+		services.BukuKas,
+		services.Pengeluaran,
+		services.RAB,
+		services.Rekonsiliasi,
+		services.Penutupan,
+		services.Piutang,
+		services.UserPinTTD,
+		services.Laporan)
 	restServer := server.NewRESTServer(
 		server.RESTServerConfig{Port: getEnvAsInt("REST_PORT", 8081)},
 		restHandler,

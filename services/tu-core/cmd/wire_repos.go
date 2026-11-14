@@ -68,7 +68,15 @@ type AppRepositories struct {
 	AlumniLegalisir repository.AlumniLegalisirRepository
 	AlumniTracking repository.AlumniTrackingRepository
 	PklPlotting repository.PklPlottingRepository
-}
+	KeuanganTransaksi repository.KeuanganTransaksiRepository
+	RAB repository.RABRepository
+	Rekonsiliasi repository.RekonsiliasiRepository
+	Penutupan repository.PenutupanRepository
+	Piutang repository.PiutangRepository
+	UserPinTTD repository.UserPinTTDRepository
+	Laporan repository.LaporanRepository
+
+	KeuanganMaster repository.KeuanganMasterRepository}
 
 func initRepositories(db *pgxpool.Pool) *AppRepositories {
 	return &AppRepositories{
@@ -131,5 +139,13 @@ func initRepositories(db *pgxpool.Pool) *AppRepositories {
 		AlumniLegalisir: repository.NewAlumniLegalisirRepository(db),
 		AlumniTracking: repository.NewAlumniTrackingRepository(db),
 		PklPlotting: repository.NewPklPlottingRepository(db),
-	}
+		KeuanganTransaksi: repository.NewKeuanganTransaksiRepository(db),
+		RAB: repository.NewRABRepository(db),
+		Rekonsiliasi: repository.NewRekonsiliasiRepository(db),
+		Penutupan: repository.NewPenutupanRepository(db),
+		Piutang: repository.NewPiutangRepository(db),
+		UserPinTTD: repository.NewUserPinTTDRepository(db),
+		Laporan: repository.NewLaporanRepository(db),
+
+		KeuanganMaster: repository.NewKeuanganMasterRepository(db),	}
 }

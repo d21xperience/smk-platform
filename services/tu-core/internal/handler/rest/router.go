@@ -15,23 +15,33 @@ import (
 
 type Router struct {
 	// Akademik & Kesiswaan
-	studentService      *service.StudentService
-	mutationService     *service.MutationService
-	registrationService *service.RegistrationService
-	attendanceService   *service.AttendanceService
-	assessmentService   *service.AssessmentService
-	financeService      *service.FinanceService
-	classService        *service.ClassService
-	enrollmentService   *service.EnrollmentService
-	statisticsService   *service.StatisticsService
-	kurikulumService    *service.KurikulumService
-	scheduleService     service.ScheduleService
-	psbService          *service.PSBService
-	jurusanService      *service.JurusanService
-	scheduleHandler     *ScheduleHandler
-	attendanceHandler   *AttendanceHandler
-	letterService       *service.LetterService
-	scholarshipService  *service.ScholarshipService
+	studentService        *service.StudentService
+	mutationService       *service.MutationService
+	registrationService   *service.RegistrationService
+	attendanceService     *service.AttendanceService
+	assessmentService     *service.AssessmentService
+	financeService        *service.FinanceService
+	keuanganMasterService *service.KeuanganMasterService
+	iuranService          *service.IuranService
+	bukuKasService        *service.BukuKasService
+	pengeluaranService    *service.PengeluaranService
+	rabService            *service.RABService
+	rekonsiliasiService   *service.RekonsiliasiService
+	penutupanService      *service.PenutupanService
+	piutangService        *service.PiutangService
+	userPinTTDService     *service.UserPinTTDService
+	laporanService        *service.LaporanService
+	classService          *service.ClassService
+	enrollmentService     *service.EnrollmentService
+	statisticsService     *service.StatisticsService
+	kurikulumService      *service.KurikulumService
+	scheduleService       service.ScheduleService
+	psbService            *service.PSBService
+	jurusanService        *service.JurusanService
+	scheduleHandler       *ScheduleHandler
+	attendanceHandler     *AttendanceHandler
+	letterService         *service.LetterService
+	scholarshipService    *service.ScholarshipService
 
 	// Persuratan
 	correspondenceService *service.CorrespondenceService
@@ -61,11 +71,11 @@ type Router struct {
 	ptkArchiveService        *service.PtkArchiveService
 	ptkDashboardService      *service.PtkDashboardService
 	bukuIndukService         *service.BukuIndukService
-		studentBukuIndukService *service.StudentBukuIndukService
-		kesiswaanReportService *service.KesiswaanReportService
-		alumniLegalisirService *service.AlumniLegalisirService
-		alumniTrackingService *service.AlumniTrackingService
-		pklPlottingService *service.PklPlottingService
+	studentBukuIndukService  *service.StudentBukuIndukService
+	kesiswaanReportService   *service.KesiswaanReportService
+	alumniLegalisirService   *service.AlumniLegalisirService
+	alumniTrackingService    *service.AlumniTrackingService
+	pklPlottingService       *service.PklPlottingService
 	laporanBerkalaRepo       repository.LaporanBerkalaRepository
 	laporanAggregatorService *service.LaporanAggregatorService
 	laporanBerkalaService    *service.LaporanBerkalaService
@@ -132,11 +142,11 @@ func NewRouter(
 	ptkArchiveService *service.PtkArchiveService,
 	ptkDashboardService *service.PtkDashboardService,
 	bukuIndukService *service.BukuIndukService,
-		studentBukuIndukService *service.StudentBukuIndukService,
-		kesiswaanReportService *service.KesiswaanReportService,
-		alumniLegalisirService *service.AlumniLegalisirService,
-		alumniTrackingService *service.AlumniTrackingService,
-		pklPlottingService *service.PklPlottingService,
+	studentBukuIndukService *service.StudentBukuIndukService,
+	kesiswaanReportService *service.KesiswaanReportService,
+	alumniLegalisirService *service.AlumniLegalisirService,
+	alumniTrackingService *service.AlumniTrackingService,
+	pklPlottingService *service.PklPlottingService,
 	laporanBerkalaRepo repository.LaporanBerkalaRepository,
 	laporanAggregatorService *service.LaporanAggregatorService,
 	laporanBerkalaService *service.LaporanBerkalaService,
@@ -160,6 +170,16 @@ func NewRouter(
 	maintenanceService *service.MaintenanceService,
 	sarprasReportService *service.SarprasReportService,
 	dashboardService *service.DashboardService, // <-- TAMBAHAN PARAMETER
+	keuanganMasterService *service.KeuanganMasterService,
+	iuranService *service.IuranService,
+	bukuKasService *service.BukuKasService,
+	pengeluaranService *service.PengeluaranService,
+	rabService *service.RABService,
+	rekonsiliasiService *service.RekonsiliasiService,
+	penutupanService *service.PenutupanService,
+	piutangService *service.PiutangService,
+	userPinTTDService *service.UserPinTTDService,
+	laporanService *service.LaporanService,
 ) http.Handler {
 	r := &Router{
 		studentService:           studentService,
@@ -226,11 +246,21 @@ func NewRouter(
 		maintenanceService:       maintenanceService,
 		sarprasReportService:     sarprasReportService,
 		dashboardService:         dashboardService, // <-- TAMBAHAN ASSIGNMENT
-		studentBukuIndukService: studentBukuIndukService,
-		kesiswaanReportService: kesiswaanReportService,
-		alumniLegalisirService: alumniLegalisirService,
-		alumniTrackingService: alumniTrackingService,
-		pklPlottingService: pklPlottingService,
+		keuanganMasterService:    keuanganMasterService,
+		iuranService:             iuranService,
+		bukuKasService:           bukuKasService,
+		pengeluaranService:       pengeluaranService,
+		rabService:               rabService,
+		rekonsiliasiService:      rekonsiliasiService,
+		penutupanService:         penutupanService,
+		piutangService:           piutangService,
+		userPinTTDService:        userPinTTDService,
+		laporanService:           laporanService,
+		studentBukuIndukService:  studentBukuIndukService,
+		kesiswaanReportService:   kesiswaanReportService,
+		alumniLegalisirService:   alumniLegalisirService,
+		alumniTrackingService:    alumniTrackingService,
+		pklPlottingService:       pklPlottingService,
 	}
 
 	mux := http.NewServeMux()
@@ -280,6 +310,7 @@ func NewRouter(
 
 	// ===== RUTE DASHBOARD =====
 	r.registerDashboardRoutes(mux) // <-- TAMBAHAN
+	r.registerFinanceRoutes(mux)
 
 	// ===== RUTE STATIC FILE (EXPORT EXCEL/PDF) =====
 	fs := http.FileServer(http.Dir("./storage"))

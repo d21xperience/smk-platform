@@ -83,11 +83,22 @@ type AppServices struct {
 	Dashboard         *service.DashboardService
 	Letter            *service.LetterService
 	Scholarship       *service.ScholarshipService
-	StudentBukuInduk   *service.StudentBukuIndukService
+	StudentBukuInduk  *service.StudentBukuIndukService
 	KesiswaanReport   *service.KesiswaanReportService
 	AlumniLegalisir   *service.AlumniLegalisirService
-	AlumniTracking   *service.AlumniTrackingService
-	PklPlotting   *service.PklPlottingService
+	AlumniTracking    *service.AlumniTrackingService
+	PklPlotting       *service.PklPlottingService
+	Iuran             *service.IuranService
+	BukuKas           *service.BukuKasService
+	Pengeluaran       *service.PengeluaranService
+	RAB               *service.RABService
+	Rekonsiliasi      *service.RekonsiliasiService
+	Penutupan         *service.PenutupanService
+	Piutang           *service.PiutangService
+	UserPinTTD        *service.UserPinTTDService
+	Laporan           *service.LaporanService
+
+	KeuanganMaster *service.KeuanganMasterService
 }
 
 func initEngines() *AppEngines {
@@ -167,7 +178,17 @@ func initServices(repos *AppRepositories, engines *AppEngines, minioClient *stor
 		StudentBukuInduk:  service.NewStudentBukuIndukService(repos.StudentBukuInduk, repos.School),
 		KesiswaanReport:   service.NewKesiswaanReportService(repos.KesiswaanReport, repos.School),
 		AlumniLegalisir:   service.NewAlumniLegalisirService(repos.AlumniLegalisir),
-		AlumniTracking:   service.NewAlumniTrackingService(repos.AlumniTracking),
-		PklPlotting:   service.NewPklPlottingService(repos.PklPlotting),
-	}
+		AlumniTracking:    service.NewAlumniTrackingService(repos.AlumniTracking),
+		PklPlotting:       service.NewPklPlottingService(repos.PklPlotting),
+		Iuran:             service.NewIuranService(repos.KeuanganTransaksi, repos.KeuanganMaster),
+		BukuKas:           service.NewBukuKasService(repos.KeuanganTransaksi),
+		Pengeluaran:       service.NewPengeluaranService(repos.KeuanganTransaksi),
+		RAB:               service.NewRABService(repos.RAB, repos.KeuanganMaster),
+		Rekonsiliasi:      service.NewRekonsiliasiService(repos.Rekonsiliasi),
+		Penutupan:         service.NewPenutupanService(repos.Penutupan, repos.Rekonsiliasi),
+		Piutang:           service.NewPiutangService(repos.Piutang),
+		UserPinTTD:        service.NewUserPinTTDService(repos.UserPinTTD),
+		Laporan:           service.NewLaporanService(repos.Laporan, service.NewRABService(repos.RAB, repos.KeuanganMaster), service.NewPiutangService(repos.Piutang), repos.Penutupan),
+
+		KeuanganMaster: service.NewKeuanganMasterService(repos.KeuanganMaster)}
 }
