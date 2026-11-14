@@ -148,4 +148,37 @@ edge.db
 edge.db-journal
 edge.db-wal
 
+nul.bak.*
+*.bak
+
+
+# === Backup patterns (format: file.ext.bak.<timestamp>) ===
+*.bak.*
+*.pre_*
+*.pre_python.*
+*.pre_fix.*
+*.pre_c2.*
+*.pre_c2_rab.*
+*.pre_c2_piutang.*
+*.pre_c2_ttd.*
+*.pre_c2_laporan.*
+*.pre_fix_laporan.*
+*.pre_fix_laporan2.*
+*.pre_neraca_fix.*
+*.pre_neraca_fix3.*
+.gitignore.bak.*
+
+
+# === Agresif: match .bak2, .bak_p, .bak6_final, dst. ===
+*.bak*
+*.Bak*
+*.BAK*
+
+
+# === Windows artifact + runtime storage ===
 nul
+nul.txt
+nul.*
+services/tu-core/storage/pdfs/*.pdf
+services/tu-core/storage/reports/*
+services/tu-core/storage/expeditions/*
